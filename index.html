@@ -548,13 +548,15 @@ function startBuildings(m,cap){m[cap].b='hall';const order=['cottage','cottage',
   const near=m.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.p===0&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
   order.forEach((b,k)=>{const i=near[k];if(i!=null){m[i].b=b;m[i].t='l'}})}
 const dist=(a,b)=>Math.hypot(Math.floor(a/W)-Math.floor(b/W),a%W-b%W);
-function setWorld(wd){startBuildings(wd.map,wd.cap);Object.assign(S,{map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{}})}
-function newState(name,size){const mo=newRoyal(28,38),wd=genWorld(size||'medium');startBuildings(wd.map,wd.cap);
+// your starting provinces: everyone lives in the capital province at first, and all are fully integrated
+function initMyProvs(prov,pop){prov.forEach((P,i)=>{if(P.o!=='me')return;P.pop=i===0?pop:0;P.integ=100;P.unrest=0})}
+function setWorld(wd){startBuildings(wd.map,wd.cap);initMyProvs(wd.prov,S.pop);Object.assign(S,{map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{}})}
+function newState(name,size){const mo=newRoyal(28,38),wd=genWorld(size||'medium');startBuildings(wd.map,wd.cap);initMyProvs(wd.prov,60);
   return{v:2,mv:2,name:name||'Kestrel',month:3,year:1,turn:0,coins:2500,pop:60,best:60,hap:55,leg:60,unrest:5,tax:12,map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{},army:1,troops:1,mob:false,general:null,navy:0,dev:{},war:null,aggr:[],nsit:{norvik:'stable',solenne:'stable',aurelia:'stable'},wins:0,gained:0,sold:{},dec:{},mods:[],hist:[],goals:{},lastNet:0,recent:[],sel:-1,
   rel:{norvik:50,solenne:50,aurelia:50},tension:{norvik:10,solenne:5,aurelia:15},embargo:{},crisisCd:{},demandCd:{},trade:{food:null,energy:null,goods:null},envoy:{},
   laws:Object.assign({},DEFAULT_LAWS),enact:null,lawsPassed:0,favorCd:{},
   tech:{done:[],cur:null,prog:0},
-  court:2,monarch:Object.assign(mo,{trait:pick(Object.keys(TRAITS)),num:1,since:1}),heir:newRoyal(6,12),aging:true,reigns:[],calm:0,sandbox:false,news:[],showReport:false,mat:100}}
+  court:2,monarch:Object.assign(mo,{trait:pick(Object.keys(TRAITS)),num:1,since:1}),heir:newRoyal(6,12),aging:true,reigns:[],calm:0,sandbox:false,news:[],showReport:false,mat:100,pv:1}}
 let S,tab='isle',resetArmed=false;const queue=[];let curEvent=null;
 function adopt(d){
   const base=newState();
@@ -569,7 +571,8 @@ function adopt(d){
     const mine=wd.map.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
     Object.assign(S,{map:wd.map,prov:wd.prov,cap,W:wd.W,H:wd.H,wsize:'small',nscale:nscaleOf(wd.prov),mv:2});let refund=0;
     old.forEach(b=>{const k=mine.findIndex(i=>!S.map[i].b&&(!B[b].coast||isCoast(i)));if(k<0){refund+=Math.round((B[b].c||0)*.5);return}const i=mine[k];S.map[i].b=b;S.map[i].t='l'});
-    S.coins+=refund;S.migrated=true}}
+    S.coins+=refund;S.migrated=true}
+  if(!d.pv)migrateProvPop()}
 function load(){let raw=store.get();if(!raw){try{raw=localStorage.getItem('pocketisle.v1')}catch(e){}}
   if(raw){try{const d=JSON.parse(raw);if(d&&(d.v===1||d.v===2)&&Array.isArray(d.map)){adopt(d);return true}}catch(e){}}S=newState();return false}
 const save=()=>store.set(JSON.stringify(S));
@@ -589,6 +592,21 @@ const cnt=b=>S.map.filter(c=>c.o==='me'&&c.b===b).length;
 const provTiles=i=>{geo();return geoTiles[i]||[]};
 const provsOf=o=>S.prov.map((P,i)=>[P,i]).filter(([P])=>P.o===o).map(([,i])=>i);
 function adjProvs(i){geo();return geoAdj[i]||[]}
+/* ---------- province population ---------- */
+// Each of your provinces holds its own people (P.pop); S.pop is always their total.
+const homesIn=i=>provTiles(i).reduce((a,t)=>{const x=S.map[t];return a+(x.b&&B[x.b]&&B[x.b].homes||0)},0);
+function syncPop(){S.pop=provsOf('me').reduce((a,i)=>a+(S.prov[i].pop||0),0);if(S.pop<10){S.prov[0].pop=(S.prov[0].pop||0)+10-S.pop;S.pop=10}}
+// newcomers settle where there's room, the capital first
+function addPop(n){let left=Math.round(n);provsOf('me').map(i=>[i,homesIn(i)-(S.prov[i].pop||0)]).filter(([,r])=>r>0).sort((a,b)=>(a[0]?1:0)-(b[0]?1:0)||b[1]-a[1])
+  .forEach(([i,r])=>{const k=Math.min(r,left);S.prov[i].pop=(S.prov[i].pop||0)+k;left-=k});if(left>0)S.prov[0].pop+=left;syncPop()}
+// losses (war, disease) fall on every province in proportion to its size
+function removePop(n){const own=provsOf('me'),tot=Math.max(1,S.pop);let left=Math.min(Math.round(n),Math.max(0,S.pop-10));
+  own.forEach(i=>{const P=S.prov[i],k=Math.min(P.pop||0,Math.round(n*(P.pop||0)/tot),left);P.pop-=k;left-=k});
+  for(const i of own){if(left<=0)break;const P=S.prov[i],k=Math.min(P.pop||0,left);P.pop-=k;left-=k}syncPop()}
+const setPop=n=>{const d=Math.round(n)-S.pop;if(d>0)addPop(d);else if(d<0)removePop(-d)};
+// older saves kept one national population: share it out by where the homes are
+function migrateProvPop(){const own=provsOf('me'),hm=own.map(homesIn),tot=hm.reduce((a,b)=>a+b,0)||1;let left=S.pop;
+  own.forEach((i,k)=>{const n=Math.min(left,Math.round(S.pop*hm[k]/tot));const P=S.prov[i];P.pop=n;left-=n;P.integ=100;P.unrest=0});S.prov[0].pop+=left;S.pv=1;syncPop()}
 const touches=(i,o)=>adjProvs(i).some(q=>S.prov[q].o===o);
 const borderOf=(owner,next)=>provsOf(owner).filter(i=>touches(i,next));
 const OWN={me:'Your kingdom',wild:'Unclaimed frontier'};const ownName=o=>OWN[o]||NATIONS[o].n;
@@ -613,19 +631,32 @@ const lockReason=d=>d.tech&&!hasTech(d.tech)?`Needs ${techOf(d.tech).n.toLowerCa
 function calc(){
   const t={homes:0,jobs:0,food:0,health:0,learn:0,fun:0,move:100,power:0,water:50,inc:0,tour:0,up:0,nat:0,hap:0,leg:0,goods:0,trade:150,mid:0,mat:0};
   // terrain: farms depend on the land, windmills catch more wind on hills
-  S.map.forEach((c,i)=>{if(c.o!=='me'||!c.b)return;const d=B[c.b];if(!d)return;const f=S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1;
+  // provinces tally their own homes, jobs and local services; the capital starts with more room to walk and natural water.
+  // A province in revolt produces nothing, and one with riots (unrest 60+) three quarters.
+  const own=provsOf('me'),pv={},LOC=['homes','jobs','health','learn','fun','move','water'];
+  own.forEach(i=>{const P=S.prov[i];pv[i]={pop:P.pop||0,homes:0,jobs:0,health:0,learn:0,fun:0,move:i===0?100:40,water:i===0?50:20,hw:0,ha:0,hp:0,f:P.revolt?0:(P.unrest||0)>=60?.75:1}});
+  S.map.forEach((c,i)=>{if(c.o!=='me'||!c.b)return;const d=B[c.b];if(!d)return;const p=pv[c.p],f=(S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1)*(p?p.f:1);
     const tm=c.b==='farm'?farmMult(i):c.b==='wind'&&c.hl?1.5:1;
-    for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]:d[k]*f*(k==='food'||k==='power'?tm:1);t.up+=d.u||0});
+    for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]:d[k]*f*(k==='food'||k==='power'?tm:1);t.up+=d.u||0;
+    if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]:d[k]*f})});
   t.trade+=S.navy*40;const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
   if(trait('frugal'))t.up*=.9;
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
   const forests=S.map.reduce((a,c)=>a+(c.o==='me'&&c.t==='f'?(!c.b?1:c.b==='lumber'?.5:0):0),0),D=k=>!!S.dec[k];
   // neighborhoods: how pleasant the average home is, weighted by how many people it houses
-  const A=appealMap();let hw=0,ha=0,hp=0;S.map.forEach((x,i)=>{const hm=x.o==='me'&&x.b&&B[x.b]&&B[x.b].homes;if(!hm)return;hw+=hm;ha+=hm*A[i];if(A[i]<0)hp+=hm});
+  const A=appealMap();let hw=0,ha=0,hp=0;S.map.forEach((x,i)=>{const hm=x.o==='me'&&x.b&&B[x.b]&&B[x.b].homes;if(!hm)return;hw+=hm;ha+=hm*A[i];if(A[i]<0)hp+=hm;
+    const p=pv[x.p];if(p){p.hw+=hm;p.ha+=hm*A[i];if(A[i]<0)p.hp+=hm}});
   const hoodAvg=hw?ha/hw:0,polluted=hw?hp/hw:0,hood=clamp(Math.round(hoodAvg*1.5),-5,5);
   const matCap=500+100*(cnt('lumber')+cnt('quarry')+cnt('brickworks')),matSale=Math.max(0,Math.round(((S.mat||0)+t.mat-matCap)*2));
   const coalImp=Math.max(0,cnt('diesel')-cnt('coalmine'))*20;
-  const pop=S.pop,soldiers=Math.min(S.troops,Math.round(pop*.2)),workers=Math.max(0,Math.round(pop*.6)-soldiers),employed=Math.min(workers,t.jobs);
+  const pop=S.pop,soldiers=Math.min(S.troops,Math.round(pop*.2)),workers=Math.max(0,Math.round(pop*.6)-soldiers);
+  // a province with spare capacity shares 60% of it with its neighbours: people use a clinic or take a job next door
+  const eff={};own.forEach(i=>{eff[i]={};LOC.forEach(k=>eff[i][k]=pv[i][k]);pv[i].workers=Math.max(0,Math.round(pv[i].pop*.6-soldiers*pv[i].pop/Math.max(1,pop)))});
+  LOC.forEach(k=>{if(k==='homes')return;own.forEach(j=>{const need=k==='jobs'?pv[j].workers:pv[j].pop,spare=Math.max(0,pv[j][k]-need),ns=adjProvs(j).filter(q=>pv[q]);
+    if(spare&&ns.length)ns.forEach(q=>{eff[q][k]+=spare*.6/ns.length})})});
+  own.forEach(i=>{pv[i].emp=Math.min(pv[i].workers,eff[i].jobs)});
+  const empSum=own.reduce((a,i)=>a+pv[i].emp,0),empScale=empSum?Math.min(1,Math.min(workers,t.jobs)/empSum):0;own.forEach(i=>{pv[i].emp*=empScale});
+  const employed=Math.round(empSum*empScale);
   const share={upper:.05+(S.laws.labor==='serfdom'?.02:0)};share.middle=clamp(.08+t.mid/pop*.5,.08,.45);share.lower=1-share.upper-share.middle;
   const foodMult=1+(hasTech('rotation')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100,goodsMult=1+(hasTech('workshops')?.25:0);
   const prod={food:t.food*foodMult,energy:t.power,goods:t.goods*goodsMult};
@@ -652,15 +683,30 @@ function calc(){
   sc.nature=55+forests*1.5+t.nat+(D('green')?8:0)+clamp(hoodAvg*3,-15,15);
   NEEDS.forEach(n=>{sc[n.k]=clamp(Math.round(sc[n.k]+modSum(n.k)),0,100)});
   sc.health=clamp(Math.round(sc.health-(100-sc.water)*.25),0,100);
-  const cls={};
-  Object.entries(CLASSES).forEach(([k,C])=>{const ws=Object.entries(C.w),tot=ws.reduce((a,[,w])=>a+w,0);
-    let v=ws.reduce((a,[n,w])=>a+sc[n]*w,0)/tot+(10-S.tax)*C.tax[S.laws.tax]-(colIdx-1)*C.col+(C.base||0)+((law('labor').cls||{})[k]||0)+((law('welfare').cls||{})[k]||0)-6;
-    cls[k]=clamp(Math.round(v),0,100)});
+  // each province's local needs; the kingdom's figure for them is the average weighted by population
+  const bonus={health:(D('lunches')?5:0)+(hasTech('hygiene')?10:0)+(hasTech('medicine')?15:0)+(law('welfare').health||0),learn:(D('lunches')?10:0)+(law('church').learn||0),fun:D('fourday')?15:0,move:D('freebus')?20:0,water:0};
+  own.forEach(i=>{const p=pv[i],e=eff[i],pp=Math.max(1,p.pop),o=p.pop/Math.max(1,p.homes),s={};
+    s.homes=o<=.8?100:100-clamp((o-.8)/.2,0,1)*45;s.jobs=p.workers?Math.min(100,e.jobs/p.workers*100):100;
+    ['health','learn','fun','move','water'].forEach(k=>{s[k]=Math.min(100,e[k]/pp*100+bonus[k])});s.health-=p.hw?p.hp/p.hw*12:0;
+    LOC.forEach(k=>{s[k]=clamp(Math.round(s[k]+modSum(k)),0,100)});s.health=clamp(Math.round(s.health-(100-s.water)*.25),0,100);
+    p.sc=s;p.hood=clamp(Math.round((p.hw?p.ha/p.hw:0)*1.5),-5,5)});
+  if(pop>0&&own.length)LOC.forEach(k=>{sc[k]=Math.round(own.reduce((a,i)=>a+pv[i].sc[k]*pv[i].pop,0)/pop)});
+  const clsFrom=s=>{const o={};Object.entries(CLASSES).forEach(([k,C])=>{const ws=Object.entries(C.w),tot=ws.reduce((a,[,w])=>a+w,0);
+    const v=ws.reduce((a,[n,w])=>a+s[n]*w,0)/tot+(10-S.tax)*C.tax[S.laws.tax]-(colIdx-1)*C.col+(C.base||0)+((law('labor').cls||{})[k]||0)+((law('welfare').cls||{})[k]||0)-6;
+    o[k]=clamp(Math.round(v),0,100)});return o};
+  const cls=clsFrom(sc);
   const debt=S.coins<0?Math.min(10,-S.coins/500):0,weary=S.war?Math.min(15,S.war.months*1.2):0;
   const quality=1+cnt('barracks')*.08+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
   const fortN=S.map.reduce((a,x)=>a+(x.o==='me'&&x.b==='fort'?(x.hl?2:1):0),0);
   const str=Math.round(soldiers*quality*supply*morale*10)/10,forts=Math.min(1.5,1+fortN*.1);
-  const target=clamp(Math.round(cls.lower*share.lower+cls.middle*share.middle+cls.upper*share.upper+t.hap+hood+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0)),0,100);
+  // approval: each province's mood from its own needs and neighbourhoods plus national effects, less a penalty until it's integrated.
+  // The kingdom's target is the average of the provinces, weighted by population.
+  const common=t.hap+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0);
+  own.forEach(i=>{const p=pv[i],c2=clsFrom(Object.assign({},sc,p.sc));p.integPen=(100-(S.prov[i].integ??100))*.1;
+    p.target=clamp(Math.round(c2.lower*share.lower+c2.middle*share.middle+c2.upper*share.upper+common+p.hood-p.integPen),0,100)});
+  const integPen=pop?own.reduce((a,i)=>a+pv[i].integPen*pv[i].pop,0)/pop:0;
+  const target=pop&&own.length?clamp(Math.round(own.reduce((a,i)=>a+pv[i].target*pv[i].pop,0)/pop),0,100)
+    :clamp(Math.round(cls.lower*share.lower+cls.middle*share.middle+cls.upper*share.upper+common+hood),0,100);
   // interest groups
   const L=S.laws,raw={
     landowners:25+(L.labor==='serfdom'?10:0)+cnt('farm'),
@@ -683,7 +729,9 @@ function calc(){
   const rp=Math.round((5+t.learn/20)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1));
   // money
   const fill=t.jobs?employed/t.jobs:0;
-  const tax=employed*S.tax/100*45*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
+  // provinces pay half their taxes at first and the full amount once integrated
+  const taxEmp=own.reduce((a,i)=>a+pv[i].emp*(.5+.5*(S.prov[i].integ??100)/100),0);
+  const tax=taxEmp*S.tax/100*45*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
   const biz=t.inc*fill*(L.trade==='protect'?1.15:1);
   const tour=t.tour*(.4+(sc.fun+sc.nature)/250)*(D('ads')?1.4:1)*(1+modSum('tour')/100);
   const extra=modSum('inc');
@@ -694,7 +742,7 @@ function calc(){
   const army=soldiers*4+(S.war?soldiers*8:0)+S.navy*20+(S.general?30:0);
   const costs=[['Building upkeep',t.up],['Royal household',courtCost()],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
   const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
-  return{t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp}}
+  return{t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
 
 /* ---------- events ---------- */
 const summer=()=>S.month>=5&&S.month<=7,winter=()=>S.month===11||S.month<=1;
@@ -746,7 +794,7 @@ const EVENTS=[
     {l:'Expand the constabulary',f(){addMod('inc',-70,12,'Constabulary');addMod('hap',3,12,'Safer streets');S.unrest=Math.max(0,S.unrest-5);return'Reports fall steadily over the year.'}},
     {l:'Fund workhouses and charity',c:400,f(){igM('clergy',5,12,'Charity work');addMod('hap',2,6,'Charity');return'Results are slower, but lasting.'}}]},
   {id:'visas',e:'🛂',t:'Skilled migrants seek to settle',d:'Engineers and nurses from abroad ask for residency.',cond:()=>calc().t.homes>S.pop,ch:[
-    {l:'Welcome them',f(){const n=Math.min(20,calc().t.homes-S.pop);S.pop+=n;addMod('health',5,12,'New nurses');igM('landowners',-3,6,'Newcomers');return`${n} new residents arrive and start work.`}},
+    {l:'Welcome them',f(){const n=Math.min(20,calc().t.homes-S.pop);addPop(n);addMod('health',5,12,'New nurses');igM('landowners',-3,6,'Newcomers');return`${n} new residents arrive and start work.`}},
     {l:'Keep the borders as they are',f(){return'Nothing changes.'}}]},
   {id:'audit',e:'🧾',t:'The treasury audit',d:'Auditors found waste in public works contracts.',ch:[
     {l:'Reform the contracts',f(){S.coins+=600;addMod('leg',2,6,'Sound finances');return'🪙600 is recovered.'}},
@@ -778,9 +826,11 @@ function crisisEvent(n){const Nn=NATIONS[n];
     {l:'Concede',c:400,f(){tenA(n,-40);relA(n,5);addMod('leg',-6,12,`Conceded to ${Nn.n}`);return`${Nn.n} is satisfied. Some at court call it weakness.`}},
     {l:'Stand firm',f(){tenA(n,25);relA(n,-10);addMod('leg',5,12,`Stood up to ${Nn.n}`);if(S.tension[n]>=100)return embargoNow(n);return`${Nn.n} backs down for now, but tension rises.`}}]}}
 function transfer(i,to,how){if(i===0)return;const P=S.prov[i],from=P.o,tiles=provTiles(i);
-  if(to==='me'){S.pop+=P.pop;P.pop=0;tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];if(from!=='wild')addMod('hap',-3,24,`Integrating ${P.name}`);S.gained++}
-  else{let homes=0;tiles.forEach(t=>{const x=S.map[t];if(x.b&&B[x.b])homes+=B[x.b].homes||0;x.o=to});const lost=Math.min(Math.max(0,S.pop-10),homes);S.pop-=lost;P.pop=lost;if(from==='me'&&how!=='sold')S.claims[i]=true;delete S.fclaims[i]}
-  P.o=to;P.settle=null}
+  // a province's people stay with it; new provinces start out only partly integrated, and conquered ones restless
+  if(to==='me'){tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];S.gained++;
+    P.integ=P.core==='me'?80:{settled:70,inherited:60,bought:40}[how]||15;P.unrest=['war','demand','treaty'].includes(how)?25:5;delete P.hap}
+  else{tiles.forEach(t=>{S.map[t].o=to});if(from==='me'&&how!=='sold')S.claims[i]=true;delete S.fclaims[i]}
+  delete P.revolt;P.o=to;P.settle=null;syncPop()}
 const rebuildCost=i=>200+provTiles(i).filter(t=>S.map[t].b).length*100;
 function provValue(i){const P=S.prov[i],tiles=provTiles(i);let v=tiles.length*60+P.pop*25;tiles.forEach(t=>{const b=S.map[t].b;if(b&&B[b])v+=(B[b].c||800)*.5});if(tiles.some(t=>isCoast(t)))v*=1.15;return v}
 function buyPrice(i){const P=S.prov[i],n=P.o;let m=1.6-S.rel[n]/100;m*={stable:1,indebted:.75,troubled:.6}[S.nsit[n]];m*=1+S.tension[n]/100;if(S.claims[i])m*=.7;if(P.heart)m*=2.5;if(provsOf(n).length===1)m*=2;return Math.round(provValue(i)*m/10)*10}
@@ -816,7 +866,7 @@ function warMonth(notes){const W_=S.war;W_.months++;const w=warStr();
   const occMe=Object.values(W_.occ).filter(v=>v==='me').length,occThem=Object.values(W_.occ).filter(v=>v==='them').length;
   if(w.ourNavy>w.theirN)d+=1;else if(w.theirN>w.ourNavy)d-=1;
   W_.score=clamp(Math.round(W_.score+d+(occMe-occThem)*2),-100,100);
-  const loss=Math.max(1,Math.round(w.c.soldiers*(.02+(d<0?-d/400:0))*lossM));S.troops=Math.max(0,S.troops-loss);S.pop=Math.max(10,S.pop-loss);
+  const loss=Math.max(1,Math.round(w.c.soldiers*(.02+(d<0?-d/400:0))*lossM));S.troops=Math.max(0,S.troops-loss);removePop(loss);
   let sd=(d>0?2:-3)-1-(loss>w.c.soldiers*.05?2:0);if(sd<0&&gen('inspiring'))sd/=2;W_.support=clamp(Math.round(W_.support+sd),0,100);
   W_.lowSup=W_.support<20?W_.lowSup+1:0;
   if(S.general&&Math.random()<(S.general.heir?.015:.01)){if(S.general.heir){ev+=` Tragedy: ${S.heir.name}, the heir, has fallen in battle.`;S.heir=newRoyal(0,6);addMod('leg',-8,24,'Heir killed in battle')}else ev+=` General ${S.general.name} has been killed.`;S.general=null}
@@ -898,6 +948,49 @@ function revoltSheet(){return{e:'🔥',t:'Revolution!',d:'Unrest has boiled over
   {l:'Make sweeping concessions',c:2000,f(){S.unrest=40;S.leg=45;IGIDS.forEach(k=>igM(k,10,12,'Royal concessions'));return'The crown survives, humbled. Order slowly returns.'}},
   {l:'Abdicate and start a new nation',f(){setTimeout(()=>{S=newState();tab='isle';render();welcome()},50);return'The old order falls.'}}]}}
 
+/* ---------- provinces each month ---------- */
+// Mood follows each province's target; people grow into free homes where they're content and leave where they're miserable,
+// and some move from an unhappy province to a happier neighbour with room. Integration rises, and unrest follows mood.
+function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=law('labor').grow||1;
+  own.forEach(i=>{const P=S.prov[i],p=c.pv[i];if(!p)return;const was=P.hap??p.target;P.hap=Math.round(was+(p.target-was)*.35);
+    const room=p.homes-(P.pop||0);
+    if(P.hap>=50&&room>0)P.pop+=Math.max(1,Math.ceil(room*.22*grow*(P.hap-40)/60));
+    else if(P.hap<35&&P.pop>0)P.pop-=Math.min(P.pop,Math.ceil(P.pop*.03*(35-P.hap)/35)+1);
+    if(P.pop>p.homes)P.pop=Math.max(p.homes,P.pop-Math.ceil((P.pop-p.homes)*.5))});
+  own.forEach(i=>{const P=S.prov[i];if(!P.pop)return;adjProvs(i).filter(j=>S.prov[j].o==='me').forEach(j=>{const Q=S.prov[j],space=homesIn(j)-(Q.pop||0);
+    if(space>0&&(Q.hap??50)-(P.hap??50)>=15){const k=Math.min(space,Math.ceil(P.pop*.03));P.pop-=k;Q.pop=(Q.pop||0)+k}})});
+  own.forEach(i=>{const P=S.prov[i],was=P.unrest||0;
+    const before=P.integ??100;P.integ=Math.min(100,before+(P.core==='me'?6:3)+(P.gov?3:0));
+    if(before<100&&P.integ>=100)notes.push(['🤝',`${P.name} is fully integrated`,'It now pays full taxes and has no integration penalty.']);
+    let du=((P.hap??50)<40?(40-P.hap)/6:-2)+(P.integ<50?(50-P.integ)/25:0)+(S.leg<40?1:0)+(P.core!=='me'&&P.core!=='wild'?.5:0)-(P.gov?1:0);
+    if(du>0)du*=(S.laws.press==='censor'?.8:1)*(trait('cautious')?.8:1);if(S.god)du=Math.min(0,du);
+    P.unrest=clamp(Math.round((was+du)*10)/10,0,100);
+    if(was<60&&P.unrest>=60&&!P.revolt){notes.push(['🔥',`Riots in ${P.name}`,'Unrest there reached 60, so its buildings produce a quarter less until it calms down.']);stop.push(`Riots in ${P.name}`)}
+    // the capital can't break away: its anger spills into the kingdom instead
+    if(P.unrest>=100&&!P.revolt){if(i===0){S.unrest=Math.min(100,S.unrest+10);P.unrest=70}else{P.revolt={m:0,prog:0,str:rebelStr(P),sup:false};queue.push(revoltEvent(i));stop.push(`${P.name} rises in revolt`)}}
+    if(P.revolt)revoltMonth(i,c,notes,stop)});
+  syncPop()}
+const revoltCost=i=>Math.round(300+(S.prov[i].pop||0)*6);
+// rebels: a small band plus a share of the province's people; they gather half a fighter a month if left alone
+const rebelStr=P=>Math.round((2+(P.pop||0)*.02)*10)/10;
+function revoltEvent(i){const P=S.prov[i];return{e:'🔥',t:`${P.name} rises in revolt`,d:`Unrest in ${P.name} has boiled over. Rebels about ${P.revolt.str} strong have taken over, and the province produces nothing while they hold it. If nothing is done for six months, it will break away${P.core!=='me'&&P.core!=='wild'?` and return to ${NATIONS[P.core].n}`:''}.`,ch:[
+  {l:'Send troops to put it down',f(){if(P.revolt)P.revolt.sup=true;return`Your soldiers march on ${P.name}. Follow the fighting in the news and the province panel.`}},
+  {l:'Negotiate with the rebels',c:revoltCost(i),f(){endRevolt(i,'deal');return`The rebels accept your terms and lay down their arms. ${P.name} is calmer, but the court thinks you weak.`}},
+  {l:'Decide later',f(){return`You can send troops, negotiate or let ${P.name} go from its province panel.`}}]}}
+function endRevolt(i,how){const P=S.prov[i];delete P.revolt;
+  if(how==='won'){P.unrest=35;addMod('leg',2,12,`Put down the ${P.name} revolt`)}
+  else if(how==='deal'){P.unrest=50;addMod('leg',-3,12,`Bargained with rebels in ${P.name}`)}
+  else{const to=P.core!=='me'&&P.core!=='wild'?P.core:'wild';P.unrest=0;transfer(i,to,'revolt');addMod('leg',-6,24,`Lost ${P.name} to rebels`)}}
+// each month of a revolt: troops fight it out if sent; left alone, the rebels grow and the province leaves after six months
+function revoltMonth(i,c,notes,stop){const P=S.prov[i],R=P.revolt;R.m++;
+  if(R.sup){const ours=Math.max(.5,c.str),d=(ours-R.str)/(ours+R.str)*45+12+(Math.random()*16-8),loss=Math.min(S.troops,Math.max(1,Math.round(R.str*.12)));
+    R.prog=clamp(Math.round(R.prog+d),-100,100);S.troops-=loss;removePop(loss);
+    if(R.prog>=100){endRevolt(i,'won');notes.push(['🎖️',`The ${P.name} revolt is crushed`,`Order is restored. You lost ${loss} soldiers in the last month of fighting.`]);stop.push(`The ${P.name} revolt is crushed`);return}
+    if(R.prog<=-60){endRevolt(i,'lost');notes.push(['🏳️',`${P.name} breaks away`,'Your troops were beaten back and the rebels have won their freedom.']);stop.push(`${P.name} breaks away`);return}
+    notes.push(['⚔️',`Fighting in ${P.name}: ${Math.max(0,R.prog)}% put down`,`Your strength ${Math.round(ours*10)/10} against about ${R.str} rebels. You lost ${loss} soldiers.`])}
+  else{R.str=Math.round((R.str+.5)*10)/10;if(R.m>=6){endRevolt(i,'lost');notes.push(['🏳️',`${P.name} breaks away`,'The revolt was left to run its course, and the province is gone.']);stop.push(`${P.name} breaks away`);return}
+    notes.push(['🔥',`${P.name} is in revolt`,`${6-R.m} month${6-R.m>1?'s':''} before it breaks away. Send troops, negotiate or let it go from its province panel.`])}}
+
 /* ---------- month ---------- */
 function endMonth(silent){
   queue.length=0;const c=calc(),oldPop=S.pop,oldHap=S.hap,oldLeg=S.leg,oldTier=tierOf(S.best).n,notes=[];
@@ -909,10 +1002,7 @@ function endMonth(silent){
   const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
   let du=(S.leg<40?(40-S.leg)/4:-3)+angry*12+(S.hap<35?3:0);if(du>0)du*=(S.laws.press==='censor'?.7:1)*(trait('cautious')?.7:1);
   S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
-  const room=c.t.homes-S.pop,grow=law('labor').grow||1;
-  if(S.hap>=50&&room>0)S.pop+=Math.max(1,Math.ceil(room*.22*grow*(S.hap-40)/60));
-  else if(S.hap<35)S.pop-=Math.ceil(S.pop*.03*(35-S.hap)/35)+1;
-  S.pop=clamp(S.pop,10,Math.max(10,c.t.homes));S.best=Math.max(S.best,S.pop);
+  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);S.best=Math.max(S.best,S.pop);
   if(S.tech.cur){S.tech.prog+=c.rp;const T=techOf(S.tech.cur);if(S.tech.prog>=T.c){S.tech.done.push(T.id);S.tech.cur=null;S.tech.prog=0;notes.push(['🔬',`${T.n} researched`,T.d]);stop.push(`${T.n} researched`)}}
   else notes.push(['🔬','Nothing is being researched','Choose a technology in the Research tab.']);
   if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
@@ -1018,7 +1108,7 @@ function tileColor(x,P,i){
 // Relations is diverging (hostile red, neutral gray at 50, friendly green); tension is one hue from calm gray to red.
 const UI=(()=>{try{return JSON.parse(localStorage.getItem('islandnation.ui'))||{}}catch(e){return{}}})();
 const saveUI=()=>{try{localStorage.setItem('islandnation.ui',JSON.stringify(UI))}catch(e){}};
-const MODES={political:'Political',land:'Land',pollution:'Pollution',relations:'Relations',tension:'Tension',claims:'Claims'};
+const MODES={political:'Political',land:'Land',pollution:'Pollution',unrest:'Unrest',relations:'Relations',tension:'Tension',claims:'Claims'};
 let mapMode=MODES[UI.mapMode]?UI.mapMode:'political';
 const hexRgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]};
 const mixHex=(a,b,t)=>{const A=hexRgb(a),B=hexRgb(b);return`rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')})`};
@@ -1027,6 +1117,7 @@ function provColors(P){if(mapMode==='political'||mapMode==='land'||mapMode==='po
   // neutral is the gray midpoint; frontier gets a fainter gray so it never reads as a neutral nation
   const neutral=P.neutral,wild=P.faint,N=P.neutralHex;
   return S.prov.map((Pv,i)=>{const o=Pv.o;
+    if(mapMode==='unrest')return o!=='me'?wild:Pv.revolt?P.bad:mixHex(N,P.bad,Math.min(1,(Pv.unrest||0)/100));
     if(mapMode==='claims'){if(o==='me')return S.fclaims[i]?mixHex(P.grass,P.bad,.6):null;return S.claims[i]?mixHex(N,P.good,.75):o==='wild'?wild:neutral}
     if(o==='me')return null;if(o==='wild')return wild;
     if(mapMode==='relations'){const r=S.rel[o];return r>=50?mixHex(N,P.good,(r-50)/50):mixHex(N,P.bad,(50-r)/50)}
@@ -1040,6 +1131,7 @@ function renderModes(){const sel=$('#modeSel');if(!sel.options.length)sel.innerH
   $('#legend').innerHTML=mapMode==='political'?sw('o-me','Your kingdom')+sw('o-norvik','Norvik')+sw('o-solenne','Solenne')+sw('o-aurelia','Aurelia')+sw('o-wild','Frontier')
     :mapMode==='land'?sw('','Open land',`background:color-mix(in srgb,var(--grass) 50%,var(--muted))`)+sw('','Fertile',`background:color-mix(in srgb,var(--grass) 55%,var(--coin))`)+sw('','Hills',`background:color-mix(in srgb,var(--sand) 55%,var(--muted))`)+sw('','Forest','background:var(--forest)')+sw('','River','background:var(--river);height:4px;border-radius:2px')
       +Object.keys(DEPN).map(k=>`<span class="lg">${DEPE[k]} ${DEPN[k][0].toUpperCase()+DEPN[k].slice(1)}</span>`).join('')
+    :mapMode==='unrest'?bar(`linear-gradient(90deg,${NEU},var(--bad))`,'Calm','Revolt')+'<span class="lg">Your provinces. Riots start at 60.</span>'
     :mapMode==='pollution'?bar(`linear-gradient(90deg,var(--bad),${NEU},var(--good))`,'Polluted','Pleasant')+'<span class="lg">Around your buildings. Homes in red make residents unhappy.</span>'
     :mapMode==='relations'?bar(`linear-gradient(90deg,var(--bad),${NEU},var(--good))`,'Hostile','Close ally')+sw('o-me','Your kingdom')+sw('','Frontier',WILD)
     :mapMode==='tension'?bar(`linear-gradient(90deg,${NEU},var(--bad))`,'Calm','On the brink')+sw('o-me','Your kingdom')+sw('','Frontier',WILD)
@@ -1181,6 +1273,7 @@ function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh
     if(UI.icons&&showDep&&x.dp&&z>=18&&!(x.b&&B[x.b]&&B[x.b].dep===x.dp))marks.push([DEPE[x.dp],sx+w*.78,sy+h*.78,.3]);
     if(Pv&&Pv.settle){ctx.fillStyle=MAP.pat.settle;ctx.fillRect(sx,sy,w,h)}
     if(war&&war.occ[x.p]){ctx.fillStyle=MAP.pat[war.occ[x.p]==='me'?'me':'them'];ctx.fillRect(sx,sy,w,h)}
+    if(Pv&&Pv.revolt){ctx.fillStyle=MAP.pat.them;ctx.fillRect(sx,sy,w,h)}
     if(S.dev[x.p]){ctx.fillStyle='rgba(105,105,105,.42)';ctx.fillRect(sx,sy,w,h)}
     if(x.o==='me'&&geoCoast[i]===1){ctx.strokeStyle=P.sand;ctx.lineWidth=lw;ctx.strokeRect(sx+lw/2,sy+lw/2,w-lw,h-lw)}
     // borders: check the right and lower neighbor so every edge is drawn once
@@ -1211,6 +1304,7 @@ function drawMini(){const m=MAP.mini,c=MAP.cam,show=MAP.vw/c.z<W||MAP.vh/c.z<H;m
 function tileLabel(i){const x=S.map[i];if(!x||x.t==='w')return'';const P=S.prov[x.p];
   const extra=NATIONS[x.o]&&mapMode==='relations'?` · relations ${Math.round(S.rel[x.o])}`:NATIONS[x.o]&&mapMode==='tension'?` · tension ${Math.round(S.tension[x.o])}`
     :mapMode==='claims'&&S.claims[x.p]?' · your claim':mapMode==='claims'&&S.fclaims[x.p]?` · claimed by ${NATIONS[S.fclaims[x.p]].n}`
+    :mapMode==='unrest'&&x.o==='me'?` · unrest ${Math.round(P.unrest||0)}${P.revolt?', in revolt':''} · mood ${P.hap??'–'}`
     :mapMode==='pollution'&&x.o==='me'?` · ${(a=>a>0?'pleasant +'+a:a<0?'polluted '+a:'neutral')((MAP.appeal||appealMap())[i])}`:'';
   const tt=terrainTxt(i),land=(tt.length?' · '+tt.join(', '):'')+(x.dp?` · ${DEPE[x.dp]} ${DEPN[x.dp]}`:'');
   return(x.o==='me'?`${x.b&&B[x.b]?B[x.b].e+' '+B[x.b].n:x.t==='f'?'🌲 Forest':'Open land'} · ${P.name}`:`${P.name} · ${ownName(x.o)}`)+land+extra}
@@ -1291,6 +1385,9 @@ function lineChart(box,o){const w=Math.max(220,box.clientWidth),hh=130,m={l:36,r
   const at=e=>{const r=box.getBoundingClientRect();show(Math.round((e.clientX-r.left-m.l)/(w-m.l-m.r)*(n-1)))};
   box.onpointermove=at;box.onpointerdown=at;box.onpointerleave=hide;box.onblur=hide;
   box.onkeydown=e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();const i=box.dataset.i!=null?+box.dataset.i:n-1;show(i+(e.key==='ArrowLeft'?-1:1))}}
+function provRows(c){return provsOf('me').sort((a,b)=>(S.prov[b].pop||0)-(S.prov[a].pop||0)).map(i=>{const P=S.prov[i],p=c.pv[i],m=P.hap??p.target,u=Math.round(P.unrest||0);
+  const tag=P.revolt?'<span class="tag" style="color:var(--bad)">In revolt</span>':u>=60?'<span class="tag" style="color:var(--bad)">Riots</span>':'';
+  return `<div class="row"><span class="em">${i===0?'👑':P.revolt?'🔥':'🏘️'}</span><div class="grow"><b>${P.name}</b> ${tag}${(P.integ??100)<100?` <span class="tag">${Math.round(P.integ)}% integrated</span>`:''}<small>${fmt(P.pop||0)} people, homes for ${fmt(p.homes)}. Unrest ${u}.</small>${bar(m)}</div><span class="num" style="color:${col(m)}">${m}</span><button class="btn" data-act="provInfo" data-arg="${i}">View</button></div>`}).join('')}
 function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.sc[b.k]),hi=low[low.length-1];
   const NAMES=['M. Arden','J. Okafor','L. Brandt','S. Moreau','D. Kowal','R. Silva','A. Lindqvist','T. Hale','N. Petrov','E. Castell'];
   const quotes=[low[0],low[1],hi].map((n,i)=>{const nm=NAMES[(S.turn*3+i*4)%NAMES.length];const good=c.sc[n.k]>=70;return `<div class="row"><span class="em">${n.e}</span><div class="grow"><span class="quote">\u201c${good?n.hi:n.lo}\u201d</span><small>${nm}</small></div></div>`}).join('');
@@ -1301,6 +1398,7 @@ function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.s
   const mods=S.mods.map(m=>{const nm=m.k.startsWith('ig:')?IGS[m.k.slice(3)].n+' mood':lbl[m.k]||(NEEDS.find(n=>n.k===m.k)||{n:m.k}).n;return `<div class="row"><div class="grow"><b>${m.l}</b><small>${nm} ${m.v>0?'+':''}${m.v}${m.k==='inc'?' a month':m.k==='tour'||m.k==='foodprod'?'%':''} for ${m.m} more month${m.m>1?'s':''}</small></div></div>`}).join('');
   return `<div class="mood"><div class="grow"><div class="big" style="color:${col(S.hap)}">${S.hap}%</div><div class="sub">approval, trending toward ${c.target}%</div></div><button class="btn" data-act="why" data-arg="approval">Why?</button></div>
   <h2>History</h2>${histHTML()}
+  <h2>Provinces</h2><p class="hint">Each province has its own people, services and mood. Approval is their average, weighted by population.</p><div class="card">${provRows(c)}</div>
   <p class="hint">${fmt(S.pop)} subjects, ${fmt(c.workers)} of working age, ${fmt(c.employed)} employed. Housing for ${fmt(c.t.homes)}. Cost of living is ${c.colIdx>1.05?`${Math.round((c.colIdx-1)*100)}% above normal`:c.colIdx<.95?`${Math.round((1-c.colIdx)*100)}% below normal`:'normal'}.</p>
   <h2>Social classes</h2><div class="card">${classes}</div>
   <p class="hint">Each class cares about different things, and tax laws weigh on them differently. Approval is the average, weighted by class size.</p>
@@ -1408,6 +1506,18 @@ function effStr(d,i){const p=[],x=i!=null&&S.map[i],tm=!x?1:d===B.farm?farmMult(
   if(d.homes)p.push(`Housing +${d.homes}`);if(d.food)p.push(`Food for ${d===B.farm?adj(d.food):d.food}`);if(d.mat)p.push(`🧱${d.mat} materials/mo`);if(d.jobs)p.push(`${d.jobs} jobs`);if(d.inc)p.push(`+🪙${d.inc}/mo`);if(d.goods)p.push(`${d.goods} goods/mo`);
   if(d.health)p.push(`Healthcare for ${d.health}`);if(d.learn)p.push(`Education for ${d.learn}`);if(d.fun)p.push(`Recreation for ${d.fun}`);if(d.move)p.push(`Transport for ${d.move}`);
   if(d.power)p.push(`Energy for ${d===B.wind?adj(d.power):d.power}`);if(d.trade)p.push(`Trade capacity +${d.trade}`);if(d.tour)p.push('Tourism');if(d.hap)p.push(`Approval +${d.hap}`);if(d.nat)p.push(`Environment ${d.nat>0?'+':''}${d.nat}`);if(d.u)p.push(`Upkeep ${d.u}/mo`);return p.join('. ')+'.'}
+// your own province: its people, mood, unrest, integration, any revolt, and how well its local needs are met
+function provStats(i){const P=S.prov[i],c=calc(),p=c.pv[i];if(!p)return'';const R=P.revolt,m=P.hap??p.target,u=Math.round(P.unrest||0),need=k=>NEEDS.find(n=>n.k===k);
+  const cov=LOCAL_NEEDS.map(k=>`<div class="need"><span aria-hidden="true">${need(k).e}</span> ${need(k).n}<b style="color:${col(p.sc[k])}">${p.sc[k]}</b>${bar(p.sc[k])}</div>`).join('');
+  return `<div class="card">
+    <div class="row"><span class="em">👥</span><div class="grow"><b>${fmt(P.pop||0)} people</b><small>Homes for ${fmt(p.homes)}. ${fmt(Math.round(p.emp))} of ${fmt(p.workers)} workers have jobs.</small></div></div>
+    <div class="row"><span class="em">📊</span><div class="grow"><b>Mood ${m}</b><small>Trending toward ${p.target}.${p.hood?` Neighborhoods ${p.hood>0?'+':''}${p.hood}.`:''}${p.integPen>=1?` Not yet integrated: −${Math.round(p.integPen)}.`:''}</small>${bar(m)}</div></div>
+    <div class="row"><span class="em">🔥</span><div class="grow"><b>Unrest ${u}</b><small>${R?'In revolt.':u>=60?'Riots: buildings here produce a quarter less.':'Rises when mood falls below 40 or the province is newly taken. At 60 riots break out, and at 100 it revolts.'}</small>${bar(100-u)}</div></div>
+    ${(P.integ??100)<100?`<div class="row"><span class="em">🤝</span><div class="grow"><b>Integration ${Math.round(P.integ)}%</b><small>New provinces pay half their taxes at first, rising to full at 100%.</small>${bar(P.integ,'var(--deep)')}</div></div>`:''}</div>
+    ${R?`<div class="card" style="margin-top:10px"><div class="row"><span class="em">🔥</span><div class="grow"><b>In revolt, month ${R.m}</b><small>Rebels about ${R.str} strong. ${R.sup?`Your troops are fighting: ${Math.max(0,R.prog)}% put down.`:`${6-R.m} month${6-R.m===1?'':'s'} before it breaks away.`}</small>${R.sup?bar(Math.max(0,R.prog),'var(--good)'):''}</div></div>
+      <div class="row"><div class="grow btns" style="margin-top:0"><button class="btn primary" data-act="suppress" data-arg="${i}" ${R.sup?'disabled':''}>${R.sup?'Troops sent':'Send troops'}</button><button class="btn" data-act="negotiate" data-arg="${i}" ${S.coins<revoltCost(i)?'disabled':''}>Negotiate 🪙${fmt(revoltCost(i))}</button><button class="btn" id="letGo" data-act="letgo" data-arg="${i}">Let it go</button></div></div></div>`:''}
+    <h2>Local needs</h2><p class="hint">Met by services in this province, plus spare capacity from your neighbouring provinces.</p><div class="needs">${cov}</div>`}
+const LOCAL_NEEDS=['homes','jobs','health','learn','fun','move','water'];
 function landSummary(tiles){const n=f=>tiles.filter(f).length,fe=n(t=>S.map[t].fr),hl=n(t=>S.map[t].hl),fo=n(t=>S.map[t].t==='f'),rv=tiles.some(t=>S.map[t].rn!=null);
   const dep=Object.keys(DEPN).map(k=>[k,n(t=>S.map[t].dp===k)]).filter(([,v])=>v).map(([k,v])=>`${DEPE[k]} ${v} ${DEPN[k]}`);
   return`Land: ${[fe&&`${fe} fertile`,hl&&`${hl} hills`,fo&&`${fo} forest`,rv&&'a river'].filter(Boolean).join(', ')||'plain'}. Deposits: ${dep.length?dep.join(', '):'none'}.`}
@@ -1417,7 +1527,7 @@ function provSheet(i){const P=S.prov[i],tiles=provTiles(i),o=P.o,bl=tiles.map(t=
   if(S.claims[i])body+=`<p><b>You hold a claim on this province.</b> It\u2019s cheaper to buy, and a war to take it costs little legitimacy.</p>`;
   if(o==='me'&&S.dev[i])body+=`<div class="card"><div class="row"><span class="em">🏚️</span><div class="grow"><b>Devastated by war</b><small>Buildings here work at half capacity for ${S.dev[i]} more month${S.dev[i]>1?'s':''}.</small></div><button class="btn" data-act="rebuild" data-arg="${i}" ${S.coins<rebuildCost(i)?'disabled':''}>Rebuild 🪙${fmt(rebuildCost(i))}</button></div></div>`;
   if(S.war&&S.war.occ[i])body+=`<p><b>Occupied by ${S.war.occ[i]==='me'?'your troops':'the enemy'}.</b>${S.war.occ[i]==='them'?' Buildings here produce nothing until it\u2019s liberated.':''}</p>`;
-  if(o==='me'){body+=S.fclaims[i]?`<p>${NATIONS[S.fclaims[i]].n} claims this province and may demand it back.</p>`:'';body+=i===0?'<p>Your capital province. It can never be taken.</p>':''}
+  if(o==='me'){body+=provStats(i);body+=S.fclaims[i]?`<p>${NATIONS[S.fclaims[i]].n} claims this province and may demand it back.</p>`:'';body+=i===0?'<p>Your capital province. It can never be taken.</p>':''}
   else if(o==='wild'){body+=P.settle?`<p><b>Settlers are at work.</b> ${P.settle} month${P.settle>1?'s':''} to go. A neighbor could still get there first.</p>`:touches(i,'me')?`<div class="card"><div class="row"><span class="em">🧭</span><div class="grow"><b>Settle this frontier</b><small>Takes ${hasTech('survey')?4:6} months. Neighbors may try to settle it too.</small></div><button class="btn primary" data-act="settle" data-arg="${i}" ${S.coins<settleCost(i)?'disabled':''}>🪙${fmt(settleCost(i))}</button></div></div>`:'<p>Only frontier bordering your kingdom can be settled.</p>'}
   else{const n=o,Nn=NATIONS[n],price=buyPrice(i),war=atWarWith(n),c=calc(),th=theirStr(n);
     const why=[S.rel[n]>=60?'friendly relations':S.rel[n]<35?'poor relations':'',S.nsit[n]!=='stable'?`${Nn.n} is ${S.nsit[n]}`:'',S.tension[n]>=40?'high tension':'',S.claims[i]?'your claim':'',P.heart?'it\u2019s their heartland':'',provsOf(n).length===1?'it\u2019s their last province here':''].filter(Boolean);
@@ -1479,6 +1589,9 @@ function whyData(kind){const c=calc(),D=k=>!!S.dec[k],R=[];const add=(l,v,note)=
     Object.keys(CLASSES).forEach(k=>R.push({l:CLASSES[k].n,v:c.cls[k]*c.share[k],note:`${c.cls[k]} satisfaction × ${Math.round(c.share[k]*100)}% of people`,plain:1}));
     add('Buildings',c.t.hap);add('Neighborhoods',c.hood,c.hood<0?'Industry near homes':'Parks and gardens near homes');add('Royal festivities',D('festival')?4:0);add('Press law',law('press').hap||0);S.mods.filter(m=>m.k==='hap').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
     add('Debt',-(S.coins<0?Math.min(10,-S.coins/500):0));add('War weariness',-c.weary);add('Rationing',D('ration')?-4:0);add('Mobilization',S.mob?-3:0);
+    add('New provinces not yet integrated',-c.integPen);
+    // whatever's left comes from provinces being served unevenly (the rows above use kingdom-wide averages)
+    const rest=c.target-R.reduce((a,r)=>a+r.v,0);if(Math.abs(rest)>=1)R.push({l:'Differences between provinces',v:rest,note:'Better- or worse-served provinces pull the average'});
     return{e:'📊',title:'Approval',now:S.hap+'%',intro:'Approval is how happy your subjects are. Each class counts in proportion to its size, and then these effects are added.',
       total:`Target ${c.target}%`,outro:`Approval is ${S.hap}% now and moves 35% of the way toward the target each month. The People tab shows what each class needs.`,rows:R}}
   if(kind==='legitimacy'){R.push({l:'Base',v:30,plain:1});
@@ -1506,11 +1619,14 @@ function whySheet(k){const w=whyData(k),n=v=>Math.round(v*10)/10;
 const monthIdx=m=>{const i=MONTHS.findIndex(x=>x.toLowerCase().startsWith(String(m).toLowerCase().slice(0,3)));return i>=0?i:clamp(num(m,1)-1,0,11)};
 function statusLines(){const c=calc();return[`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}, aged ${S.monarch.age}.`,`Treasury ${fmt(S.coins)}, net ${c.net>=0?'+':''}${fmt(c.net)} a month.`,`Population ${fmt(S.pop)} of ${fmt(c.t.homes)} housing. Approval ${S.hap}% (to ${c.target}).`,`Legitimacy ${S.leg} (to ${c.legT}). Unrest ${Math.round(S.unrest)}.`,`Army ${c.soldiers} soldiers, strength ${c.str}. Navy ${S.navy}.`,S.war?`At war with ${S.war.foes.map(n=>NATIONS[n].n).join(', ')}: score ${S.war.score}, support ${S.war.support}%.`:'At peace.',`Provinces: ${provsOf('me').length}. Research: ${S.tech.cur?techOf(S.tech.cur).n:'none'}.${S.god?' God mode on.':''}${S.noEvents?' Random events off.':''}`]}
 const CMDS={
-  help:()=>['money N           set the treasury','add N             add to the treasury','mat N             set building materials','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
+  help:()=>['money N           set the treasury','add N             add to the treasury','mat N             set building materials','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
   money:n=>{S.coins=num(n,0);return`Treasury set to ${fmt(S.coins)}`},
   mat:n=>{S.mat=Math.max(0,num(n,500));return`Building materials set to ${fmt(S.mat)}`},
+  punrest:(i,n)=>{i=num(i,-1);const P=S.prov[i];if(!P||P.o!=='me')return E('Usage: punrest ID N (one of your provinces)');P.unrest=clamp(num(n,50),0,100);return`${P.name} unrest set to ${P.unrest}`},
+  integ:(i,n)=>{i=num(i,-1);const P=S.prov[i];if(!P||P.o!=='me')return E('Usage: integ ID N (one of your provinces)');P.integ=clamp(num(n,100),0,100);return`${P.name} integration set to ${P.integ}%`},
+  revolt:i=>{i=num(i,-1);const P=S.prov[i];if(!P||P.o!=='me'||i===0)return E('Usage: revolt ID (one of your provinces, not the capital)');P.unrest=100;P.revolt={m:0,prog:0,str:rebelStr(P),sup:false};return`${P.name} rises in revolt`},
   add:n=>{S.coins+=num(n,10000);return`Treasury now ${fmt(S.coins)}`},
-  pop:n=>{S.pop=Math.max(10,num(n,S.pop));S.best=Math.max(S.best,S.pop);return`Population set to ${fmt(S.pop)}`},
+  pop:n=>{setPop(Math.max(10,num(n,S.pop)));S.best=Math.max(S.best,S.pop);return`Population set to ${fmt(S.pop)}`},
   approval:n=>{S.hap=clamp(num(n,S.hap),0,100);return`Approval set to ${S.hap}%`},
   legitimacy:n=>{S.leg=clamp(num(n,S.leg),0,100);return`Legitimacy set to ${S.leg}`},
   unrest:n=>{S.unrest=clamp(num(n,0),0,100);return`Unrest set to ${S.unrest}`},
@@ -1607,6 +1723,10 @@ function act(a,arg,n){
       S.coins+=Math.round(d.c*.25);x.b=null;S.sel=-1;resetArmed=false;$('#sheetWrap').classList.remove('open');toast(`${d.n} demolished`);break}
     case'dec':S.dec[arg]=!S.dec[arg];toast(`${DEC[arg].n} ${S.dec[arg]?'decreed':'revoked'}`);break;
     case'provInfo':provSheet(+arg);return;
+    case'suppress':{const P=S.prov[+arg];if(!P||!P.revolt)return;P.revolt.sup=true;toast(`Troops march on ${P.name}`);provSheet(+arg);return}
+    case'negotiate':{const i=+arg,P=S.prov[i],k=revoltCost(i);if(!P||!P.revolt||S.coins<k)return;S.coins-=k;endRevolt(i,'deal');toast(`The ${P.name} rebels accept your terms`);render();provSheet(i);return}
+    case'letgo':{const i=+arg,P=S.prov[i];if(!P||!P.revolt)return;if(!resetArmed){resetArmed=true;$('#letGo').textContent='Tap again to let it go';return}resetArmed=false;
+      endRevolt(i,'lost');closeSheet();toast(`${P.name} leaves your kingdom`);break}
     case'bfilt':{const F=UI.bfilt||(UI.bfilt={cat:'all',afford:false});if(arg==='afford')F.afford=!F.afford;else F.cat=arg;saveUI();tileSheet(+n);return}
     case'settle':{const i=+arg,P=S.prov[i],cost=settleCost(i);if(P.o!=='wild'||P.settle||S.coins<cost||!touches(i,'me'))return;S.coins-=cost;P.settle=hasTech('survey')?4:6;closeSheet();toast(`🧭 Settlers set out for ${P.name}`);break}
     case'buyProv':{const i=+arg,P=S.prov[i];if(!NATIONS[P.o]||atWarWith(P.o))return;const price=buyPrice(i);if(S.coins<price)return;if(!resetArmed){resetArmed=true;$('#buyBtn').textContent='Tap to confirm';return}resetArmed=false;
