@@ -327,7 +327,7 @@ function placeWhy(id,i,free){const d=B[id],x=S.map[i];if(!free){const w=lockReas
   if(d.coast&&!isCoast(i))return'Coast only';if(d.forest&&x.t!=='f')return'Forest only';if(d.dep&&x.dp!==d.dep)return`Needs ${DEPN[d.dep]}`;
   if(d.riv&&!nearRiver(i))return'River only';if(!free&&d.unique&&has(id))return'Built';return''}
 // Larger buildings (🪙800 and up) need building materials; whatever isn't in stock is imported.
-const matCost=d=>d&&d.c>=800?Math.round(d.c/250)*10:0;
+const matCost=d=>d&&d.c>=800?Math.round(d.c/250*(hasTech('masonry')?.8:1))*10:0;
 const matPrice=()=>5*(S.laws.trade==='protect'?1.2:S.laws.trade==='free'?.9:1);
 function priceOf(c,m){const use=Math.min(Math.max(0,S.mat||0),m),imp=m-use,ic=Math.round(imp*matPrice());return{coins:c+ic,use,imp,ic,m}}
 const priceTxt=k=>!k.m?'':k.imp?`Needs 🧱${k.m}: ${k.use} from stock, ${k.imp} imported for 🪙${fmt(k.ic)}.`:`Uses 🧱${k.m} from stock.`;
@@ -405,33 +405,74 @@ const welfareGrudge=()=>Math.min(15,3+(inDeficit()?6:0)+(S.laws.tax==='progressi
 const igStatus=m=>m>=65?['Loyal','var(--good)']:m>=40?['Content','var(--muted)']:m>=25?['Discontent','var(--warn)']:['Radical','var(--bad)'];
 
 /* ---------- technology ---------- */
+// era: 0 Age of Crowns, 1 Enlightenment, 2 Industry, 3 Modern. Only technologies of your era and earlier can be researched.
 const TECH=[
-  {id:'rotation',n:'Crop rotation',e:'🌾',c:60,d:'Food production +15%.'},
-  {id:'workshops',n:'Mechanized workshops',e:'⚙️',c:60,d:'Goods production +25%.'},
-  {id:'hygiene',n:'Public hygiene',e:'🧼',c:80,d:'Unlocks waterworks. Healthcare +10.'},
-  {id:'banking',n:'Banking',e:'🏦',c:100,d:'Unlocks the bank. Debt interest is halved.'},
-  {id:'pedagogy',n:'Pedagogy',e:'🎓',c:100,d:'Unlocks the university. Research +20%.'},
-  {id:'steam',n:'Steam power',e:'♨️',c:120,req:'workshops',d:'Unlocks the factory.'},
-  {id:'glass',n:'Glasshouses',e:'🪴',c:120,req:'rotation',d:'Unlocks glasshouses.'},
-  {id:'survey',n:'Land surveying',e:'🧭',c:90,d:'Settling frontier land costs 40% less and takes 4 months instead of 6.'},
-  {id:'drill',n:'Military drill',e:'🎖️',c:120,d:'Army quality +15%.'},
-  {id:'artillery',n:'Artillery',e:'💣',c:220,req:'steam',d:'Army quality +25%.'},
-  {id:'telegraph',n:'Telegraph',e:'📡',c:150,d:'Tension cools twice as fast, and envoys are more effective.'},
-  {id:'rail',n:'Railways',e:'🛤️',c:180,req:'steam',d:'Unlocks the railway.'},
-  {id:'medicine',n:'Modern medicine',e:'💉',c:200,req:'hygiene',d:'Healthcare +15.'},
-  {id:'tourism',n:'Leisure travel',e:'🧳',c:200,req:'rail',d:'Unlocks the grand hotel and the stadium.'},
-  {id:'steel',n:'Steel frames',e:'🏗️',c:220,req:'steam',d:'Unlocks apartment blocks.'},
-  {id:'electric',n:'Electrification',e:'💡',c:250,req:'steam',d:'Unlocks the hydro dam.'},
-  {id:'monument',n:'Monumental architecture',e:'🗼',c:300,req:'steel',d:'Unlocks the royal monument.'}
+  {id:'rotation',era:0,n:'Crop rotation',e:'🌾',c:60,d:'Food production +15%.'},
+  {id:'workshops',era:0,n:'Guild workshops',e:'⚒️',c:60,d:'Goods production +25%.'},
+  {id:'masonry',era:0,n:'Masonry',e:'🧱',c:70,d:'Buildings need 20% fewer materials.'},
+  {id:'herbalism',era:0,n:'Herbal medicine',e:'🌿',c:70,d:'Healthcare +5.'},
+  {id:'watermill',era:0,n:'Water mills',e:'💧',c:80,d:'Food production +5%.'},
+  {id:'survey',era:0,n:'Land surveying',e:'🧭',c:90,d:'Settling frontier land costs 40% less and takes 4 months instead of 6.'},
+  {id:'charter',era:0,n:'Town charters',e:'📜',c:90,d:'Business revenue +10%.'},
+  {id:'drill',era:0,n:'Military drill',e:'🎖️',c:110,d:'Army quality +15%.'},
+  {id:'banking',era:1,n:'Banking',e:'🏦',c:110,d:'Unlocks the bank. Debt interest is halved.'},
+  {id:'printing',era:1,n:'Printing press',e:'📰',c:110,d:'Research +15%.'},
+  {id:'pedagogy',era:1,n:'Pedagogy',e:'🎓',c:120,req:'printing',d:'Unlocks the university. Research +20%.'},
+  {id:'hygiene',era:1,n:'Public hygiene',e:'🧼',c:120,req:'herbalism',d:'Unlocks waterworks. Healthcare +10.'},
+  {id:'philosophy',era:1,n:'Natural philosophy',e:'🔭',c:120,d:'Education +5.'},
+  {id:'glass',era:1,n:'Glasshouses',e:'🪴',c:130,req:'rotation',d:'Unlocks glasshouses.'},
+  {id:'navigation',era:1,n:'Navigation',e:'🧭',c:140,d:'Trade capacity +20%.'},
+  {id:'agronomy',era:1,n:'Scientific agriculture',e:'🚜',c:140,req:'rotation',d:'Food production +15%.'},
+  {id:'gunpowder',era:1,n:'Gunpowder regiments',e:'🔫',c:150,req:'drill',d:'Army quality +15%.'},
+  {id:'steam',era:2,n:'Steam power',e:'♨️',c:160,req:'workshops',d:'Unlocks the factory.'},
+  {id:'telegraph',era:2,n:'Telegraph',e:'📡',c:160,d:'Tension cools twice as fast, and envoys are more effective.'},
+  {id:'coke',era:2,n:'Coke smelting',e:'🔥',c:170,req:'steam',d:'Goods production +10%.'},
+  {id:'gaslight',era:2,n:'Gas lighting',e:'🏮',c:170,d:'Recreation +10.'},
+  {id:'vaccination',era:2,n:'Vaccination',e:'💉',c:180,req:'hygiene',d:'Healthcare +10.'},
+  {id:'rail',era:2,n:'Railways',e:'🛤️',c:190,req:'steam',d:'Unlocks the railway.'},
+  {id:'steamship',era:2,n:'Steamships',e:'🚢',c:200,req:'steam',d:'Trade capacity +25%.'},
+  {id:'steel',era:2,n:'Steel frames',e:'🏗️',c:220,req:'steam',d:'Unlocks apartment blocks.'},
+  {id:'artillery',era:2,n:'Artillery',e:'💣',c:230,req:'steam',d:'Army quality +25%.'},
+  {id:'electric',era:3,n:'Electrification',e:'💡',c:240,req:'steam',d:'Unlocks the hydro dam.'},
+  {id:'telephone',era:3,n:'Telephone',e:'☎️',c:240,req:'telegraph',d:'Tension cools faster still.'},
+  {id:'tourism',era:3,n:'Leisure travel',e:'🧳',c:250,req:'rail',d:'Unlocks the grand hotel and the stadium.'},
+  {id:'radio',era:3,n:'Radio',e:'📻',c:260,req:'electric',d:'Royal broadcasts: legitimacy +2.'},
+  {id:'automobile',era:3,n:'Motor cars',e:'🚗',c:270,req:'steel',d:'Transport +20.'},
+  {id:'medicine',era:3,n:'Modern medicine',e:'🏥',c:280,req:'vaccination',d:'Healthcare +15.'},
+  {id:'massprod',era:3,n:'Mass production',e:'🏭',c:300,req:'steel',d:'Goods production +25%, business revenue +10%.'},
+  {id:'monument',era:3,n:'Monumental architecture',e:'🗼',c:300,req:'steel',d:'Unlocks the royal monument.'},
+  {id:'antibiotics',era:3,n:'Antibiotics',e:'🧪',c:320,req:'medicine',d:'Healthcare +10, and populations grow 10% faster.'}
 ];
+// Each era: how many of its technologies you need before the next age arrives, and the three bonuses offered when it does.
+const ERAS=[
+  {n:'Age of Crowns',e:'👑',need:5,d:'Farms, guilds and feudal levies. The island’s kingdoms are small and the sea beyond is a rumor.'},
+  {n:'Age of Enlightenment',e:'🔭',need:6,d:'Printing, banking and new ideas about how a kingdom should be ruled.',
+    b:[{id:'reason',n:'The Age of Reason',d:'Research +15%.'},{id:'commerce',n:'The Age of Commerce',d:'Trade capacity +20%, and business revenue +10%.'},{id:'old1',n:'Uphold the old ways',d:'Legitimacy +3, but research 10% slower.'}]},
+  {n:'Age of Industry',e:'🏭',need:6,d:'Steam, rail and factories. Cities grow fast, and working people want a say.',
+    b:[{id:'workshop',n:'Workshop of the world',d:'Goods production +20%, and business revenue +10%.'},{id:'iron',n:'Iron and blood',d:'Army quality +15%, and soldiers are recruited 25% faster.'},{id:'old2',n:'Uphold the old ways',d:'Legitimacy +3 and the landowners +5, but research 10% slower.'}]},
+  {n:'Modern Age',e:'💡',need:0,d:'Electricity, medicine and mass culture. The crown must win hearts as well as obey laws.',
+    b:[{id:'progress',n:'The age of progress',d:'Healthcare +10, and education +10.'},{id:'plenty',n:'The age of plenty',d:'Approval +3.'},{id:'old3',n:'Uphold the old ways',d:'Legitimacy +3 and the clergy +5, but research 10% slower.'}]}];
 const techOf=id=>TECH.find(t=>t.id===id);
+/* ---------- eras ---------- */
+// S.era is the current age (0–3); S.eraB lists the bonus chosen at each new age.
+const era=()=>S.era||0;
+const eraB=id=>(S.eraB||[]).includes(id);
+const oldWays=()=>['old1','old2','old3'].filter(eraB).length;
+const eraDone=e=>TECH.filter(t=>t.era===e&&hasTech(t.id)).length;
+const techOpen=t=>t.era<=era();
+const eraReady=()=>era()<3&&eraDone(era())>=ERAS[era()].need;
+function eraEvent(){const next=era()+1,E=ERAS[next];
+  return{id:'era',e:E.e,t:`The ${E.n} begins`,d:`${E.d} New technologies are now open to your scholars. Choose what will define your kingdom in this new age.`,
+    ch:E.b.map(b=>({l:b.n,s:b.d,f(){if(era()<next){S.era=next;S.eraB=[...(S.eraB||[]),b.id]}return`Your kingdom enters the ${E.n}. ${b.n}: ${b.d}`}}))}}
+// once enough of this era's technologies are known, the next age arrives as an event (asked again each month until answered)
+function eraCheck(stop){if(eraReady()&&!queue.some(q=>q.id==='era')&&!(curEvent&&curEvent.id==='era')){queue.push(eraEvent());stop.push(`The ${ERAS[era()+1].n} begins`)}}
 // S.tech: done, cur (being researched), prog (its points), pp (points kept on technologies you switched away from),
 // q (the queue), bank (points saved while nothing was being researched, or left over, up to BANKCAP).
 const BANKCAP=250;
 const techQ=()=>S.tech.q||(S.tech.q=[]);
 const techPts=id=>id===S.tech.cur?S.tech.prog:((S.tech.pp||{})[id]||0);
 // a technology can be queued once its prerequisite is known, being researched, or earlier in the queue
-const canQueue=t=>!hasTech(t.id)&&t.id!==S.tech.cur&&!techQ().includes(t.id)&&(!t.req||hasTech(t.req)||S.tech.cur===t.req||techQ().includes(t.req));
+const canQueue=t=>techOpen(t)&&!hasTech(t.id)&&t.id!==S.tech.cur&&!techQ().includes(t.id)&&(!t.req||hasTech(t.req)||S.tech.cur===t.req||techQ().includes(t.req));
 function startTech(id){const T=S.tech;T.pp=T.pp||{};if(T.cur&&T.cur!==id&&T.prog>0)T.pp[T.cur]=T.prog;T.cur=id;T.prog=(T.pp[id]||0)+(T.bank||0);T.bank=0;delete T.pp[id];T.q=techQ().filter(x=>x!==id)}
 function researchMonth(pts,notes,stop){const T=S.tech,q=techQ();
   if(!T.cur&&q.length)startTech(q[0]);
@@ -692,7 +733,7 @@ function newState(name,size){const mo=newRoyal(28,38),wd=genWorld(size||'medium'
   const st={v:2,mv:2,name:name||'Kestrel',month:3,year:1,turn:0,coins:2500,pop:60,best:60,hap:55,leg:60,unrest:5,tax:12,map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{},army:1,troops:1,mob:false,general:null,navy:0,dev:{},war:null,aggr:[],nsit:{norvik:'stable',solenne:'stable',aurelia:'stable'},wins:0,gained:0,sold:{},dec:{},mods:[],hist:[],goals:{},lastNet:0,recent:[],sel:-1,
   rel:{norvik:50,solenne:50,aurelia:50},tension:{norvik:10,solenne:5,aurelia:15},embargo:{},crisisCd:{},demandCd:{},trade:{food:null,energy:null,goods:null},envoy:{},
   laws:Object.assign({},DEFAULT_LAWS),enact:null,lawsPassed:0,favorCd:{},
-  tech:{done:[],cur:null,prog:0,pp:{},q:[],bank:0},
+  tech:{done:[],cur:null,prog:0,pp:{},q:[],bank:0},era:0,eraB:[],
   court:2,monarch:Object.assign(mo,{trait:pick(Object.keys(TRAITS)),num:1,since:1}),fam:makeFamily(mo),drama:'some',aging:true,reigns:[],calm:0,sandbox:false,news:[],showReport:false,mat:100,pv:1};bindHeir(st);return st}
 let S,tab='isle',resetArmed=false;const queue=[];let curEvent=null;
 function adopt(d){
@@ -702,7 +743,7 @@ function adopt(d){
   S.W=d.W||18;S.H=d.H||16;S.cap=d.cap!=null?d.cap:8*18+4;S.wsize=d.wsize||(d.W?'medium':'classic');S.nscale=d.nscale||{};W=S.W;H=S.H;
   ['rel','tension','trade','laws'].forEach(k=>{S[k]=Object.assign({},def[k],d[k]||{})});
   S.tech=Object.assign({done:[],cur:null,prog:0,pp:{},q:[],bank:0},d.tech||{});S.embargo=d.embargo||{};S.crisisCd=d.crisisCd||{};S.demandCd=d.demandCd||{};S.envoy=d.envoy||{};S.favorCd=d.favorCd||{};S.reigns=d.reigns||[];
-  if(!d.monarch)S.monarch=base.monarch;if(!d.fam)S.fam=famFromOld(d);if(d.general&&d.general.heir&&S.fam.kids[0])S.general.kid=S.fam.kids[0].id;S.drama=d.drama||'some';bindHeir(S);if(d.gens==null)S.gens=1+(S.reigns||[]).length;if(!d.wedded)S.wedded=marriedTo();
+  if(!d.monarch)S.monarch=base.monarch;if(!d.fam)S.fam=famFromOld(d);if(d.general&&d.general.heir&&S.fam.kids[0])S.general.kid=S.fam.kids[0].id;S.drama=d.drama||'some';bindHeir(S);if(d.gens==null)S.gens=1+(S.reigns||[]).length;if(d.era==null){S.era=0;S.eraB=[];while(eraReady())S.era++}if(!d.wedded)S.wedded=marriedTo();
   S.dev=d.dev||{};if(d.troops==null)S.troops=Math.round((d.pop||60)*ARMY[d.army!=null?d.army:1].r);S.claims=d.claims||{};S.fclaims=d.fclaims||{};S.aggr=d.aggr||[];S.nsit=Object.assign({},base.nsit,d.nsit||{});S.sold=d.sold||{};
   if(d.mv!==2){const old=d.map.filter(x=>x.b&&x.b!=='hall'&&B[x.b]).map(x=>x.b);const wd=genWorld('small'),cap=wd.cap;wd.map[cap].b='hall';
     const mine=wd.map.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
@@ -776,7 +817,7 @@ function calc(){
     const tm=c.b==='farm'?farmMult(i):c.b==='wind'&&c.hl?1.5:1;
     for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]:d[k]*f*(k==='food'||k==='power'?tm:1);t.up+=d.u||0;
     if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]:d[k]*f})});
-  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
+  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
   if(trait('frugal'))t.up*=.9;
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
   const forests=S.map.reduce((a,c)=>a+(c.o==='me'&&c.t==='f'?(!c.b?1:c.b==='lumber'?.5:0):0),0),D=k=>!!S.dec[k];
@@ -795,7 +836,7 @@ function calc(){
   const empSum=own.reduce((a,i)=>a+pv[i].emp,0),empScale=empSum?Math.min(1,Math.min(workers,t.jobs)/empSum):0;own.forEach(i=>{pv[i].emp*=empScale});
   const employed=Math.round(empSum*empScale);
   const share={upper:.05+(S.laws.labor==='serfdom'?.02:0)};share.middle=clamp(.08+t.mid/pop*.5,.08,.45);share.lower=1-share.upper-share.middle;
-  const foodMult=1+(hasTech('rotation')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100,goodsMult=1+(hasTech('workshops')?.25:0);
+  const foodMult=1+(hasTech('rotation')?.15:0)+(hasTech('watermill')?.05:0)+(hasTech('agronomy')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100,goodsMult=1+(hasTech('workshops')?.25:0)+(hasTech('coke')?.1:0)+(hasTech('massprod')?.25:0)+(eraB('workshop')?.2:0);
   const prod={food:t.food*foodMult,energy:t.power,goods:t.goods*goodsMult};
   const rat=D('ration')?.8:1;const dem={food:Math.round(pop*rat),energy:Math.round(pop*rat),goods:Math.round(pop*share.middle+pop*share.upper*3)};
   let cap=t.trade;const tr={};let expV=0,impV=0;
@@ -821,7 +862,8 @@ function calc(){
   NEEDS.forEach(n=>{sc[n.k]=clamp(Math.round(sc[n.k]+modSum(n.k)),0,100)});
   sc.health=clamp(Math.round(sc.health-(100-sc.water)*.25),0,100);
   // each province's local needs; the kingdom's figure for them is the average weighted by population
-  const bonus={health:(D('lunches')?5:0)+(hasTech('hygiene')?10:0)+(hasTech('medicine')?15:0)+(law('welfare').health||0),learn:(D('lunches')?10:0)+(law('church').learn||0),fun:D('fourday')?15:0,move:D('freebus')?20:0,water:0};
+  const bonus={health:(D('lunches')?5:0)+(hasTech('hygiene')?10:0)+(hasTech('medicine')?15:0)+(hasTech('herbalism')?5:0)+(hasTech('vaccination')?10:0)+(hasTech('antibiotics')?10:0)+(eraB('progress')?10:0)+(law('welfare').health||0),
+    learn:(D('lunches')?10:0)+(law('church').learn||0)+(hasTech('philosophy')?5:0)+(eraB('progress')?10:0),fun:(D('fourday')?15:0)+(hasTech('gaslight')?10:0),move:(D('freebus')?20:0)+(hasTech('automobile')?20:0),water:0};
   own.forEach(i=>{const p=pv[i],e=eff[i],pp=Math.max(1,p.pop),o=p.pop/Math.max(1,p.homes),s={};
     s.homes=o<=.8?100:100-clamp((o-.8)/.2,0,1)*45;s.jobs=p.workers?Math.min(100,e.jobs/p.workers*100):100;
     ['health','learn','fun','move','water'].forEach(k=>{s[k]=Math.min(100,e[k]/pp*100+bonus[k])});s.health-=p.hw?p.hp/p.hw*12:0;
@@ -833,12 +875,12 @@ function calc(){
     o[k]=clamp(Math.round(v),0,100)});return o};
   const cls=clsFrom(sc);
   const debt=S.coins<0?Math.min(10,-S.coins/500):0,weary=S.war?Math.min(15,S.war.months*1.2):0;
-  const quality=1+cnt('barracks')*.08+msCount(['c1','c2','c3'])*.03+officeSkill('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
+  const quality=1+cnt('barracks')*.08+(hasTech('gunpowder')?.15:0)+(eraB('iron')?.15:0)+msCount(['c1','c2','c3'])*.03+officeSkill('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
   const fortN=S.map.reduce((a,x)=>a+(x.o==='me'&&x.b==='fort'?(x.hl?2:1):0),0);
   const str=Math.round(soldiers*quality*supply*morale*10)/10,forts=Math.min(1.5,1+fortN*.1);
   // approval: each province's mood from its own needs and neighbourhoods plus national effects, less a penalty until it's integrated.
   // The kingdom's target is the average of the provinces, weighted by population.
-  const common=t.hap+(hasPal('gardens')?1:0)+msHap()+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0);
+  const common=t.hap+(hasPal('gardens')?1:0)+msHap()+(eraB('plenty')?3:0)+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0);
   own.forEach(i=>{const p=pv[i],c2=clsFrom(Object.assign({},sc,p.sc));p.integPen=(100-(S.prov[i].integ??100))*.1;
     p.target=clamp(Math.round(c2.lower*share.lower+c2.middle*share.middle+c2.upper*share.upper+common+p.hood-p.integPen+govMood(S.prov[i])),0,100)});
   const integPen=pop?own.reduce((a,i)=>a+pv[i].integPen*pv[i].pop,0)/pop:0;
@@ -857,23 +899,23 @@ function calc(){
     if(G.cls)m+=(cls[G.cls]-50)*.4;
     // public welfare only really bothers the landowners when they end up paying: through a deficit, or a progressive tax
     if(k==='landowners'&&L.welfare==='public')m-=welfareGrudge();
-    if(k==='landowners')m+=(hasPal('hall')?3:0)-2*Math.max(0,hh().estates-2)+(rentIdx-1)*8-(D('rentcap')?12:0)+(S.army-1)*3;
+    if(k==='landowners')m+=(eraB('old2')?5:0)+(hasPal('hall')?3:0)-2*Math.max(0,hh().estates-2)+(rentIdx-1)*8-(D('rentcap')?12:0)+(S.army-1)*3;
     // merchants accept a big army the kingdom can afford, and resent one paid for by running into debt; mobilizing takes their workers
     if(k==='merchants')m-=Math.max(0,S.army-2)*(inDeficit()?5:1.5)+(S.mob?8:0);
-    if(k==='clergy')m+=officeSkill('chaplain')*2+(hasPal('chapel')?5:0)+cnt('church')*2+(trait('pious')?10:0);
+    if(k==='clergy')m+=(eraB('old3')?5:0)+officeSkill('chaplain')*2+(hasPal('chapel')?5:0)+cnt('church')*2+(trait('pious')?10:0);
     if(k==='intelligentsia')m+=(sc.learn-50)*.15;
     if(k==='workers'&&D('fourday'))m+=8;if(k==='merchants'&&D('fourday'))m-=8;
     // a lavish court galls working people most when the lower class is struggling, and hardly at all when it's doing well
     m+=(COURT[S.court].ig[k]||0)*(k==='workers'&&(COURT[S.court].ig[k]||0)<0?(cls.lower<45?1.5:cls.lower>=65?.4:1):1);m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
-  const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+officeSkill('chancellor')+(hasPal('hall')?2:0)+msLeg()),0,100);
+  const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+officeSkill('chancellor')+(hasPal('hall')?2:0)+msLeg()+(hasTech('radio')?2:0)+3*oldWays()),0,100);
   // research
-  const rp=Math.round((5+t.learn/20)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1));
+  const rp=Math.round((5+t.learn/20)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(eraB('reason')?1.15:1)*Math.pow(.9,oldWays()));
   // money
   const fill=t.jobs?employed/t.jobs:0;
   // provinces pay half their taxes at first and the full amount once integrated
   const taxEmp=own.reduce((a,i)=>a+pv[i].emp*(.5+.5*(S.prov[i].integ??100)/100),0);
   const tax=taxEmp*(1+officeSkill('treasurer')*.02+msTax())*S.tax/100*45*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
-  const biz=t.inc*fill*(L.trade==='protect'?1.15:1);
+  const biz=t.inc*fill*(L.trade==='protect'?1.15:1)*(hasTech('charter')?1.1:1)*(hasTech('massprod')?1.1:1)*(eraB('commerce')?1.1:1)*(eraB('workshop')?1.1:1);
   const tour=t.tour*(.4+(sc.fun+sc.nature)/250)*(D('ads')?1.4:1)*(1+modSum('tour')/100);
   const extra=modSum('inc');
   const decCost=(D('freebus')?pop:0)+(D('lunches')?pop:0)+(D('festival')?150:0)+(D('green')?120:0)+(D('ads')?100:0);
@@ -1160,7 +1202,7 @@ function revoltSheet(){return{e:'🔥',t:'Revolution!',d:'Unrest has boiled over
 /* ---------- provinces each month ---------- */
 // Mood follows each province's target; people grow into free homes where they're content and leave where they're miserable,
 // and some move from an unhappy province to a happier neighbour with room. Integration rises, and unrest follows mood.
-function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=law('labor').grow||1;
+function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=(law('labor').grow||1)*(hasTech('antibiotics')?1.1:1);
   own.forEach(i=>{const P=S.prov[i],p=c.pv[i];if(!p)return;const was=P.hap??p.target;P.hap=Math.round(was+(p.target-was)*.35);
     const room=p.homes-(P.pop||0);
     if(P.hap>=50&&room>0)P.pop+=Math.max(1,Math.ceil(room*.22*grow*(P.hap-40)/60));
@@ -1212,10 +1254,10 @@ function endMonth(silent){
   let du=(S.leg<40?(40-S.leg)/4:-3)+angry*12+(S.hap<35?3:0);if(du>0)du*=(S.laws.press==='censor'?.7:1)*(trait('cautious')?.7:1)*(1-officeSkill('chaplain')*.05)*(msHas('p7')?.9:1);if(du>0&&hasPal('guard'))du=Math.max(0,du-.5);
   S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
   const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);S.best=Math.max(S.best,S.pop);
-  researchMonth(c.rp,notes,stop);
+  researchMonth(c.rp,notes,stop);eraCheck(stop);
   if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
   NIDS.forEach(n=>{let r=S.rel[n]+(50-S.rel[n])*.04;if(Object.values(c.tr).some(x=>x.c===n))r+=1.5;S.rel[n]=clamp(Math.round(r*10)/10,0,100);
-    tenA(n,-(hasTech('telegraph')?4:2)-(msHas('g3')?1:0)+(S.rel[n]<30?2:0));S.tension[n]=Math.round(S.tension[n]*10)/10;
+    tenA(n,-(hasTech('telegraph')?4:2)-(msHas('g3')?1:0)-(hasTech('telephone')?1:0)+(S.rel[n]<30?2:0));S.tension[n]=Math.round(S.tension[n]*10)/10;
     if(S.embargo[n]){S.embargo[n]--;if(!S.embargo[n]){delete S.embargo[n];notes.push([NATIONS[n].e,`${NATIONS[n].n} lifts its embargo`,'Trade can resume.'])}}
     if(S.crisisCd[n])S.crisisCd[n]--;if(S.demandCd[n])S.demandCd[n]--});
   // settling
@@ -1227,7 +1269,7 @@ function endMonth(silent){
   const sp=pick(marriedTo());if(sp&&!atWarWith(sp)&&Math.random()<.004){const opts=borderOf(sp,'me').filter(i=>!S.prov[i].heart);if(opts.length){const i=opts.find(q=>S.claims[q])!=null?opts.find(q=>S.claims[q]):pick(opts);transfer(i,'me','inherited');notes.push(['💍',`You inherit ${S.prov[i].name}`,`A branch of the ${NATIONS[sp].n} royal line has died out, and through marriage the province passes to your crown.`]);stop.push(`You inherit ${S.prov[i].name}`)}}
   // war
   // army reinforcement and devastation
-  {const tg=troopTarget();if(S.troops<tg)S.troops=Math.min(tg,S.troops+Math.max(1,Math.ceil(S.pop*.006*(1+cnt('barracks')*.25+officeSkill('marshal')*.1))));else if(!S.war)S.troops=tg}
+  {const tg=troopTarget();if(S.troops<tg)S.troops=Math.min(tg,S.troops+Math.max(1,Math.ceil(S.pop*.006*(1+cnt('barracks')*.25+officeSkill('marshal')*.1+(eraB('iron')?.25:0)))));else if(!S.war)S.troops=tg}
   Object.keys(S.dev).forEach(k=>{S.dev[k]--;if(S.dev[k]<=0)delete S.dev[k]});
   if(S.war){const r=warMonth(notes);if(r){const res=autoResolve(r);queue.push({e:r==='win'?'🏆':r==='lose'?'🏳️':'🕊️',t:res.t,d:res.d,ch:[{l:'Continue',f(){return'The war is over.'}}]});const v=queue.findIndex(q=>q.e==='🎖️');if(v>=0)queue.push(queue.splice(v,1)[0])}}
   else{const c2=calc();NIDS.forEach(n=>{if(S.war||S.embargo[n])return;if(S.tension[n]>=90&&theirStr(n)>c2.str*1.2&&Math.random()<.2){const goals=borderOf('me',n).filter(i=>i!==0);if(!goals.length)return;const g=goals.find(i=>S.fclaims[i]===n)!=null?goals.find(i=>S.fclaims[i]===n):pick(goals);startWar(n,g,n);
@@ -1279,7 +1321,7 @@ function afterMonths(rs){const last=rs[rs.length-1],net=rs.reduce((a,r)=>a+r.net
   if(S.showReport)reportSheet();else if(queue.length)showNext();
   toast(`${head}: 🪙 ${net>=0?'+':''}${fmt(net)}, 👥 ${dp>=0?'+':''}${dp}${why?'. '+why+'.':''}`)}
 function showNext(){curEvent=queue.shift();if(!curEvent){closeSheet();return}
-  openSheet(`<div class="event"><div class="pic" aria-hidden="true">${curEvent.e}</div><h3>${curEvent.t}</h3><p>${curEvent.d}</p></div>${curEvent.ch.map((ch,i)=>`<button class="btn choice" data-act="choose" data-arg="${i}">${ch.l}<small>${ch.c?`Costs 🪙${fmt(ch.c)}`:'No upfront cost'}</small></button>`).join('')}`)}
+  openSheet(`<div class="event"><div class="pic" aria-hidden="true">${curEvent.e}</div><h3>${curEvent.t}</h3><p>${curEvent.d}</p></div>${curEvent.ch.map((ch,i)=>`<button class="btn choice" data-act="choose" data-arg="${i}">${ch.l}<small>${ch.s?ch.s:ch.c?`Costs 🪙${fmt(ch.c)}`:'No upfront cost'}</small></button>`).join('')}`)}
 
 /* ---------- views ---------- */
 const bar=(v,c)=>`<div class="meter"><i style="width:${clamp(v,0,100)}%;background:${c||col(v)}"></i></div>`;
@@ -1740,22 +1782,25 @@ function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
   <h2>Agreements</h2><div class="card">${res}</div>
   <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}`}
 function techHTML(){const c=calc(),cur=S.tech.cur&&techOf(S.tech.cur);
-  const avail=TECH.filter(t=>!hasTech(t.id)&&(!t.req||hasTech(t.req))),locked=TECH.filter(t=>!hasTech(t.id)&&t.req&&!hasTech(t.req)),done=TECH.filter(t=>hasTech(t.id));
+  const avail=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&(!t.req||hasTech(t.req))),locked=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&t.req&&!hasTech(t.req)),done=TECH.filter(t=>hasTech(t.id)),future=TECH.filter(t=>!techOpen(t)),E=ERAS[era()];
   const row=(t,btn,sub)=>`<div class="row"><span class="em">${t.e}</span><div class="grow"><b>${t.n}</b><small>${t.d}${sub?' '+sub:''}</small></div>${btn||''}</div>`;
   const q=techQ(),months=pts=>Math.max(1,Math.ceil(pts/Math.max(1,c.rp))),kept=t=>{const p=techPts(t.id);return p?` ${Math.round(p)} of ${t.c} points done.`:''};
   // start now, or queue it if something is already under way
   const btns=t=>t.id===S.tech.cur?'<span class="tag">Researching</span>':q.includes(t.id)?`<span class="tag">Queued ${q.indexOf(t.id)+1}</span>`
     :`<div class="btns" style="margin-top:0;flex-wrap:nowrap">${S.tech.cur?`<button class="btn" data-act="queue" data-arg="${t.id}">Queue</button>`:''}<button class="btn ${S.tech.cur?'':'primary'}" data-act="research" data-arg="${t.id}" title="${t.c} points">${S.tech.cur?'Switch':`${t.c} pts`}</button></div>`;
-  return `<h2>Research</h2><p class="hint">Your scholars produce ${c.rp} research points a month. Schools, libraries and universities add more. Switching keeps the progress you’ve made, and points left over carry on to the next technology.</p>
+  // where the kingdom stands among the ages, and what the next one needs
+  const eraCard=`<div class="card"><div class="row"><span class="em">${E.e}</span><div class="grow"><b>${E.n}</b><small>${E.d}</small>${era()<3?`<small>Research ${E.need} of this age2019s technologies to enter the ${ERAS[era()+1].n}: ${Math.min(eraDone(era()),E.need)} of ${E.need} done.</small>${bar(Math.min(100,eraDone(era())/E.need*100),'var(--deep)')}`:'<small>The last age. Every technology is now within reach.</small>'}${(S.eraB||[]).length?`<small>Chosen: ${S.eraB.map(id=>ERAS.flatMap(x=>x.b||[]).find(b=>b.id===id).n).join(', ')}.</small>`:''}</div></div></div>`;
+  return `${eraCard}<h2>Research</h2><p class="hint">Your scholars produce ${c.rp} research points a month. Schools, libraries and universities add more. Switching keeps the progress you’ve made, and points left over carry on to the next technology.</p>
   ${cur?`<div class="card">${row(cur,'',`${Math.round(S.tech.prog)} of ${cur.c} points, about ${months(cur.c-S.tech.prog)} month${months(cur.c-S.tech.prog)>1?'s':''} left.`)}<div class="capbar" style="margin-bottom:12px"><i style="width:${Math.min(100,S.tech.prog/cur.c*100)}%"></i></div></div>`:`<p class="hint"><b>Nothing is being researched. Choose a technology below.</b>${S.tech.bank?` ${S.tech.bank} saved points will go toward it.`:''}</p>`}
   ${q.length?`<h2>Up next</h2><div class="card">${q.map((id,k)=>{const t=techOf(id);return`<div class="row"><span class="em">${t.e}</span><div class="grow"><b>${k+1}. ${t.n}</b><small>${t.c} points.${kept(t)}</small></div><div class="btns" style="margin-top:0;flex-wrap:nowrap">${k?`<button class="btn" data-act="qup" data-arg="${id}" aria-label="Move ${t.n} up">↑</button>`:''}<button class="btn" data-act="unqueue" data-arg="${id}" aria-label="Remove ${t.n} from the queue">✕</button></div></div>`}).join('')}</div><p class="hint">When the current technology is finished, the next one starts automatically.</p>`:''}
   <h2>Available</h2><div class="card">${avail.length?avail.map(t=>row(t,btns(t),kept(t))).join(''):'<p class="empty hint">Everything available has been researched.</p>'}</div>
   ${locked.length?`<h2>Later</h2><div class="card">${locked.map(t=>row(t,q.includes(t.id)?`<span class="tag">Queued ${q.indexOf(t.id)+1}</span>`:canQueue(t)?`<button class="btn" data-act="queue" data-arg="${t.id}">Queue</button>`:'',`Requires ${techOf(t.req).n.toLowerCase()}.${canQueue(t)?' Can be queued to follow it.':''}`)).join('')}</div>`:''}
+  ${future.length?`<h2>Later ages</h2><div class="card">${[1,2,3].filter(e=>e>era()).map(e=>`<div class="row"><span class="em">${ERAS[e].e}</span><div class="grow"><b>${ERAS[e].n}</b><small>${future.filter(t=>t.era===e).map(t=>t.e+' '+t.n).join(', ')}.</small></div></div>`).join('')}</div>`:''}
   ${done.length?`<h2>Known</h2><div class="card">${done.map(t=>row(t,'<span>✅</span>')).join('')}</div>`:''}`}
 
 function render(){
   $('#name').textContent=S.name;
-  $('#when').textContent=`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}`;
+  $('#when').textContent=`${MONTHS[S.month]}, year ${S.year}. ${ERAS[era()].n}. ${monarchName(S.monarch)}`;
   $('#coins').textContent=`🪙 ${fmt(S.coins)}`;$('#coins').style.color=S.coins<0?'var(--bad)':'';
   $('#pop').textContent=`👥 ${fmt(S.pop)}`;
   $('#hap').textContent=`📊 ${S.hap}%`;$('#hap').style.color=col(S.hap);
@@ -1860,7 +1905,7 @@ function freeTile(id){return S.map.findIndex((x,i)=>x.o==='me'&&x.t!=='w'&&!x.b&
 function whyData(kind){const c=calc(),D=k=>!!S.dec[k],R=[];const add=(l,v,note)=>{if(Math.round(v*10))R.push({l,v,note})};
   if(kind==='approval'){
     Object.keys(CLASSES).forEach(k=>R.push({l:CLASSES[k].n,v:c.cls[k]*c.share[k],note:`${c.cls[k]} satisfaction × ${Math.round(c.share[k]*100)}% of people`,plain:1}));
-    add('Buildings',c.t.hap);add('Royal gardens',hasPal('gardens')?1:0);add('Milestones',msHap());add('Neighborhoods',c.hood,c.hood<0?'Industry near homes':'Parks and gardens near homes');add('Royal festivities',D('festival')?4:0);add('Press law',law('press').hap||0);S.mods.filter(m=>m.k==='hap').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
+    add('Buildings',c.t.hap);add('Royal gardens',hasPal('gardens')?1:0);add('Milestones',msHap());add('The age of plenty',eraB('plenty')?3:0);add('Neighborhoods',c.hood,c.hood<0?'Industry near homes':'Parks and gardens near homes');add('Royal festivities',D('festival')?4:0);add('Press law',law('press').hap||0);S.mods.filter(m=>m.k==='hap').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
     add('Debt',-(S.coins<0?Math.min(10,-S.coins/500):0));add('War weariness',-c.weary);add('Rationing',D('ration')?-4:0);add('Mobilization',S.mob?-3:0);
     add('New provinces not yet integrated',-c.integPen);
     // whatever's left comes from provinces being served unevenly (the rows above use kingdom-wide averages)
@@ -1870,7 +1915,7 @@ function whyData(kind){const c=calc(),D=k=>!!S.dec[k],R=[];const add=(l,v,note)=
   if(kind==='legitimacy'){R.push({l:'Base',v:30,plain:1});
     IGIDS.forEach(k=>add(IGS[k].n,c.clout[k]*(c.mood[k]-50)/50*40,`Mood ${c.mood[k]}, clout ${Math.round(c.clout[k]*100)}%`));
     add(`Approval (${S.hap}%)`,(S.hap-50)*.3);add('Charismatic monarch',trait('charismatic')?6:0);add('Pious monarch',trait('pious')?3:0);
-    add('Religion law',law('church').leg||0);add('Press law',law('press').leg||0);add('Royal festivities',D('festival')?2:0);add(`Royal household (${COURT[S.court].n.toLowerCase()})`,COURT[S.court].leg);add('Buildings',c.t.leg);add('Milestones',msLeg());add('Chancellor',officeSkill('chancellor'));add('Great hall',hasPal('hall')?2:0);
+    add('Religion law',law('church').leg||0);add('Press law',law('press').leg||0);add('Royal festivities',D('festival')?2:0);add(`Royal household (${COURT[S.court].n.toLowerCase()})`,COURT[S.court].leg);add('Buildings',c.t.leg);add('Milestones',msLeg());add('Chancellor',officeSkill('chancellor'));add('Royal broadcasts',hasTech('radio')?2:0);add('Upholding the old ways',3*oldWays());add('Great hall',hasPal('hall')?2:0);
     S.mods.filter(m=>m.k==='leg').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
     return{e:'👑',title:'Legitimacy',now:S.leg,intro:'Legitimacy is how accepted your rule is. Powerful interest groups count most: a group above mood 50 adds legitimacy, and a group below 50 takes it away.',
       total:`Target ${c.legT}`,outro:`Legitimacy is ${S.leg} now and moves 20% of the way toward the target each month. Below 40, unrest starts to build.`,rows:R}}
@@ -1892,8 +1937,9 @@ function whySheet(k){const w=whyData(k),n=v=>Math.round(v*10)/10;
 const monthIdx=m=>{const i=MONTHS.findIndex(x=>x.toLowerCase().startsWith(String(m).toLowerCase().slice(0,3)));return i>=0?i:clamp(num(m,1)-1,0,11)};
 function statusLines(){const c=calc();return[`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}, aged ${S.monarch.age}.`,`Treasury ${fmt(S.coins)}, net ${c.net>=0?'+':''}${fmt(c.net)} a month.`,`Population ${fmt(S.pop)} of ${fmt(c.t.homes)} housing. Approval ${S.hap}% (to ${c.target}).`,`Legitimacy ${S.leg} (to ${c.legT}). Unrest ${Math.round(S.unrest)}.`,`Army ${c.soldiers} soldiers, strength ${c.str}. Navy ${S.navy}.`,S.war?`At war with ${S.war.foes.map(n=>NATIONS[n].n).join(', ')}: score ${S.war.score}, support ${S.war.support}%.`:'At peace.',`Provinces: ${provsOf('me').length}. Research: ${S.tech.cur?techOf(S.tech.cur).n:'none'}.${S.god?' God mode on.':''}${S.noEvents?' Random events off.':''}`]}
 const CMDS={
-  help:()=>['money N           set the treasury','add N             add to the treasury','mat N             set building materials','child [m|f] [AGE] add a royal child','kids              list the royal children with IDs','makeheir ID       name a child heir','drama off|some|lots  family drama level','spouse            marry the monarch to a noble','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
+  help:()=>['money N           set the treasury','add N             add to the treasury','era 0-3           jump to an era (0 Crowns, 1 Enlightenment, 2 Industry, 3 Modern)','mat N             set building materials','child [m|f] [AGE] add a royal child','kids              list the royal children with IDs','makeheir ID       name a child heir','drama off|some|lots  family drama level','spouse            marry the monarch to a noble','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
   money:n=>{S.coins=num(n,0);return`Treasury set to ${fmt(S.coins)}`},
+  era:n=>{const e=clamp(num(n,era()+1),0,3);S.era=e;return`The kingdom is now in the ${ERAS[e].n}`},
   mat:n=>{S.mat=Math.max(0,num(n,500));return`Building materials set to ${fmt(S.mat)}`},
   child:(g,a)=>{const gg=g==='m'||g==='f'?g:undefined,age=num(gg?a:g,0);const k=addKid(Math.max(0,age),gg);return`${kidName(k)} (ID ${k.id}), aged ${k.age}, joins the royal family`},
   kids:()=>kids().length?kids().map(k=>`${k.id}: ${kidName(k)}, ${k.age}, ${TRAITS[k.trait].n}${k===heirOf(S)?', heir':''}${kidRole(k)?', '+kidRole(k):''}${k.spouse?', married':''}${k.rival?', resentful':''}`):'No children',
@@ -1911,7 +1957,7 @@ const CMDS={
   skip:n=>{const k=clamp(num(n,1),1,240);for(let i=0;i<k;i++)endMonth(true);return`Skipped ${k} months. Now ${MONTHS[S.month]}, year ${S.year}`},
   build:(id,n)=>{if(!B[id]||B[id].fixed)return E('Unknown building. Try buildings.');let k=clamp(num(n,1),1,50),b=0;while(k--){const i=freeTile(id);if(i<0)break;S.map[i].b=id;if(!B[id].forest)S.map[i].t='l';b++}return b?`Built ${b} ${B[id].n.toLowerCase()}`:E('No free tile available')},
   buildings:()=>Object.keys(B).filter(k=>!B[k].fixed).join(', '),
-  unlock:()=>{TECH.forEach(t=>{if(!hasTech(t.id))S.tech.done.push(t.id)});S.tech.cur=null;S.tech.q=[];S.tech.pp={};return'Every technology researched'},
+  unlock:()=>{TECH.forEach(t=>{if(!hasTech(t.id))S.tech.done.push(t.id)});S.era=3;S.tech.cur=null;S.tech.q=[];S.tech.pp={};return'Every technology researched'},
   tech:id=>{const t=techOf(id);if(!t)return E('Unknown technology. Try techs.');if(!hasTech(id))S.tech.done.push(id);S.tech.q=techQ().filter(x=>x!==id);if(S.tech.pp)delete S.tech.pp[id];if(S.tech.cur===id){S.tech.cur=null;S.tech.prog=0}return`${t.n} researched`},
   techs:()=>TECH.map(t=>t.id).join(', '),
   law:(c,o)=>{if(!LAWS[c]||!LAWS[c].o[o])return E('Try laws for valid options');S.laws[c]=o;if(S.enact&&S.enact.cat===c)S.enact=null;S.lawsPassed++;return`${LAWS[c].o[o].n} is now law`},
@@ -2061,7 +2107,7 @@ function act(a,arg,n){
     case'cancelLaw':{if(!S.enact)return;const o=LAWS[S.enact.cat].o[S.enact.opt].n.toLowerCase();S.mods=S.mods.filter(m=>m.l!==`Opposes ${o}`);S.enact=null;addMod('leg',-2,3,'Withdrawn law');toast('The law is withdrawn');break}
     case'favor':{if(S.favorCd[arg]||S.coins<400)return;S.coins-=400;S.favorCd[arg]=6;igM(arg,15,12,'Royal favor');toast(`The ${IGS[arg].n.toLowerCase()} are pleased by the crown\u2019s favor`);break}
     // start now (progress on the previous technology is kept), or add to the queue
-    case'research':{if(hasTech(arg))return;const t=techOf(arg);if(!t||t.req&&!hasTech(t.req))return;const had=S.tech.cur;if(had!==arg)startTech(arg);
+    case'research':{if(hasTech(arg))return;const t=techOf(arg);if(!t||!techOpen(t)||t.req&&!hasTech(t.req))return;const had=S.tech.cur;if(had!==arg)startTech(arg);
       toast(had&&had!==arg?`Scholars switch to ${t.n.toLowerCase()}. Progress on ${techOf(had).n.toLowerCase()} is kept.`:`Scholars begin work on ${t.n.toLowerCase()}`);break}
     case'queue':{const t=techOf(arg);if(!t||!canQueue(t))return;if(!S.tech.cur&&(!t.req||hasTech(t.req))){startTech(arg);toast(`Scholars begin work on ${t.n.toLowerCase()}`)}else{techQ().push(arg);toast(`${t.n} added to the queue`)}break}
     case'unqueue':{const q=techQ(),i=q.indexOf(arg);if(i<0)return;q.splice(i,1);
