@@ -206,6 +206,7 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
     <div class="top">
       <div class="flag"><h1 id="name"></h1><div class="sub" id="when"></div></div>
       <span id="net" class="tag" hidden>Offline</span>
+      <button class="icon" data-act="legacy" aria-label="Legacy and milestones">🏆</button>
       <button class="icon" data-act="news" aria-label="News">📰</button>
       <button class="icon" data-act="settings" aria-label="Settings">⚙️</button>
     </div>
@@ -364,7 +365,7 @@ const LAWS={
   tax:{n:'Taxation',e:'🧾',o:{percapita:{n:'Per-capita tax',d:'Everyone pays the same amount. Hard on the poor, easy on the rich. Tax income +10%.',inc:1.1},proportional:{n:'Proportional tax',d:'Everyone pays the same share of income.'},progressive:{n:'Progressive tax',d:'The wealthy pay a higher share. Tax income -5%.',inc:.95}}},
   church:{n:'Religion',e:'⛪',o:{state:{n:'State religion',d:'The church is part of the state. Legitimacy +5.',leg:5},tolerance:{n:'Freedom of conscience',d:'Other faiths are tolerated.'},secular:{n:'Secularism',d:'Church and state are separate. Education +10.',learn:10}}},
   trade:{n:'Trade policy',e:'⚖️',o:{protect:{n:'Protectionism',d:'Tariffs shield local business. Business revenue +15%, imports cost 20% more.'},mercantile:{n:'Mercantilism',d:'A balanced approach to trade.'},free:{n:'Free trade',d:'Exports earn 15% more and imports cost 10% less.'}}},
-  welfare:{n:'Welfare',e:'🤲',o:{none:{n:'No welfare',d:'Families fend for themselves.'},relief:{n:'Poor relief',d:'Basic support for the poor. Lower class +8. Costs 1 per lower-class citizen a month.',cls:{lower:8}},public:{n:'Public welfare',d:'Broad support. Lower class +12, middle class +6, healthcare +5. Costs 2 per citizen a month.',cls:{lower:12,middle:6},health:5}}},
+  welfare:{n:'Welfare',e:'🤲',o:{none:{n:'No welfare',d:'Families fend for themselves.'},relief:{n:'Poor relief',d:'Basic support for the poor. Lower class +8. Costs 1 per lower-class citizen a month.',cls:{lower:8}},public:{n:'Public welfare',d:'Broad support. Lower class +12, middle class +6, healthcare +5. Costs 2 per citizen a month. The landowners grumble a little, and object strongly only if it runs the treasury into deficit or the wealthy pay for it through a progressive tax.',cls:{lower:12,middle:6},health:5}}},
   press:{n:'Press',e:'📰',o:{censor:{n:'Censorship',d:'The crown controls the press. Legitimacy +3, and unrest builds more slowly.',leg:3},limited:{n:'Licensed press',d:'Newspapers need a royal license.'},free:{n:'Free press',d:'Anyone may publish. Approval +3, legitimacy -3.',leg:-3,hap:3}}}
 };
 const COURT=[
@@ -389,13 +390,18 @@ const DEFAULT_LAWS={labor:'tenant',tax:'percapita',church:'state',trade:'mercant
 
 /* ---------- interest groups ---------- */
 const IGS={
-  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{labor:{serfdom:20,tenant:5,free:-15},tax:{percapita:10,proportional:0,progressive:-15},welfare:{none:5,relief:0,public:-10},trade:{protect:10,mercantile:0,free:-5}}},
+  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{labor:{serfdom:20,tenant:5,free:-15},tax:{percapita:10,proportional:0,progressive:-15},trade:{protect:10,mercantile:0,free:-5}}},
   clergy:{n:'Clergy',e:'⛪',d:'The established church and its faithful.',likes:{church:{state:20,tolerance:0,secular:-25},press:{censor:8,limited:0,free:-5},welfare:{none:-5,relief:10,public:0}}},
   merchants:{n:'Merchants',e:'💼',cls:'middle',d:'Traders, bankers and business owners.',likes:{labor:{serfdom:-15,tenant:0,free:15},trade:{protect:-5,mercantile:5,free:15},tax:{percapita:5,proportional:5,progressive:-10}}},
   intelligentsia:{n:'Intelligentsia',e:'🎓',cls:'middle',d:'Writers, scholars and professionals.',likes:{church:{state:-10,tolerance:5,secular:15},press:{censor:-20,limited:0,free:15},welfare:{none:-5,relief:0,public:10}}},
   workers:{n:'Workers',e:'🔨',cls:'lower',d:'Factory hands, dockers and laborers.',likes:{labor:{serfdom:-25,tenant:0,free:10},tax:{percapita:-15,proportional:0,progressive:10},welfare:{none:-10,relief:5,public:15}}}
 };
 const IGIDS=Object.keys(IGS);
+// "who pays": the treasury is in deficit if last month lost money or it's already in debt
+const inDeficit=()=>S.lastNet<0||S.coins<0;
+// landowners and public welfare: a mild grumble when it's comfortably paid for; real anger when it comes from a deficit
+// (they expect new taxes) or a progressive tax (they're paying for it)
+const welfareGrudge=()=>Math.min(15,3+(inDeficit()?6:0)+(S.laws.tax==='progressive'?6:0));
 const igStatus=m=>m>=65?['Loyal','var(--good)']:m>=40?['Content','var(--muted)']:m>=25?['Discontent','var(--warn)']:['Radical','var(--bad)'];
 
 /* ---------- technology ---------- */
@@ -538,7 +544,7 @@ function assignGov(k,i){const P=S.prov[i];if(!P||P.o!=='me'||P.gov!=null)return 
 function marryKid(k,to){const f=S.fam;
   if(to==='noble'){const who=k==='monarch'?S.monarch:k,sp=newSpouse(who.g,who.age-2+rnd(5),'noble');if(k==='monarch')f.spouse=sp;else k.spouse=sp;igM('landowners',6,12,'A royal match with a noble house');addMod('leg',1,12,'Royal wedding');return`${k==='monarch'?monarchName(S.monarch):kidName(k)} marries ${sp.name} of a great local family.`}
   const who=k==='monarch'?S.monarch:k,sp=newSpouse(who.g,who.age-2+rnd(5),to),Nn=NATIONS[to];if(k==='monarch')f.spouse=sp;else{k.spouse=sp;if(k!==heirOf(S)){clearRole(k);k.role='abroad'}}
-  relA(to,20);tenA(to,-20);const opts=borderOf(to,'me').filter(i=>!S.prov[i].heart);let msg=`${k==='monarch'?monarchName(S.monarch):kidName(k)} marries ${sp.name} of the ${Nn.n} royal family.`;
+  S.wedded=[...new Set([...(S.wedded||[]),to])];relA(to,20);tenA(to,-20);const opts=borderOf(to,'me').filter(i=>!S.prov[i].heart);let msg=`${k==='monarch'?monarchName(S.monarch):kidName(k)} marries ${sp.name} of the ${Nn.n} royal family.`;
   if(opts.length){const i=pick(opts);if(Math.random()<.3){transfer(i,'me','inherited');msg+=` ${S.prov[i].name} comes as the dowry!`}else{S.claims[i]=true;msg+=` You gain a claim on ${S.prov[i].name}.`}}
   if(k!=='monarch'&&k.role==='abroad')msg+=` ${k.name} now lives at the ${Nn.n} court.`;return msg}
 // each month: births (2–4 children is usual; more are rare unless you hope for more), the spouse's old age, and family events
@@ -696,7 +702,7 @@ function adopt(d){
   S.W=d.W||18;S.H=d.H||16;S.cap=d.cap!=null?d.cap:8*18+4;S.wsize=d.wsize||(d.W?'medium':'classic');S.nscale=d.nscale||{};W=S.W;H=S.H;
   ['rel','tension','trade','laws'].forEach(k=>{S[k]=Object.assign({},def[k],d[k]||{})});
   S.tech=Object.assign({done:[],cur:null,prog:0,pp:{},q:[],bank:0},d.tech||{});S.embargo=d.embargo||{};S.crisisCd=d.crisisCd||{};S.demandCd=d.demandCd||{};S.envoy=d.envoy||{};S.favorCd=d.favorCd||{};S.reigns=d.reigns||[];
-  if(!d.monarch)S.monarch=base.monarch;if(!d.fam)S.fam=famFromOld(d);if(d.general&&d.general.heir&&S.fam.kids[0])S.general.kid=S.fam.kids[0].id;S.drama=d.drama||'some';bindHeir(S);
+  if(!d.monarch)S.monarch=base.monarch;if(!d.fam)S.fam=famFromOld(d);if(d.general&&d.general.heir&&S.fam.kids[0])S.general.kid=S.fam.kids[0].id;S.drama=d.drama||'some';bindHeir(S);if(d.gens==null)S.gens=1+(S.reigns||[]).length;if(!d.wedded)S.wedded=marriedTo();
   S.dev=d.dev||{};if(d.troops==null)S.troops=Math.round((d.pop||60)*ARMY[d.army!=null?d.army:1].r);S.claims=d.claims||{};S.fclaims=d.fclaims||{};S.aggr=d.aggr||[];S.nsit=Object.assign({},base.nsit,d.nsit||{});S.sold=d.sold||{};
   if(d.mv!==2){const old=d.map.filter(x=>x.b&&x.b!=='hall'&&B[x.b]).map(x=>x.b);const wd=genWorld('small'),cap=wd.cap;wd.map[cap].b='hall';
     const mine=wd.map.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
@@ -747,11 +753,11 @@ function addMod(k,v,m,l){S.mods.push({k,v,m,l})}
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
 const col=v=>v>=70?'var(--good)':v>=45?'var(--warn)':'var(--bad)';
 const law=c=>LAWS[c].o[S.laws[c]];
-const tradeMult=(dir)=>S.laws.trade==='free'?(dir==='pay'?1.15:.9):S.laws.trade==='protect'?(dir==='pay'?1:1.2):1;
+const tradeMult=dir=>(msHas('g2')?(dir==='pay'?1.05:.95):1)*(S.laws.trade==='free'?(dir==='pay'?1.15:.9):S.laws.trade==='protect'?(dir==='pay'?1:1.2):1);
 const payP=(c,r)=>PRICE[r]*NATIONS[c].pay[r]*(.8+.4*S.rel[c]/100)*tradeMult('pay');
 const buyP=(c,r)=>PRICE[r]*NATIONS[c].sell[r]*(1.2-.4*S.rel[c]/100)*tradeMult('buy');
 const atWarWith=n=>!!(S.war&&S.war.foes.includes(n));
-const tradeOK=c=>c&&S.rel[c]>=20&&!S.embargo[c]&&!atWarWith(c);
+const tradeOK=c=>c&&!isFallen(c)&&S.rel[c]>=20&&!S.embargo[c]&&!atWarWith(c);
 const relWord=r=>r>=75?'Close ally':r>=55?'Friendly':r>=35?'Neutral':r>=20?'Cool':'Hostile';
 const tenWord=t=>t>=80?'On the brink':t>=60?'Crisis':t>=35?'Strained':'Calm';
 const relA=(c,v)=>{S.rel[c]=clamp(S.rel[c]+v,0,100)};
@@ -770,7 +776,7 @@ function calc(){
     const tm=c.b==='farm'?farmMult(i):c.b==='wind'&&c.hl?1.5:1;
     for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]:d[k]*f*(k==='food'||k==='power'?tm:1);t.up+=d.u||0;
     if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]:d[k]*f})});
-  t.trade+=S.navy*40;const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
+  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
   if(trait('frugal'))t.up*=.9;
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
   const forests=S.map.reduce((a,c)=>a+(c.o==='me'&&c.t==='f'?(!c.b?1:c.b==='lumber'?.5:0):0),0),D=k=>!!S.dec[k];
@@ -827,12 +833,12 @@ function calc(){
     o[k]=clamp(Math.round(v),0,100)});return o};
   const cls=clsFrom(sc);
   const debt=S.coins<0?Math.min(10,-S.coins/500):0,weary=S.war?Math.min(15,S.war.months*1.2):0;
-  const quality=1+cnt('barracks')*.08+officeSkill('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
+  const quality=1+cnt('barracks')*.08+msCount(['c1','c2','c3'])*.03+officeSkill('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
   const fortN=S.map.reduce((a,x)=>a+(x.o==='me'&&x.b==='fort'?(x.hl?2:1):0),0);
   const str=Math.round(soldiers*quality*supply*morale*10)/10,forts=Math.min(1.5,1+fortN*.1);
   // approval: each province's mood from its own needs and neighbourhoods plus national effects, less a penalty until it's integrated.
   // The kingdom's target is the average of the provinces, weighted by population.
-  const common=t.hap+(hasPal('gardens')?1:0)+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0);
+  const common=t.hap+(hasPal('gardens')?1:0)+msHap()+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0);
   own.forEach(i=>{const p=pv[i],c2=clsFrom(Object.assign({},sc,p.sc));p.integPen=(100-(S.prov[i].integ??100))*.1;
     p.target=clamp(Math.round(c2.lower*share.lower+c2.middle*share.middle+c2.upper*share.upper+common+p.hood-p.integPen+govMood(S.prov[i])),0,100)});
   const integPen=pop?own.reduce((a,i)=>a+pv[i].integPen*pv[i].pop,0)/pop:0;
@@ -849,20 +855,24 @@ function calc(){
   IGIDS.forEach(k=>{clout[k]=Math.max(1,raw[k])/rsum;const G=IGS[k];let m=50;
     Object.entries(G.likes).forEach(([c,o])=>{m+=o[L[c]]||0});
     if(G.cls)m+=(cls[G.cls]-50)*.4;
+    // public welfare only really bothers the landowners when they end up paying: through a deficit, or a progressive tax
+    if(k==='landowners'&&L.welfare==='public')m-=welfareGrudge();
     if(k==='landowners')m+=(hasPal('hall')?3:0)-2*Math.max(0,hh().estates-2)+(rentIdx-1)*8-(D('rentcap')?12:0)+(S.army-1)*3;
-    if(k==='merchants')m-=Math.max(0,S.army-2)*3+(S.mob?8:0);
+    // merchants accept a big army the kingdom can afford, and resent one paid for by running into debt; mobilizing takes their workers
+    if(k==='merchants')m-=Math.max(0,S.army-2)*(inDeficit()?5:1.5)+(S.mob?8:0);
     if(k==='clergy')m+=officeSkill('chaplain')*2+(hasPal('chapel')?5:0)+cnt('church')*2+(trait('pious')?10:0);
     if(k==='intelligentsia')m+=(sc.learn-50)*.15;
     if(k==='workers'&&D('fourday'))m+=8;if(k==='merchants'&&D('fourday'))m-=8;
-    m+=COURT[S.court].ig[k]||0;m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
-  const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+officeSkill('chancellor')+(hasPal('hall')?2:0)),0,100);
+    // a lavish court galls working people most when the lower class is struggling, and hardly at all when it's doing well
+    m+=(COURT[S.court].ig[k]||0)*(k==='workers'&&(COURT[S.court].ig[k]||0)<0?(cls.lower<45?1.5:cls.lower>=65?.4:1):1);m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
+  const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+officeSkill('chancellor')+(hasPal('hall')?2:0)+msLeg()),0,100);
   // research
   const rp=Math.round((5+t.learn/20)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1));
   // money
   const fill=t.jobs?employed/t.jobs:0;
   // provinces pay half their taxes at first and the full amount once integrated
   const taxEmp=own.reduce((a,i)=>a+pv[i].emp*(.5+.5*(S.prov[i].integ??100)/100),0);
-  const tax=taxEmp*(1+officeSkill('treasurer')*.02)*S.tax/100*45*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
+  const tax=taxEmp*(1+officeSkill('treasurer')*.02+msTax())*S.tax/100*45*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
   const biz=t.inc*fill*(L.trade==='protect'?1.15:1);
   const tour=t.tour*(.4+(sc.fun+sc.nature)/250)*(D('ads')?1.4:1)*(1+modSum('tour')/100);
   const extra=modSum('inc');
@@ -936,13 +946,13 @@ const EVENTS=[
   {id:'seawall',e:'🧱',t:'The sea wall is cracking',d:'Winter swells have damaged the defenses around the capital.',cond:winter,ch:[
     {l:'Repair it now',c:700,f(){return'The wall is repaired before the next storm.'}},
     {l:'Delay the repairs',f(){if(Math.random()<.5){S.coins-=1400;return'A storm surge floods the waterfront. Repairs cost 🪙1,400.'}return'The wall holds through the winter.'}}]},
-  {id:'aid',e:'🌊',t:'Floods in Solenne',d:'Solenne\u2019s court asks for aid after severe flooding.',ch:[
+  {id:'aid',cond:()=>!isFallen('solenne'),e:'🌊',t:'Floods in Solenne',d:'Solenne\u2019s court asks for aid after severe flooding.',ch:[
     {l:'Send aid',c:500,f(){relA('solenne',15);tenA('solenne',-15);return'Solenne\u2019s queen thanks you publicly.'}},
     {l:'Decline politely',f(){relA('solenne',-6);return'Solenne notes the refusal.'}}]},
-  {id:'summit',e:'🤝',t:'A congress of nations',d:'Norvik, Solenne and Aurelia invite you to a peace congress.',ch:[
-    {l:'Attend in person',c:400,f(){NIDS.forEach(c=>{relA(c,6);tenA(c,-10)});addMod('leg',3,6,'Statesmanship');return'Tensions ease across the region.'}},
-    {l:'Send an ambassador',f(){NIDS.forEach(c=>relA(c,-2));return'The other courts notice your absence.'}}]},
-  {id:'heirstudy',e:'📚',t:'The heir\u2019s education',d:'Tutors propose sending the heir to study abroad.',cond:()=>S.aging&&S.heir&&S.heir.age>=12&&S.heir.age<20,ch:[
+  {id:'summit',e:'🤝',t:'A congress of nations',d:'Your neighbors invite you to a peace congress.',cond:()=>liveNations().length>=2,ch:[
+    {l:'Attend in person',c:400,f(){liveNations().forEach(c=>{relA(c,6);tenA(c,-10)});addMod('leg',3,6,'Statesmanship');return'Tensions ease across the region.'}},
+    {l:'Send an ambassador',f(){liveNations().forEach(c=>relA(c,-2));return'The other courts notice your absence.'}}]},
+  {id:'heirstudy',e:'📚',t:'The heir\u2019s education',d:'Tutors propose sending the heir to study abroad.',cond:()=>S.aging&&S.heir&&S.heir.age>=12&&S.heir.age<20&&!isFallen('norvik'),ch:[
     {l:'Send them to Norvik',c:300,f(){relA('norvik',8);igM('intelligentsia',5,12,'Educated heir');return'The heir returns well read and well connected.'}},
     {l:'Educate them at court',f(){igM('landowners',5,12,'Traditional upbringing');igM('clergy',5,12,'Traditional upbringing');return'The old families approve.'}}]}
 ];
@@ -958,7 +968,7 @@ function crisisEvent(n){const Nn=NATIONS[n];
     {l:'Stand firm',f(){tenA(n,25);relA(n,-10);addMod('leg',5,12,`Stood up to ${Nn.n}`);if(S.tension[n]>=100)return embargoNow(n);return`${Nn.n} backs down for now, but tension rises.`}}]}}
 function transfer(i,to,how){if(i===0)return;const P=S.prov[i],from=P.o,tiles=provTiles(i);
   // a province's people stay with it; new provinces start out only partly integrated, and conquered ones restless
-  if(to==='me'){tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];S.gained++;
+  if(to==='me'){tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];S.gained++;if(['war','demand','treaty'].includes(how))S.conq=(S.conq||0)+1;
     P.integ=P.core==='me'?80:{settled:70,inherited:60,bought:40}[how]||15;P.unrest=['war','demand','treaty'].includes(how)?25:5;delete P.hap}
   else{tiles.forEach(t=>{S.map[t].o=to});if(from==='me'&&how!=='sold')S.claims[i]=true;delete S.fclaims[i];const gk=govKid(P);if(gk){gk.role=null;delete gk.gov}delete P.gov}
   delete P.revolt;P.o=to;P.settle=null;syncPop()}
@@ -1066,13 +1076,65 @@ const GOALS=[
   {id:'monument',d:'Build the royal monument',r:1500,f:()=>has('lighthouse')},
   {id:'capital',d:'Become a capital (1,200 subjects)',r:5000,f:()=>S.pop>=1200}
 ];
+/* ---------- milestones: four paths through an endless game ---------- */
+// Each milestone is marked with the date and monarch, and gives a small lasting bonus on its path.
+// S.ms = {id:{y,m,who}}; counters: S.conq (provinces won by force), S.gens (generations), S.peace (months at peace),
+// S.happy (months in a row at 75%+ approval), S.wedded (houses ever married into), S.dispute (survived a disputed succession).
+const isFallen=n=>NATIONS[n]&&!S.prov.some(P=>P.o===n);
+const liveNations=()=>NIDS.filter(n=>!isFallen(n));
+const landShare=()=>{let mine=0,all=0;S.map.forEach(x=>{if(x.t==='w')return;all++;if(x.o==='me')mine++});return all?mine/all:0};
+const MPATH={conquest:{n:'Conquest',e:'⚔️'},prosperity:{n:'Prosperity',e:'🌾'},dynasty:{n:'Dynasty',e:'👑'},diplomacy:{n:'Diplomacy',e:'🕊️'}};
+const pc=v=>Math.round(v*100)+'%';
+const MILESTONES=[
+  {id:'c1',p:'conquest',n:'Spoils of war',d:'Win a province by force',b:'Army quality +3%',t:()=>(S.conq||0)>=1,g:()=>`${S.conq||0} won by force so far.`},
+  {id:'c2',p:'conquest',n:'A quarter of the island',d:'Rule a quarter of the island’s land',b:'Army quality +3%',t:()=>landShare()>=.25,g:()=>`You rule ${pc(landShare())}.`},
+  {id:'c3',p:'conquest',n:'Half the island',d:'Rule half the island’s land',b:'Army quality +3%',t:()=>landShare()>=.5,g:()=>`You rule ${pc(landShare())}.`},
+  {id:'c4',p:'conquest',n:'A nation falls',d:'Take the last province of a neighboring nation',b:'Legitimacy +2',t:()=>NIDS.some(isFallen),g:()=>`${NIDS.filter(isFallen).length} of ${NIDS.length} nations have fallen.`},
+  {id:'c5',p:'conquest',n:'Master of the island',d:'Rule every province on the island',b:'Legitimacy +2',t:()=>S.prov.every(P=>P.o==='me'),g:()=>`${provsOf('me').length} of ${S.prov.length} provinces.`},
+  {id:'p1',p:'prosperity',n:'A thriving town',d:'Reach 500 subjects',b:'Approval +1',t:()=>S.pop>=500,g:()=>`${fmt(S.pop)} subjects.`},
+  {id:'p2',p:'prosperity',n:'A great city',d:'Reach 1,000 subjects',b:'Tax income +3%',t:()=>S.pop>=1000,g:()=>`${fmt(S.pop)} subjects.`},
+  {id:'p3',p:'prosperity',n:'A populous realm',d:'Reach 2,500 subjects',b:'Approval +1',t:()=>S.pop>=2500,g:()=>`${fmt(S.pop)} subjects.`},
+  {id:'p4',p:'prosperity',n:'A mighty kingdom',d:'Reach 5,000 subjects',b:'Tax income +3%',t:()=>S.pop>=5000,g:()=>`${fmt(S.pop)} subjects.`},
+  {id:'p5',p:'prosperity',n:'A contented people',d:'Keep approval at 75% or more for 24 months in a row',b:'Legitimacy +2',t:()=>(S.happy||0)>=24,g:()=>`${S.happy||0} months in a row so far.`},
+  {id:'p6',p:'prosperity',n:'A golden treasury',d:'Hold 🪙50,000 in the treasury',b:'Tax income +2%',t:()=>S.coins>=50000,g:()=>`🪙${fmt(S.coins)} now.`},
+  {id:'p7',p:'prosperity',n:'A realm at peace with itself',d:'Hold at least 5 provinces, all fully integrated with unrest under 20',b:'Unrest builds 10% more slowly',t:()=>{const o=provsOf('me');return o.length>=5&&o.every(i=>(S.prov[i].integ??100)>=100&&(S.prov[i].unrest||0)<20)},g:()=>`${provsOf('me').length} provinces.`},
+  {id:'d1',p:'dynasty',n:'A family tradition',d:'Your family holds the throne for 3 generations',b:'Legitimacy +1',t:()=>(S.gens||1)>=3,g:()=>`Generation ${S.gens||1}.`},
+  {id:'d2',p:'dynasty',n:'An established house',d:'Your family holds the throne for 5 generations',b:'Legitimacy +1',t:()=>(S.gens||1)>=5,g:()=>`Generation ${S.gens||1}.`},
+  {id:'d3',p:'dynasty',n:'A royal line for the ages',d:'Your family holds the throne for 10 generations',b:'Legitimacy +2',t:()=>(S.gens||1)>=10,g:()=>`Generation ${S.gens||1}.`},
+  {id:'d4',p:'dynasty',n:'A long reign',d:'One monarch reigns for 40 years',b:'Legitimacy +2',t:()=>S.year-S.monarch.since>=40,g:()=>`The current reign: ${S.year-S.monarch.since} years.`},
+  {id:'d5',p:'dynasty',n:'Kin to every crown',d:'Marry into every royal house on the island',b:'Legitimacy +1',t:()=>NIDS.every(n=>(S.wedded||[]).includes(n)),g:()=>`${(S.wedded||[]).length} of ${NIDS.length} houses.`},
+  {id:'d6',p:'dynasty',n:'A full nursery',d:'Have six living royal children at once',b:'Legitimacy +1',t:()=>kids().length>=6,g:()=>`${kids().length} now.`},
+  {id:'d7',p:'dynasty',n:'The crown holds',d:'Survive a disputed succession',b:'Legitimacy +1',t:()=>!!S.dispute,g:()=>'Not yet.'},
+  {id:'g1',p:'diplomacy',n:'A true friend',d:'Become a close ally of a neighbor (relations 75+)',b:'Envoys are 20% more effective',t:()=>liveNations().some(n=>S.rel[n]>=75),g:()=>`Best relations: ${Math.round(Math.max(0,...liveNations().map(n=>S.rel[n])))}.`},
+  {id:'g2',p:'diplomacy',n:'Friend to all',d:'Be close allies with every remaining neighbor at once (at least two)',b:'Trade prices 5% better',t:()=>liveNations().length>=2&&liveNations().every(n=>S.rel[n]>=75),g:()=>`${liveNations().filter(n=>S.rel[n]>=75).length} of ${liveNations().length} allies.`},
+  {id:'g3',p:'diplomacy',n:'A decade of peace',d:'Go 10 years without a war',b:'Tension cools faster',t:()=>(S.peace||0)>=120,g:()=>`${Math.floor((S.peace||0)/12)} years so far.`},
+  {id:'g4',p:'diplomacy',n:'The long peace',d:'Go 25 years without a war',b:'Approval +1',t:()=>(S.peace||0)>=300,g:()=>`${Math.floor((S.peace||0)/12)} years so far.`},
+  {id:'g5',p:'diplomacy',n:'Open markets',d:'Have a trade agreement running with every remaining neighbor (at least two)',b:'Trade capacity +10%',t:()=>{const c=calc(),w=new Set(Object.values(c.tr).map(x=>x.c));return liveNations().length>=2&&liveNations().every(n=>w.has(n))},g:()=>'Needs food, energy and goods agreements spread across your neighbors.'}];
+const msHas=id=>!!(S.ms&&S.ms[id]);
+const msCount=ids=>ids.filter(msHas).length;
+const msLeg=()=>(msHas('c4')?2:0)+(msHas('c5')?2:0)+(msHas('p5')?2:0)+msCount(['d1','d2','d5','d6','d7'])+(msHas('d3')?2:0)+(msHas('d4')?2:0);
+const msHap=()=>msCount(['p1','p3','g4']);
+const msTax=()=>(msHas('p2')?.03:0)+(msHas('p4')?.03:0)+(msHas('p6')?.02:0);
+// counters, then any newly reached milestones, each month
+function msMonth(notes,stop){S.peace=S.war?0:(S.peace||0)+1;S.happy=S.hap>=75?(S.happy||0)+1:0;S.ms=S.ms||{};
+  // a nation that has lost its last province falls; one that gets a province back through a revolt rises again
+  S.fallen=S.fallen||{};NIDS.forEach(n=>{const f=isFallen(n);if(f&&!S.fallen[n]){S.fallen[n]=1;notes.push([NATIONS[n].e,`${NATIONS[n].n} has fallen`,'Its last province is gone. It no longer trades or negotiates, though a revolt could one day bring it back.']);stop.push(`${NATIONS[n].n} has fallen`)}
+    else if(!f&&S.fallen[n]){delete S.fallen[n];notes.push([NATIONS[n].e,`${NATIONS[n].n} rises again`,'Rebels have restored it in one of its old provinces.'])}});
+  MILESTONES.forEach(M=>{if(S.ms[M.id]||!M.t())return;S.ms[M.id]={y:S.year,m:S.month,who:monarchName(S.monarch)};
+    notes.push(['🏆',`Milestone: ${M.n}`,`${M.d}. Lasting bonus: ${M.b}.`]);stop.push(`Milestone: ${M.n}`)})}
+function legacySheet(){const ms=S.ms||{};
+  openSheet(`<h3>🏆 Legacy</h3><p class="hint">The game never ends. Conquest, prosperity, dynasty and diplomacy are all ways to build a legacy, and each milestone gives a small lasting bonus. ${Object.keys(ms).length} of ${MILESTONES.length} reached.</p>
+    ${Object.entries(MPATH).map(([p,Pt])=>{const list=MILESTONES.filter(M=>M.p===p),got=list.filter(M=>ms[M.id]).length;
+      return`<h2>${Pt.e} ${Pt.n} <span class="tag">${got} of ${list.length}</span></h2><div class="card">${list.map(M=>{const r=ms[M.id];
+        return`<div class="row"><span class="em">${r?'✅':'⬜'}</span><div class="grow"><b>${M.n}</b><small>${M.d}. Bonus: ${M.b}.</small><small>${r?`Reached in ${MONTHS[r.m]}, year ${r.y}, under ${r.who}.`:M.g()}</small></div></div>`}).join('')}</div>`}).join('')}
+    <button class="btn primary wide" data-act="closeSheet">Done</button>`)}
 function checkGoals(){const got=[];GOALS.forEach(g=>{if(!S.goals[g.id]&&g.f()){S.goals[g.id]=1;S.coins+=g.r;got.push(g)}});return got}
 
 /* ---------- monarchy ---------- */
 // The heir takes the throne with their spouse. Their brothers and sisters step back from their posts, and a monarch
 // who is already grown and married may have children of their own. With no children at all, a distant cousin inherits.
 function succeed(reason){const old=S.monarch,f=S.fam;let h=heirOf(S),cousin=false;
-  S.reigns.push({name:old.name,num:old.num,g:old.g,from:old.since,to:S.year,reason});
+  S.reigns.push({name:old.name,num:old.num,g:old.g,from:old.since,to:S.year,reason});S.gens=(S.gens||1)+1;
   const passed=h&&eldest()&&eldest()!==h&&eldest().rival&&isAdult(eldest())&&atHome(eldest())?eldest():null;
   if(!h){const c=newRoyal(20,40);h={name:c.name,g:c.g,age:c.age,trait:pick(Object.keys(TRAITS)),spouse:Math.random()<.6?newSpouse(c.g,c.age,'noble'):null};cousin=true}
   kids().forEach(k=>{if(k!==h)clearRole(k)});if(S.general&&S.general.kid!=null)S.general=null;
@@ -1087,8 +1149,8 @@ let pendingDispute=null;
 function queueSuccession(old,reason){queue.push(successionSheet(old,reason));if(pendingDispute){queue.push(disputeEvent(pendingDispute));pendingDispute=null}}
 // the eldest child, passed over and resentful, contests the succession
 function disputeEvent(k){return{e:'⚖️',t:'A disputed succession',d:`${k.name}, eldest child of the late monarch, says the crown was theirs by right and is gathering supporters.`,ch:[
-  {l:'Stand by the new monarch',f(){addMod('leg',-6,24,'Disputed succession');return`${k.name} is escorted out of the kingdom. The quarrel leaves a mark on the new reign.`}},
-  {l:'Buy their loyalty',c:1500,f(){addMod('leg',-2,12,'Disputed succession');return`Lands and a title persuade ${k.name} to accept the new monarch.`}}]}}
+  {l:'Stand by the new monarch',f(){S.dispute=1;addMod('leg',-6,24,'Disputed succession');return`${k.name} is escorted out of the kingdom. The quarrel leaves a mark on the new reign.`}},
+  {l:'Buy their loyalty',c:1500,f(){S.dispute=1;addMod('leg',-2,12,'Disputed succession');return`Lands and a title persuade ${k.name} to accept the new monarch.`}}]}}
 function successionSheet(old,reason){const m=S.monarch;
   return{e:'👑',t:reason==='abdicated'?`${monarchName(old)} abdicates`:`${monarchName(old)} has died`,d:`${reason==='abdicated'?'After a long reign, the crown passes on.':`The ${title(old).toLowerCase()} died at the age of ${old.age}. The kingdom mourns.`} ${monarchName(m)}, aged ${m.age}, takes the throne${m.age<16?' under a regency council until coming of age':''}. The new ${title(m).toLowerCase()} is known to be ${TRAITS[m.trait].n.toLowerCase()}: ${TRAITS[m.trait].d.toLowerCase()} A new reign always tests legitimacy.`,ch:[{l:'Long live the '+title(m).toLowerCase(),f(){const h=heirOf(S);return`${monarchName(m)} is crowned.${S.fam.spouse?` ${S.fam.spouse.name} becomes the royal consort.`:''} ${h?`The heir is ${kidName(h)}, aged ${h.age}.`:'The new monarch has no children yet, so the succession is uncertain.'}`}}]}}
 function revoltSheet(){return{e:'🔥',t:'Revolution!',d:'Unrest has boiled over. Crowds fill the streets demanding change, and parts of the army waver.',ch:[
@@ -1110,7 +1172,7 @@ function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=law('labor').g
     const before=P.integ??100;P.integ=Math.min(100,before+(P.core==='me'?6:3)+(govKid(P)?3:0));
     if(before<100&&P.integ>=100)notes.push(['🤝',`${P.name} is fully integrated`,'It now pays full taxes and has no integration penalty.']);
     let du=((P.hap??50)<40?(40-P.hap)/6:-2)+(P.integ<50?(50-P.integ)/25:0)+(S.leg<40?1:0)+(P.core!=='me'&&P.core!=='wild'?.5:0)-govCalm(P);
-    if(du>0)du*=(S.laws.press==='censor'?.8:1)*(trait('cautious')?.8:1);if(S.god)du=Math.min(0,du);
+    if(du>0)du*=(S.laws.press==='censor'?.8:1)*(trait('cautious')?.8:1)*(msHas('p7')?.9:1);if(S.god)du=Math.min(0,du);
     P.unrest=clamp(Math.round((was+du)*10)/10,0,100);
     if(was<60&&P.unrest>=60&&!P.revolt){notes.push(['🔥',`Riots in ${P.name}`,'Unrest there reached 60, so its buildings produce a quarter less until it calms down.']);stop.push(`Riots in ${P.name}`)}
     // the capital can't break away: its anger spills into the kingdom instead
@@ -1147,13 +1209,13 @@ function endMonth(silent){
   S.hap=Math.round(S.hap+(c.target-S.hap)*.35);
   S.leg=Math.round(S.leg+(c.legT-S.leg)*.2);
   const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
-  let du=(S.leg<40?(40-S.leg)/4:-3)+angry*12+(S.hap<35?3:0);if(du>0)du*=(S.laws.press==='censor'?.7:1)*(trait('cautious')?.7:1)*(1-officeSkill('chaplain')*.05);if(du>0&&hasPal('guard'))du=Math.max(0,du-.5);
+  let du=(S.leg<40?(40-S.leg)/4:-3)+angry*12+(S.hap<35?3:0);if(du>0)du*=(S.laws.press==='censor'?.7:1)*(trait('cautious')?.7:1)*(1-officeSkill('chaplain')*.05)*(msHas('p7')?.9:1);if(du>0&&hasPal('guard'))du=Math.max(0,du-.5);
   S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
   const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);S.best=Math.max(S.best,S.pop);
   researchMonth(c.rp,notes,stop);
   if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
   NIDS.forEach(n=>{let r=S.rel[n]+(50-S.rel[n])*.04;if(Object.values(c.tr).some(x=>x.c===n))r+=1.5;S.rel[n]=clamp(Math.round(r*10)/10,0,100);
-    tenA(n,-(hasTech('telegraph')?4:2)+(S.rel[n]<30?2:0));S.tension[n]=Math.round(S.tension[n]*10)/10;
+    tenA(n,-(hasTech('telegraph')?4:2)-(msHas('g3')?1:0)+(S.rel[n]<30?2:0));S.tension[n]=Math.round(S.tension[n]*10)/10;
     if(S.embargo[n]){S.embargo[n]--;if(!S.embargo[n]){delete S.embargo[n];notes.push([NATIONS[n].e,`${NATIONS[n].n} lifts its embargo`,'Trade can resume.'])}}
     if(S.crisisCd[n])S.crisisCd[n]--;if(S.demandCd[n])S.demandCd[n]--});
   // settling
@@ -1177,10 +1239,10 @@ function endMonth(silent){
   familyMonth(notes,stop);
   S.turn++;
   S.hist.push([S.pop,S.hap,S.leg]);if(S.hist.length>60)S.hist.shift();
-  const got=checkGoals(),newTier=tierOf(S.best).n;
+  const got=checkGoals(),newTier=tierOf(S.best).n;msMonth(notes,stop);
   if(S.aging){const a=S.monarch.age,p=a>50?Math.pow(a-50,2)/60000:0;if(Math.random()<p){queueSuccession(succeed('died'),'died')}}
   if(S.unrest>=100)queue.push(revoltSheet());
-  const cr=NIDS.find(n=>S.tension[n]>=60&&!S.crisisCd[n]&&!S.embargo[n]);if(cr&&Math.random()<.5){S.crisisCd[cr]=8;queue.push(crisisEvent(cr))}
+  const cr=NIDS.find(n=>!isFallen(n)&&S.tension[n]>=60&&!S.crisisCd[n]&&!S.embargo[n]);if(cr&&Math.random()<.5){S.crisisCd[cr]=8;queue.push(crisisEvent(cr))}
   if(!S.noEvents&&!queue.length){const fe=familyEvent();if(fe)queue.push(fe)}
   if(!S.noEvents&&!queue.length&&S.hist.length>1&&Math.random()<.55){const pool=EVENTS.filter(e=>(!e.cond||e.cond())&&!S.recent.includes(e.id));if(pool.length){const e=pick(pool);S.recent.push(e.id);if(S.recent.length>10)S.recent.shift();queue.push(e)}}
   if(silent){while(queue.length){const e=queue.shift();if(e.id==='crisis'){e.ch[1].f()}else if(e.t==='Revolution!'){e.ch[0].f()}else if(e.ch)e.ch[e.ch.length-1].f()}return}
@@ -1623,7 +1685,7 @@ function kidSheet(id){const k=kidById(id);if(!k){closeSheet();return}const h=hei
     ${acts}<button class="btn primary wide" data-act="closeSheet">Done</button>`)}
 function marrySheet(who){const k=who==='monarch'?'monarch':kidById(+who);if(!k)return;const nm=k==='monarch'?monarchName(S.monarch):kidName(k),abroad=k!=='monarch'&&k!==heirOf(S);
   openSheet(`<h3>💍 A match for ${nm}</h3><p class="hint">A foreign match improves relations, eases tension and brings a claim on one of their border provinces, sometimes as a dowry, and one day you may inherit land.${abroad?' A child who marries abroad goes to live at that court and can no longer govern or lead the army.':''}</p>
-    <div class="card">${NIDS.map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>The ${NATIONS[n].n} royal family</b><small>Relations ${Math.round(S.rel[n])}.${atWarWith(n)?' At war.':''}</small></div><button class="btn" data-act="wed" data-arg="${who}" data-n="${n}" ${atWarWith(n)||S.coins<500?'disabled':''}>🪙500</button></div>`).join('')}
+    <div class="card">${NIDS.map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>The ${NATIONS[n].n} royal family</b><small>Relations ${Math.round(S.rel[n])}.${atWarWith(n)?' At war.':''}</small></div><button class="btn" data-act="wed" data-arg="${who}" data-n="${n}" ${atWarWith(n)||isFallen(n)||S.coins<500?'disabled':''}>🪙500</button></div>`).join('')}
       <div class="row"><span class="em">🏡</span><div class="grow"><b>A great local family</b><small>Pleases the landowners and stays at home.</small></div><button class="btn" data-act="wed" data-arg="${who}" data-n="noble" ${S.coins<200?'disabled':''}>🪙200</button></div></div>
     <button class="btn wide" data-act="closeSheet">Cancel</button>`)}
 function govSheet(id){const k=kidById(id);if(!k)return;const opts=provsOf('me').filter(i=>S.prov[i].gov==null).sort((a,b)=>(S.prov[b].unrest||0)-(S.prov[a].unrest||0));
@@ -1654,7 +1716,7 @@ function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
     const opts=NIDS.map(n=>{const p=dir==='import'?buyP(n,r.k):payP(n,r.k);return `<button class="btn ${cur===n?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="${n}" ${tradeOK(n)?'':'disabled'} aria-pressed="${cur===n}">${NATIONS[n].e} ${NATIONS[n].n} ${p.toFixed(1)}</button>`}).join('');
     const now=T?`${T.dir==='import'?'Importing':'Exporting'} ${fmt(T.amt)} with ${NATIONS[T.c].n} for 🪙${fmt(T.v)} a month.`:cur&&!tradeOK(cur)?`${NATIONS[cur].n} isn\u2019t trading with you right now.`:'';
     return `<div class="row"><span class="em">${r.e}</span><div class="grow"><b>${r.n}</b><small>${status}</small>${dir?`<small>${dir==='import'?'Price you pay':'Price they pay'} per unit:</small><div class="seg">${opts}<button class="btn ${!cur?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="">None</button></div>`:''}${now?`<small><b>${now}</b></small>`:''}</div></div>`}).join('');
-  const nats=NIDS.map(n=>{const Nn=NATIONS[n],r=Math.round(S.rel[n]),tn=Math.round(S.tension[n]);
+  const nats=NIDS.map(n=>{if(isFallen(n))return`<div class="card" style="margin-bottom:10px"><div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b> <span class="tag">Fallen</span><small>It holds no land any more, so it can2019t trade or negotiate. A revolt in one of its old provinces could bring it back.</small></div></div></div>`;const Nn=NATIONS[n],r=Math.round(S.rel[n]),tn=Math.round(S.tension[n]);
     return `<div class="card" style="margin-bottom:10px"><div class="row"><span class="em">${Nn.e}</span><div class="grow"><b>${Nn.n}</b> <span class="tag">${relWord(r)}</span>${atWarWith(n)?' <span class="tag" style="color:var(--bad)">At war</span>':''}${S.nsit[n]!=='stable'?` <span class="tag">${S.nsit[n][0].toUpperCase()+S.nsit[n].slice(1)}</span>`:''}${S.embargo[n]?` <span class="tag" style="color:var(--bad)">Embargo, ${S.embargo[n]} mo</span>`:''}<small>${Nn.d} They hold ${provsOf(n).length} province${provsOf(n).length===1?'':'s'} on the map${provsOf(n).filter(i=>S.claims[i]).length?`, and you have claims on ${provsOf(n).filter(i=>S.claims[i]).map(i=>S.prov[i].name).join(', ')}`:''}.</small></div></div>
     <div class="row"><div class="grow"><small>Relations ${r}/100. Better relations mean better prices, and below 20 they stop trading.</small>${bar(r)}<small style="margin-top:6px">Tension ${tn}/100, ${tenWord(tn).toLowerCase()}. At 60 they may issue ultimatums, and at 100 they impose an embargo.</small>${bar(tn,tn>=60?'var(--bad)':tn>=35?'var(--warn)':'var(--good)')}</div></div>
     <div class="row"><div class="grow btns" style="margin-top:0"><button class="btn" data-act="envoy" data-arg="${n}" ${S.envoy[n]||S.coins<300?'disabled':''}>${S.envoy[n]?'Envoy sent':'Send envoy 🪙300'}</button><button class="btn" data-act="demand" data-arg="${n}" ${S.demandCd[n]?'disabled':''}>${S.demandCd[n]?`Demand again in ${S.demandCd[n]} mo`:'Make a demand'}</button></div></div></div>`}).join('');
@@ -1673,7 +1735,7 @@ function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
     <input type="range" id="army" min="0" max="4" step="1" value="${S.army}" aria-label="Army size"><small>Bigger armies cost more and please landowners. Merchants dislike large ones.</small></div></div>
     <div class="row"><span class="em">🎖️</span><div class="grow"><b>${g?(g.kid!=null&&kidById(g.kid)?kidName(kidById(g.kid))+(kidById(g.kid)===heirOf(S)?', the heir':''):'General '+g.name):'No general'}</b><small>${g?`${GTRAITS[g.trait].n}: ${GTRAITS[g.trait].d}${g.kid!=null?' A victory under a royal commander brings extra legitimacy, but they could fall in battle.':''}`:'Appoint a commander to lead your army.'}</small></div><button class="btn" data-act="genSheet">${g?'Replace':'Appoint'}</button></div>
     <div class="row"><span class="em">🚢</span><div class="grow"><b>Navy: ${S.navy} warship${S.navy===1?'':'s'}</b><small>${has('shipyard')?'Each ship costs 🪙400 and 🪙20 a month, and adds 40 trade capacity in peacetime.':'Build a shipyard on the coast to build warships.'}</small></div><button class="btn" data-act="ship" ${!has('shipyard')||S.coins<400?'disabled':''}>Build 🪙400</button></div>
-    ${NIDS.map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b><small>Army ${theirStr(n)}${theirStr(n)>c.str*1.2?', stronger than yours':theirStr(n)*1.2<c.str?', weaker than yours':', evenly matched'}. Navy ${theirNavy(n)}.</small></div></div>`).join('')}</div>`;
+    ${liveNations().map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b><small>Army ${theirStr(n)}${theirStr(n)>c.str*1.2?', stronger than yours':theirStr(n)*1.2<c.str?', weaker than yours':', evenly matched'}. Navy ${theirNavy(n)}.</small></div></div>`).join('')}</div>`;
   return `${war}${mil}<h2>Trade capacity</h2><p class="hint">${fmt(used)} of ${fmt(c.cap)} units used this month. Fishing docks add 30 and a harbor adds 600. Imports are filled first. Your trade law: ${law('trade').n.toLowerCase()}.</p><div class="capbar"><i style="width:${c.cap?Math.min(100,used/c.cap*100):0}%"></i></div>
   <h2>Agreements</h2><div class="card">${res}</div>
   <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}`}
@@ -1798,7 +1860,7 @@ function freeTile(id){return S.map.findIndex((x,i)=>x.o==='me'&&x.t!=='w'&&!x.b&
 function whyData(kind){const c=calc(),D=k=>!!S.dec[k],R=[];const add=(l,v,note)=>{if(Math.round(v*10))R.push({l,v,note})};
   if(kind==='approval'){
     Object.keys(CLASSES).forEach(k=>R.push({l:CLASSES[k].n,v:c.cls[k]*c.share[k],note:`${c.cls[k]} satisfaction × ${Math.round(c.share[k]*100)}% of people`,plain:1}));
-    add('Buildings',c.t.hap);add('Royal gardens',hasPal('gardens')?1:0);add('Neighborhoods',c.hood,c.hood<0?'Industry near homes':'Parks and gardens near homes');add('Royal festivities',D('festival')?4:0);add('Press law',law('press').hap||0);S.mods.filter(m=>m.k==='hap').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
+    add('Buildings',c.t.hap);add('Royal gardens',hasPal('gardens')?1:0);add('Milestones',msHap());add('Neighborhoods',c.hood,c.hood<0?'Industry near homes':'Parks and gardens near homes');add('Royal festivities',D('festival')?4:0);add('Press law',law('press').hap||0);S.mods.filter(m=>m.k==='hap').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
     add('Debt',-(S.coins<0?Math.min(10,-S.coins/500):0));add('War weariness',-c.weary);add('Rationing',D('ration')?-4:0);add('Mobilization',S.mob?-3:0);
     add('New provinces not yet integrated',-c.integPen);
     // whatever's left comes from provinces being served unevenly (the rows above use kingdom-wide averages)
@@ -1808,7 +1870,7 @@ function whyData(kind){const c=calc(),D=k=>!!S.dec[k],R=[];const add=(l,v,note)=
   if(kind==='legitimacy'){R.push({l:'Base',v:30,plain:1});
     IGIDS.forEach(k=>add(IGS[k].n,c.clout[k]*(c.mood[k]-50)/50*40,`Mood ${c.mood[k]}, clout ${Math.round(c.clout[k]*100)}%`));
     add(`Approval (${S.hap}%)`,(S.hap-50)*.3);add('Charismatic monarch',trait('charismatic')?6:0);add('Pious monarch',trait('pious')?3:0);
-    add('Religion law',law('church').leg||0);add('Press law',law('press').leg||0);add('Royal festivities',D('festival')?2:0);add(`Royal household (${COURT[S.court].n.toLowerCase()})`,COURT[S.court].leg);add('Buildings',c.t.leg);add('Chancellor',officeSkill('chancellor'));add('Great hall',hasPal('hall')?2:0);
+    add('Religion law',law('church').leg||0);add('Press law',law('press').leg||0);add('Royal festivities',D('festival')?2:0);add(`Royal household (${COURT[S.court].n.toLowerCase()})`,COURT[S.court].leg);add('Buildings',c.t.leg);add('Milestones',msLeg());add('Chancellor',officeSkill('chancellor'));add('Great hall',hasPal('hall')?2:0);
     S.mods.filter(m=>m.k==='leg').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
     return{e:'👑',title:'Legitimacy',now:S.leg,intro:'Legitimacy is how accepted your rule is. Powerful interest groups count most: a group above mood 50 adds legitimacy, and a group below 50 takes it away.',
       total:`Target ${c.legT}`,outro:`Legitimacy is ${S.leg} now and moves 20% of the way toward the target each month. Below 40, unrest starts to build.`,rows:R}}
@@ -1972,7 +2034,7 @@ function act(a,arg,n){
     case'rebuild':{const i=+arg,cost=rebuildCost(i);if(!S.dev[i]||S.coins<cost)return;S.coins-=cost;delete S.dev[i];closeSheet();toast(`${S.prov[i].name} is rebuilt`);break}
     // arg: a child's id or 'monarch'; n: a nation, or 'noble' for a local match
     case'wed':{const k=arg==='monarch'?'monarch':kidById(+arg),cost=n==='noble'?200:500;if(!k||S.coins<cost)return;
-      if(k==='monarch'){if(S.fam.spouse||S.monarch.age<16)return}else if(!isAdult(k)||k.spouse||!atHome(k))return;if(n!=='noble'&&(!NATIONS[n]||atWarWith(n)))return;
+      if(k==='monarch'){if(S.fam.spouse||S.monarch.age<16)return}else if(!isAdult(k)||k.spouse||!atHome(k))return;if(n!=='noble'&&(!NATIONS[n]||atWarWith(n)||isFallen(n)))return;
       S.coins-=cost;const msg=marryKid(k,n);closeSheet();openSheet(`<div class="event"><div class="pic" aria-hidden="true">💍</div><h3>A royal wedding</h3><p>${msg}</p></div><button class="btn primary wide" data-act="closeSheet">Done</button>`);checkGoals();render();return}
     case'kid':kidSheet(+arg);return;
     case'offices':officesSheet();return;
@@ -2007,8 +2069,8 @@ function act(a,arg,n){
       for(let k=q.length-1;k>=0;k--){const x=techOf(q[k]);if(x.req&&!hasTech(x.req)&&S.tech.cur!==x.req&&!q.slice(0,k).includes(x.req))q.splice(k,1)}break}
     case'qup':{const q=techQ(),i=q.indexOf(arg);if(i<=0)return;const x=techOf(arg);if(x.req&&q[i-1]===x.req)return;[q[i-1],q[i]]=[q[i],q[i-1]];break}
     case'setTrade':{S.trade[arg]=n||null;toast(n?`${RES.find(r=>r.k===arg).n} agreement signed with ${NATIONS[n].n}`:'Agreement ended');checkGoals();break}
-    case'envoy':{if(S.envoy[arg]||S.coins<300)return;S.coins-=300;S.envoy[arg]=1;const tg=hasTech('telegraph');relA(arg,tg?12:8);tenA(arg,tg?-12:-8);toast(`Envoy sent to ${NATIONS[arg].n}. Relations improve and tension eases.`);break}
-    case'demand':{if(S.demandCd[arg])return;S.demandCd[arg]=6;tenA(arg,25);const ok=S.rel[arg]>=40&&Math.random()<S.rel[arg]/100;let msg;
+    case'envoy':{if(S.envoy[arg]||S.coins<300||isFallen(arg))return;S.coins-=300;S.envoy[arg]=1;const tg=hasTech('telegraph'),eb=msHas('g1')?1.2:1;relA(arg,(tg?12:8)*eb);tenA(arg,-(tg?12:8)*eb);toast(`Envoy sent to ${NATIONS[arg].n}. Relations improve and tension eases.`);break}
+    case'demand':{if(S.demandCd[arg]||isFallen(arg))return;S.demandCd[arg]=6;tenA(arg,25);const ok=S.rel[arg]>=40&&Math.random()<S.rel[arg]/100;let msg;
       if(ok){const pay=300+Math.round(S.rel[arg]*5);S.coins+=pay;addMod('leg',3,6,`Tribute from ${NATIONS[arg].n}`);relA(arg,-4);msg=`${NATIONS[arg].n} pays 🪙${fmt(pay)} in tribute. Your court is impressed.`}
       else{relA(arg,-10);msg=`${NATIONS[arg].n} refuses, and relations suffer.`}
       if(S.tension[arg]>=100)msg+=' '+embargoNow(arg);toast(msg);break}
@@ -2017,6 +2079,7 @@ function act(a,arg,n){
     case'endMonth':{const r=endMonth(false);render();afterMonths([r]);return}
     case'advance':{const rs=[];for(let k=0;k<12;k++){const r=endMonth(false);rs.push(r);if(queue.length||r.stop.length||S.war)break}render();afterMonths(rs);return}
     case'news':newsSheet();return;
+    case'legacy':legacySheet();return;
     case'why':whySheet(arg);return;
     case'mapmode':if(!MODES[arg])return;mapMode=UI.mapMode=arg;saveUI();renderModes();MAP.dirty=true;drawSoon();return;
     case'report':{S.showReport=!S.showReport;const b=$('#sheet [data-act=report]');if(b)b.setAttribute('aria-pressed',!!S.showReport);save();return}
