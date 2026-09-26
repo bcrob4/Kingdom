@@ -1053,22 +1053,132 @@ function glyph(e,px){const k=e+'|'+px;let g=MAP.glyphs.get(k);if(g)return g;if(M
   x.font=`${px}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillStyle=MAP.pal.ink;x.fillText(e,s/2,s/2+px*.06);MAP.glyphs.set(k,g);return g}
 function buildBase(){const P=MAP.pal,b=MAP.base||(MAP.base=document.createElement('canvas'));b.width=W;b.height=H;const x=b.getContext('2d');x.fillStyle=P.sea;x.fillRect(0,0,W,H);
   S.map.forEach((t,i)=>{if(t.t==='w')return;x.fillStyle=tileColor(t,P,i);x.fillRect(i%W,i/W|0,1,1)})}
+/* ---------- building pieces ---------- */
+// Buildings stand up like board-game pieces. Coordinates are tile-local (0..1 across the tile) and h is height in tiles;
+// height leans a little up and to the right, so every piece shows its top, its front (south) and its east side.
+const PK=.8,PSK=.2,SHC={};
+const shadeHex=(hex,f)=>{const k=hex+f;if(SHC[k])return SHC[k];const n=parseInt(hex.slice(1),16),c=[n>>16&255,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(v*f))));return SHC[k]=`rgb(${c})`};
+const PC={wall:'#F2E6CF',roof:'#C8553D',stone:'#BDB7AA',blue:'#3E7CB1',teal:'#2E8C89',white:'#EEEEE8',slate:'#6B7B83',brick:'#A65A3A',dark:'#5A4A42',wood:'#9C7B55',gold:'#E2AE2A',
+  glass:'#BFE3EA',grey:'#8C9396',green:'#6BAA5E',leaf:'#4F8A45',pine:'#3F6E3A',field:'#D6BE5C',black:'#3A3634',clay:'#C0703F',yellow:'#E8C547',cream:'#E8D9B8',water:'#6FA9C9'};
+function pieceKit(ctx,sx,sy,z){const pr=(x,y,h)=>[sx+(x+h*PSK)*z,sy+(y-h*PK)*z],edge='rgba(35,28,20,.35)',lw=Math.max(.5,z*.018);
+  const path=pts=>{ctx.beginPath();pts.forEach((p,i)=>{const q=pr(p[0],p[1],p[2]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.closePath()};
+  const poly=(pts,fill)=>{path(pts);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=edge;ctx.stroke()};
+  const g={z,pr,poly,detail:z>=34,
+    box(x0,y0,x1,y1,h0,h1,c){poly([[x1,y0,h0],[x1,y1,h0],[x1,y1,h1],[x1,y0,h1]],shadeHex(c,.7));poly([[x0,y1,h0],[x1,y1,h0],[x1,y1,h1],[x0,y1,h1]],shadeHex(c,.86));poly([[x0,y0,h1],[x1,y0,h1],[x1,y1,h1],[x0,y1,h1]],c)},
+    // ridge running left to right
+    gable(x0,y0,x1,y1,h,rh,c){const yc=(y0+y1)/2;poly([[x0,y0,h],[x1,y0,h],[x1,yc,h+rh],[x0,yc,h+rh]],shadeHex(c,.78));poly([[x0,y1,h],[x1,y1,h],[x1,yc,h+rh],[x0,yc,h+rh]],c);poly([[x1,y0,h],[x1,y1,h],[x1,yc,h+rh]],shadeHex(c,.62))},
+    // ridge running front to back, so the gable end faces you
+    gableY(x0,y0,x1,y1,h,rh,c){const xc=(x0+x1)/2;poly([[x0,y0,h],[x0,y1,h],[xc,y1,h+rh],[xc,y0,h+rh]],shadeHex(c,.86));poly([[x1,y0,h],[x1,y1,h],[xc,y1,h+rh],[xc,y0,h+rh]],shadeHex(c,.72));poly([[x0,y1,h],[x1,y1,h],[xc,y1,h+rh]],c)},
+    pyr(x0,y0,x1,y1,h,rh,c){const a=[(x0+x1)/2,(y0+y1)/2,h+rh];poly([[x0,y0,h],[x1,y0,h],a],shadeHex(c,.78));poly([[x0,y0,h],[x0,y1,h],a],shadeHex(c,.9));poly([[x0,y1,h],[x1,y1,h],a],c);poly([[x1,y0,h],[x1,y1,h],a],shadeHex(c,.66))},
+    cyl(cx,cy,r,h0,h1,c){const b=pr(cx,cy,h0),t=pr(cx,cy,h1),R=r*z,dx=t[0]-b[0],dy=t[1]-b[1],L=Math.hypot(dx,dy)||1,nx=-dy/L*R,ny=dx/L*R;ctx.fillStyle=shadeHex(c,.78);
+      ctx.beginPath();ctx.moveTo(b[0]+nx,b[1]+ny);ctx.lineTo(t[0]+nx,t[1]+ny);ctx.lineTo(t[0]-nx,t[1]-ny);ctx.lineTo(b[0]-nx,b[1]-ny);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.arc(b[0],b[1],R,0,7);ctx.fill();ctx.beginPath();ctx.arc(t[0],t[1],R,0,7);ctx.fillStyle=c;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=edge;ctx.stroke()},
+    cone(cx,cy,r,h0,h1,c){const b=pr(cx,cy,h0),t=pr(cx,cy,h1),R=r*z,dx=t[0]-b[0],dy=t[1]-b[1],L=Math.hypot(dx,dy)||1;ctx.beginPath();ctx.arc(b[0],b[1],R,0,7);ctx.fillStyle=shadeHex(c,.75);ctx.fill();
+      ctx.beginPath();ctx.moveTo(b[0]-dy/L*R,b[1]+dx/L*R);ctx.lineTo(t[0],t[1]);ctx.lineTo(b[0]+dy/L*R,b[1]-dx/L*R);ctx.closePath();ctx.fillStyle=c;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=edge;ctx.stroke()},
+    dome(cx,cy,r,h,c){const p=pr(cx,cy,h),R=r*z;ctx.beginPath();ctx.arc(p[0],p[1],R,Math.PI,0);ctx.closePath();ctx.fillStyle=c;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=edge;ctx.stroke();
+      ctx.beginPath();ctx.arc(p[0]-R*.35,p[1]-R*.45,R*.25,0,7);ctx.fillStyle='rgba(255,255,255,.35)';ctx.fill()},
+    disc(cx,cy,r,h,c,noEdge){const p=pr(cx,cy,h);ctx.beginPath();ctx.arc(p[0],p[1],r*z,0,7);ctx.fillStyle=c;ctx.fill();if(!noEdge){ctx.lineWidth=lw;ctx.strokeStyle=edge;ctx.stroke()}},
+    line(pts,c,w){ctx.beginPath();pts.forEach((p,i)=>{const q=pr(p[0],p[1],p[2]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.strokeStyle=c;ctx.lineWidth=Math.max(1,w*z);ctx.lineCap='round';ctx.stroke()},
+    flag(x,y,h,c){g.line([[x,y,h],[x,y,h+.26]],'#4a3b2c',.018);poly([[x,y,h+.26],[x+.15,y,h+.215],[x,y,h+.17]],c)},
+    tree(x,y,s,c){g.line([[x,y,0],[x,y,.16*s]],'#6b4f33',.035*s);g.disc(x,y,.13*s,.24*s,c||PC.leaf);if(g.detail)g.disc(x-.03*s,y-.03*s,.06*s,.3*s,'rgba(255,255,255,.18)',1)},
+    pine(x,y,s){g.line([[x,y,0],[x,y,.08*s]],'#6b4f33',.03*s);g.cone(x,y,.11*s,.05*s,.42*s,PC.pine)},
+    smoke(x,y,h){[[0,0,.05],[.05,.1,.065],[.12,.2,.08]].forEach(([dx,dh,r])=>g.disc(x+dx,y,r,h+dh,'rgba(200,200,200,.55)',1))},
+    // rows of windows on a front face (only when zoomed in enough to see them)
+    windows(x0,x1,y,h0,h1,rows,cols){if(!g.detail)return;const w=(x1-x0)/cols,hh=(h1-h0)/rows;
+      for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){const a=x0+k*w+w*.3,b=a+w*.4,c0=h0+r*hh+hh*.3,c1=c0+hh*.45;path([[a,y,c0],[b,y,c0],[b,y,c1],[a,y,c1]]);ctx.fillStyle='rgba(40,50,60,.55)';ctx.fill()}}};
+  return g}
+const house=(g,x0,y0,x1,y1,h,rh,roof)=>{g.box(x0,y0,x1,y1,0,h,PC.wall);g.gable(x0-.03,y0-.03,x1+.03,y1+.03,h,rh,roof);if(g.detail){g.poly([[x0+(x1-x0)*.42,y1,0],[x0+(x1-x0)*.58,y1,0],[x0+(x1-x0)*.58,y1,h*.55],[x0+(x1-x0)*.42,y1,h*.55]],'#6b4f33')}};
+const headframe=g=>{g.line([[.34,.72,0],[.5,.56,.72],[.66,.72,0]],'#5a4632',.035);g.line([[.5,.56,.72],[.5,.56,0]],'#5a4632',.025);g.disc(.5,.56,.07,.72,'#3a3634')};
+// One drawing per building type, back to front.
+const PIECES={
+  hall(g){[[.12,.2],[.7,.2]].forEach(([x,y])=>{g.box(x,y,x+.18,y+.18,0,.74,PC.stone);g.pyr(x-.02,y-.02,x+.2,y+.2,.74,.22,PC.roof)});
+    g.box(.14,.32,.86,.86,0,.44,PC.stone);g.windows(.14,.86,.86,.08,.4,2,4);g.pyr(.12,.3,.88,.88,.44,.24,PC.blue);g.flag(.5,.59,.68,PC.gold)},
+  fcap(g){g.box(.16,.3,.84,.86,0,.4,PC.stone);g.windows(.16,.84,.86,.06,.36,2,3);g.gableY(.13,.27,.87,.89,.4,.24,PC.slate);g.flag(.5,.3,.64,PC.roof)},
+  cottage(g){house(g,.22,.34,.78,.84,.3,.24,PC.roof)},
+  townhouse(g){house(g,.1,.12,.55,.56,.42,.22,'#B84A34');house(g,.42,.44,.9,.9,.36,.22,PC.roof)},
+  apartments(g){g.box(.14,.18,.86,.88,0,.86,'#D9CBB0');g.windows(.14,.86,.88,.04,.84,4,4);g.box(.6,.24,.78,.42,.86,1,'#BFAF92')},
+  farm(g){g.poly([[.04,.06,0],[.96,.06,0],[.96,.94,0],[.04,.94,0]],PC.field);if(g.z>=22)for(let k=1;k<6;k++)g.line([[.08,.06+k*.15,0],[.92,.06+k*.15,0]],'rgba(130,105,35,.5)',.02);
+    g.box(.58,.56,.9,.9,0,.26,'#B5452F');g.gable(.55,.53,.93,.93,.26,.2,'#7A2E22')},
+  dock(g){g.box(.1,.16,.42,.46,0,.22,PC.wood);g.gable(.08,.14,.44,.48,.22,.14,PC.dark);g.box(.04,.58,.96,.72,0,.05,PC.wood);
+    g.box(.6,.78,.9,.92,0,.06,'#7A5234');g.poly([[.7,.85,.06],[.84,.85,.06],[.7,.85,.3]],'#F4EFE2')},
+  greenhouse(g){g.box(.14,.3,.86,.86,0,.26,PC.glass);g.gable(.12,.28,.88,.88,.26,.2,'#D6F0F4');if(g.detail)for(let k=1;k<4;k++)g.line([[.14+k*.18,.86,0],[.14+k*.18,.86,.26]],'rgba(90,120,120,.6)',.012)},
+  market(g){[['#C8553D',.08,.14],['#E8C547',.54,.14],['#3E7CB1',.3,.54]].forEach(([c,x,y])=>{g.box(x,y,x+.3,y+.28,0,.14,PC.wood);g.gable(x-.03,y-.03,x+.33,y+.31,.14,.1,c)})},
+  workshop(g){g.cyl(.72,.38,.05,.3,.6,PC.dark);g.box(.18,.32,.82,.86,0,.3,PC.brick);g.windows(.18,.82,.86,.04,.26,1,3);g.gable(.15,.29,.85,.89,.3,.16,PC.dark)},
+  factory(g){g.cyl(.8,.28,.065,.36,1.05,PC.dark);g.smoke(.8+.2,.28,1.05);g.box(.07,.24,.93,.9,0,.36,PC.brick);g.windows(.07,.93,.9,.04,.3,1,4);
+    for(let k=0;k<3;k++)g.gable(.07,.24+k*.22,.93,.24+(k+1)*.22,.36,.13,PC.dark)},
+  bank(g){g.box(.14,.3,.86,.86,0,.36,PC.white);if(g.detail)for(let k=0;k<5;k++){const x=.2+k*.15;g.line([[x,.86,.02],[x,.86,.33]],'rgba(120,120,110,.7)',.03)}g.gableY(.1,.27,.9,.89,.36,.16,'#D9D7CC')},
+  harbor(g){g.box(.08,.14,.6,.52,0,.3,'#B08D5E');g.gable(.06,.12,.62,.54,.3,.16,PC.slate);g.box(.06,.6,.96,.76,0,.05,PC.wood);
+    g.line([[.8,.62,0],[.8,.62,.72],[.96,.44,.72]],'#C8553D',.03);g.box(.2,.62,.34,.74,.05,.14,'#8A6A48')},
+  lumber(g){g.pine(.24,.26,.9);g.pine(.78,.22,1);g.box(.18,.52,.5,.82,0,.2,PC.wood);g.gable(.16,.5,.52,.84,.2,.13,PC.dark);
+    for(let k=0;k<3;k++)g.cyl(.64+k*.08,.8-k*.02,.04,0,.07,'#8A6A48')},
+  quarry(g){g.poly([[.12,.18,0],[.88,.18,0],[.92,.9,0],[.08,.9,0]],'#A3A9AB');g.box(.18,.26,.5,.52,0,.18,'#B8BDBE');g.box(.52,.46,.84,.7,0,.1,'#9CA2A4');g.box(.2,.64,.42,.84,0,.07,'#C3C7C8')},
+  brickworks(g){g.cyl(.74,.3,.06,0,.7,PC.brick);g.dome(.38,.6,.22,.02,PC.clay);g.box(.64,.62,.88,.86,0,.1,'#B5613A');g.box(.66,.64,.86,.84,.1,.18,'#A85A36')},
+  mine(g){g.box(.14,.18,.46,.44,0,.18,PC.dark);g.gable(.12,.16,.48,.46,.18,.12,'#3F342D');headframe(g);g.box(.6,.8,.78,.9,0,.07,'#7A7068')},
+  coalmine(g){g.cone(.76,.76,.18,0,.24,PC.black);g.box(.14,.18,.46,.44,0,.18,PC.dark);g.gable(.12,.16,.48,.46,.18,.12,'#3F342D');headframe(g)},
+  clinic(g){g.box(.14,.28,.86,.86,0,.36,PC.white);g.windows(.14,.86,.86,.05,.32,2,4);const h=.361;g.poly([[.44,.42,h],[.56,.42,h],[.56,.72,h],[.44,.72,h]],'#D0383E');g.poly([[.35,.51,h],[.65,.51,h],[.65,.63,h],[.35,.63,h]],'#D0383E')},
+  school(g){g.box(.44,.2,.58,.36,0,.55,PC.cream);g.pyr(.42,.18,.6,.38,.55,.16,PC.blue);g.box(.12,.36,.88,.86,0,.3,PC.cream);g.windows(.12,.88,.86,.04,.26,1,4);g.gable(.09,.33,.91,.89,.3,.18,PC.blue)},
+  library(g){g.box(.15,.3,.85,.86,0,.34,'#E5DCC9');if(g.detail)for(let k=0;k<4;k++){const x=.24+k*.17;g.line([[x,.86,.02],[x,.86,.31]],'rgba(120,110,95,.7)',.03)}g.pyr(.12,.27,.88,.89,.34,.2,PC.blue)},
+  university(g){g.box(.1,.3,.9,.88,0,.38,'#E5DCC9');g.windows(.1,.9,.88,.05,.34,2,5);g.cyl(.5,.58,.19,.38,.46,'#E5DCC9');g.dome(.5,.58,.19,.46,PC.gold)},
+  church(g){g.box(.42,.16,.58,.34,0,.64,PC.white);g.pyr(.4,.14,.6,.36,.64,.34,PC.slate);g.box(.26,.34,.74,.88,0,.34,PC.white);g.gableY(.23,.32,.77,.9,.34,.22,PC.slate);
+    if(g.detail)g.poly([[.46,.88,0],[.54,.88,0],[.54,.88,.2],[.46,.88,.2]],'#6b4f33')},
+  park(g){g.disc(.5,.52,.4,.005,'#8FC27A',1);g.line([[.1,.8,0],[.5,.5,0],[.9,.3,0]],'#E3D6B0',.05);g.tree(.26,.28,1.1);g.tree(.72,.62,1);g.tree(.3,.72,.9)},
+  garden(g){g.disc(.5,.52,.4,.005,'#8FC27A',1);[['#D2577A',.3,.35],['#E8C547',.62,.3],['#9B6BC4',.45,.6],['#D2577A',.72,.66],['#E8C547',.25,.7]].forEach(([c,x,y])=>{g.disc(x,y,.08,.01,shadeHex(c,.8),1);g.disc(x,y,.05,.02,c,1)});g.tree(.8,.2,.8)},
+  tent(g){g.box(.12,.3,.88,.86,0,.26,'#F4EFE2');g.gable(.09,.27,.91,.89,.26,.26,'#C8553D');g.flag(.2,.58,.48,PC.gold);g.flag(.8,.58,.48,PC.blue)},
+  fair(g){g.cyl(.5,.55,.42,0,.2,'#B9B2A6');g.disc(.5,.55,.3,.201,'#6BAA5E');if(g.detail)g.line([[.5,.3,.202],[.5,.8,.202]],'rgba(255,255,255,.7)',.012)},
+  bus(g){g.box(.12,.2,.88,.6,0,.28,PC.grey);g.box(.2,.66,.62,.86,0,.12,PC.yellow);g.windows(.2,.62,.86,.05,.11,1,4)},
+  rail(g){g.box(.14,.12,.86,.44,0,.26,'#C9A77C');g.gable(.11,.09,.89,.47,.26,.14,PC.dark);g.box(.08,.5,.92,.58,0,.04,'#B8B1A4');
+    [.68,.8].forEach(y=>g.line([[0,y,0],[1,y,0]],'#6B5B4A',.025));if(g.z>=22)for(let k=0;k<7;k++)g.line([[.07+k*.14,.65,0],[.07+k*.14,.83,0]],'#8A6A48',.02)},
+  well(g){g.line([[.36,.56,0],[.36,.56,.3]],'#6b4f33',.025);g.line([[.64,.56,0],[.64,.56,.3]],'#6b4f33',.025);g.cyl(.5,.58,.16,0,.12,PC.stone);g.disc(.5,.58,.11,.121,'#3E6E86',1);g.pyr(.3,.42,.7,.72,.3,.14,PC.roof)},
+  waterworks(g){[[.58,.26],[.84,.26],[.58,.52],[.84,.52]].forEach(([x,y])=>g.line([[x,y,0],[x,y,.5]],'#6b5b4a',.02));g.cyl(.71,.39,.17,.5,.72,PC.water);g.cone(.71,.39,.17,.72,.84,'#5A8FA8');
+    g.box(.08,.46,.56,.88,0,.26,PC.brick);g.gable(.06,.44,.58,.9,.26,.14,PC.dark)},
+  wind(g){g.cyl(.5,.62,.06,0,.72,PC.white);const hub=[.5,.62,.72];[[0,.32],[.28,-.16],[-.28,-.16]].forEach(([dx,dh])=>g.line([hub,[.5+dx,.62,.72+dh]],'#F4F4F0',.035));g.disc(.5,.62,.04,.72,PC.slate)},
+  hydro(g){g.poly([[.05,.06,.3],[.95,.06,.3],[.95,.46,.3],[.05,.46,.3]],'#4F8FB5');g.box(.04,.46,.96,.62,0,.34,'#A7AAA3');g.box(.4,.62,.6,.9,0,.04,'#8FC0DA')},
+  diesel(g){g.cyl(.68,.28,.06,.34,.96,'#6E625B');g.cyl(.84,.34,.06,.34,.9,'#6E625B');g.disc(.9,.28,.07,1.02,'rgba(90,90,90,.6)',1);g.disc(.98,.3,.09,1.12,'rgba(90,90,90,.45)',1);
+    g.box(.1,.36,.76,.88,0,.34,'#7B6F68');g.windows(.1,.76,.88,.05,.3,1,3)},
+  barracks(g){g.box(.1,.3,.9,.8,0,.24,'#C2B59B');g.windows(.1,.9,.8,.04,.2,1,5);g.gable(.07,.27,.93,.83,.24,.16,'#7A2E22');g.flag(.84,.5,.4,'#C8553D')},
+  shipyard(g){g.poly([[.1,.2,0],[.9,.2,0],[.95,.95,0],[.05,.95,0]],'#A08A6A');g.box(.25,.3,.75,.85,.02,.14,'#7A5234');g.box(.3,.35,.7,.78,.14,.18,'#8F6640');g.line([[.88,.9,0],[.88,.9,.8],[.6,.5,.8]],'#C8553D',.03)},
+  fort(g){const w=PC.stone,t=.3;g.box(.12,.14,.88,.24,0,t,w);[[.14,.18],[.86,.18]].forEach(([x,y])=>g.cyl(x,y,.09,0,.44,w));g.box(.12,.24,.22,.8,0,t,w);g.box(.78,.24,.88,.8,0,t,w);
+    g.box(.12,.8,.88,.9,0,t,w);[[.14,.85],[.86,.85]].forEach(([x,y])=>g.cyl(x,y,.09,0,.44,w));g.flag(.5,.5,.02,'#C8553D')},
+  hotel(g){g.box(.15,.22,.85,.86,0,.72,'#F1E3C6');g.windows(.15,.85,.86,.05,.68,4,4);g.pyr(.12,.19,.88,.89,.72,.2,PC.teal)},
+  lighthouse(g){g.cyl(.5,.6,.16,0,.1,PC.stone);g.cyl(.5,.6,.12,.1,.9,PC.white);[.3,.6].forEach(h=>g.cyl(.5,.6,.121,h,h+.09,'#C8553D'));g.cyl(.5,.6,.1,.9,1,'#FFE9A8');g.cone(.5,.6,.13,1,1.16,PC.gold)}};
+// rough piece heights, for shadows
+const PH=id=>({apartments:.9,hotel:.85,factory:.6,hall:.9,church:.9,lighthouse:1.1,wind:.8,diesel:.7,waterworks:.8,mine:.6,coalmine:.5,brickworks:.6,university:.6,school:.6}[id]||.42);
+// category colours for the simple squares drawn when zoomed far out
+const CATC={};GROUPS.forEach(([,ids],k)=>ids.forEach(id=>{CATC[id]=['#C8553D','#D6BE5C','#8A64B0','#9C7B55','#3E7CB1','#5F9E55','#8C9396','#4FA3C0','#E08A2E','#7A2E22','#E2AE2A'][k]}));CATC.hall=CATC.fcap='#BDB7AA';
+function depositPiece(g,d){if(d==='ore'){[[.66,.8,'#9A5B3A'],[.8,.74,'#8A4F32'],[.76,.86,'#A8663F']].forEach(([x,y,c])=>g.box(x-.05,y-.04,x+.05,y+.04,0,.06,c));g.disc(.74,.76,.018,.07,'#F2D27A',1)}
+  else if(d==='coal')[[.68,.8],[.8,.76],[.76,.87]].forEach(([x,y])=>g.box(x-.05,y-.04,x+.05,y+.04,0,.06,PC.black));
+  else if(d==='stone'){g.box(.62,.72,.78,.86,0,.08,'#A9AEB0');g.box(.74,.64,.88,.78,0,.12,'#BCC0C1')}
+  else if(d==='clay')g.cone(.76,.8,.12,0,.1,PC.clay)}
+// Every piece of a kind looks the same, so each is drawn once per zoom level into a small sprite and stamped onto the map.
+// A sprite is 1.5 tiles wide and 2.2 tall, with the tile's top-left corner at (0.1, 1.15), leaving room for height and shadow.
+const SPR=new Map();
+function sprite(key,z,dpr,paint){const zk=Math.round(z),k=key+'|'+zk;let s=SPR.get(k);if(s)return s;if(SPR.size>600)SPR.clear();
+  s=document.createElement('canvas');s.width=Math.ceil(1.5*zk*dpr);s.height=Math.ceil(2.2*zk*dpr);const c=s.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
+  paint(c,pieceKit(c,.1*zk,1.15*zk,zk),zk);SPR.set(k,s);return s}
+function pieceShadow(c,zk,h){c.fillStyle='rgba(20,28,20,.18)';c.fillRect(zk*(.26+h*.3),zk*(1.45+h*.15),zk*.72,zk*.6)}
+function drawPieces(ctx,X,Y,r0,r1,c0,c1,z,showDep,dpr){const stamp=(s,c,r)=>ctx.drawImage(s,X(c)-.1*z,Y(r)-1.15*z,1.5*z,2.2*z);
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*W+c,x=S.map[i];if(x.t==='w')continue;
+    if(showDep&&x.dp&&!(x.b&&B[x.b]&&B[x.b].dep===x.dp))stamp(sprite('d'+x.dp,z,dpr,(cx,g)=>depositPiece(g,x.dp)),c,r);
+    if(x.t==='f'&&!x.b&&mapMode==='political'){const k=(i*7919)%5,hl=!!x.hl;
+      stamp(sprite('f'+k+hl,z,dpr,(cx,g)=>{hl?(g.pine(.28,.3+k*.02,1),g.pine(.7,.4,1.1),g.pine(.42,.75,.9)):(g.tree(.28,.32+k*.02,1),g.tree(.72,.42,1.1),g.tree(.45,.76,.95))}),c,r)}
+    if(x.b&&PIECES[x.b]){const id=x.b,dev=!!S.dev[x.p];
+      stamp(sprite('b'+id+dev,z,dpr,(cx,g,zk)=>{pieceShadow(cx,zk,PH(id));if(dev)cx.globalAlpha=.7;PIECES[id](g)}),c,r)}}}
 function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh||!S)return;
   if(MAP.camMap!==S.map){MAP.camMap=S.map;MAP.kc=-1;centerOn(capIdx(),TS)}
-  if(MAP.dirty){MAP.pal=palette();MAP.pcol=provColors(MAP.pal);MAP.appeal=mapMode==='pollution'?appealMap():null;MAP.glyphs.clear();MAP.pat={settle:stripes('rgba(255,255,255,.3)',1),me:stripes('rgba(60,140,80,.6)',1),them:stripes('rgba(190,60,60,.6)',-1)};buildBase();MAP.dirty=false}
+  if(MAP.dirty){MAP.pal=palette();MAP.pcol=provColors(MAP.pal);if(SPR.dpr!==dpr){SPR.clear();SPR.dpr=dpr}MAP.appeal=mapMode==='pollution'?appealMap():null;MAP.glyphs.clear();MAP.pat={settle:stripes('rgba(255,255,255,.3)',1),me:stripes('rgba(60,140,80,.6)',1),them:stripes('rgba(190,60,60,.6)',-1)};buildBase();MAP.dirty=false}
   geo();const P=MAP.pal,c=MAP.cam,z=c.z,ox=vw/2-c.cx*z,oy=vh/2-c.cy*z;
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=P.sea;ctx.fillRect(0,0,vw,vh);
   const c0=Math.max(0,Math.floor(-ox/z)),c1=Math.min(W-1,Math.floor((vw-ox)/z)),r0=Math.max(0,Math.floor(-oy/z)),r1=Math.min(H-1,Math.floor((vh-oy)/z));
   const X=col=>Math.round(ox+col*z),Y=row=>Math.round(oy+row*z),war=S.war;
   if(window.DOMMatrix)for(const k in MAP.pat)if(MAP.pat[k]&&MAP.pat[k].setTransform)MAP.pat[k].setTransform(new DOMMatrix([1,0,0,1,Math.round(ox),Math.round(oy)]));
-  const lw=Math.max(1.5,z*.075),thick=new Path2D(),thin=new Path2D(),hillP=new Path2D(),marks=[],pol=mapMode==='political',showDep=pol||mapMode==='land';
+  const lw=Math.max(1.5,z*.075),thick=new Path2D(),thin=new Path2D(),hillP=new Path2D(),marks=[],pol=mapMode==='political',showDep=pol||mapMode==='land',pieces=!UI.icons&&z>=16;
   for(let r=r0;r<=r1;r++)for(let col=c0;col<=c1;col++){const i=r*W+col,x=S.map[i],sx=X(col),sy=Y(r),w=X(col+1)-sx,h=Y(r+1)-sy;
     if(x.t==='w'){if(geoCoast[i]===2){ctx.globalAlpha=.35;ctx.fillStyle=P.shallow;ctx.fillRect(sx,sy,w,h);ctx.globalAlpha=1}continue}
     const Pv=S.prov[x.p];ctx.fillStyle=tileColor(x,P,i);ctx.fillRect(sx,sy,w,h);
     // terrain shows through the political colours as light tints
     if(pol&&x.hl){ctx.fillStyle='rgba(95,65,35,.16)';ctx.fillRect(sx,sy,w,h)}else if(pol&&x.fr){ctx.fillStyle='rgba(235,205,70,.12)';ctx.fillRect(sx,sy,w,h)}
     if(x.hl&&!x.b&&x.t!=='f'&&z>=16){hillP.moveTo(sx+w*.18,sy+h*.66);hillP.lineTo(sx+w*.36,sy+h*.42);hillP.lineTo(sx+w*.54,sy+h*.66);hillP.moveTo(sx+w*.46,sy+h*.56);hillP.lineTo(sx+w*.64,sy+h*.32);hillP.lineTo(sx+w*.82,sy+h*.66)}
-    if(showDep&&x.dp&&z>=18&&!(x.b&&B[x.b]&&B[x.b].dep===x.dp))marks.push([DEPE[x.dp],sx+w*.78,sy+h*.78,.3]);
+    if(UI.icons&&showDep&&x.dp&&z>=18&&!(x.b&&B[x.b]&&B[x.b].dep===x.dp))marks.push([DEPE[x.dp],sx+w*.78,sy+h*.78,.3]);
     if(Pv&&Pv.settle){ctx.fillStyle=MAP.pat.settle;ctx.fillRect(sx,sy,w,h)}
     if(war&&war.occ[x.p]){ctx.fillStyle=MAP.pat[war.occ[x.p]==='me'?'me':'them'];ctx.fillRect(sx,sy,w,h)}
     if(S.dev[x.p]){ctx.fillStyle='rgba(105,105,105,.42)';ctx.fillRect(sx,sy,w,h)}
@@ -1076,7 +1186,9 @@ function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh
     // borders: check the right and lower neighbor so every edge is drawn once
     if(col+1<W){const y=S.map[i+1];if(y.t!=='w'&&y.p!==x.p){const p=y.o!==x.o?thick:thin;p.moveTo(sx+w,sy);p.lineTo(sx+w,sy+h)}}
     if(r+1<H){const y=S.map[i+W];if(y.t!=='w'&&y.p!==x.p){const p=y.o!==x.o?thick:thin;p.moveTo(sx,sy+h);p.lineTo(sx+w,sy+h)}}
-    const e=x.b&&B[x.b]?B[x.b].e:x.t==='f'&&mapMode==='political'?'🌲':'';if(e&&z>=14)marks.unshift([e,sx+w/2,sy+h/2,x.o==='me'?.56:.46])}
+    if(UI.icons){const e=x.b&&B[x.b]?B[x.b].e:x.t==='f'&&mapMode==='political'?'🌲':'';if(e&&z>=14)marks.unshift([e,sx+w/2,sy+h/2,x.o==='me'?.56:.46])}
+    // zoomed far out, a building is a small square in its category colour; closer in, drawPieces stands it up
+    else if(!pieces&&x.b){ctx.fillStyle=CATC[x.b]||'#9A958C';ctx.fillRect(sx+w*.2,sy+h*.2,w*.6,h*.6)}}
   // rivers run from each river tile's centre to the next tile downstream (to the shore when that's the sea); one extra ring so lines don't stop at the view's edge
   const riv=new Path2D(),cx=i=>ox+(i%W+.5)*z,cy=i=>oy+((i/W|0)+.5)*z;
   for(let r=Math.max(0,r0-1);r<=Math.min(H-1,r1+1);r++)for(let col=Math.max(0,c0-1);col<=Math.min(W-1,c1+1);col++){const i=r*W+col,x=S.map[i];if(x.rn==null)continue;
@@ -1085,6 +1197,8 @@ function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh
   ctx.strokeStyle='rgba(70,45,20,.4)';ctx.lineWidth=Math.max(1,z*.04);ctx.stroke(hillP);
   ctx.lineCap='round';ctx.strokeStyle='rgba(20,30,35,.3)';ctx.lineWidth=Math.max(.75,z*.0375);ctx.stroke(thin);
   ctx.strokeStyle='rgba(20,30,35,.75)';ctx.lineWidth=lw;ctx.stroke(thick);
+  // pieces lean up and to the right, so include a row below and a column to the left of the view
+  if(pieces)drawPieces(ctx,X,Y,r0,Math.min(H-1,r1+2),Math.max(0,c0-1),c1,z,showDep&&z>=18,dpr);
   marks.forEach(([e,mx,my,f])=>{const t=z*f,px=Math.max(8,Math.ceil(t*dpr/4)*4),g=glyph(e,px),s=t*1.3;ctx.drawImage(g,mx-s/2,my-s/2,s,s)});
   const ring=(i,color,dash)=>{if(i<0)return;const sx=X(i%W),sy=Y(i/W|0),w=X(i%W+1)-sx;ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=3;ctx.strokeRect(sx+1.5,sy+1.5,w-3,w-3);ctx.setLineDash([])};
   ring(S.sel,P.coin);if(document.activeElement===cv)ring(MAP.kc,P.coin,[5,4]);
@@ -1334,6 +1448,7 @@ function tileSheet(i){const x=S.map[i];if(x.o!=='me'){S.sel=i;render();provSheet
 function settings(){openSheet(`<h3>Settings</h3>
   <p>The game runs entirely on this device and saves automatically. It works without an internet connection once it\u2019s open.</p>
   <div class="card"><div class="row"><span class="em">⏳</span><div class="grow"><b>Aging and succession</b><small>Monarchs grow older, and the crown passes to the heir when they die or abdicate. Turn off to rule forever.</small></div><button class="sw" data-act="aging" aria-pressed="${S.aging}" aria-label="Aging and succession"></button></div>
+    <div class="row"><span class="em">🏠</span><div class="grow"><b>Buildings as icons</b><small>Show buildings on the map as flat icons instead of raised pieces.</small></div><button class="sw" data-act="icons" aria-pressed="${!!UI.icons}" aria-label="Buildings as icons"></button></div>
     <div class="row"><span class="em">📰</span><div class="grow"><b>Monthly report pop-up</b><small>Show the full report after every month. When off, you get a short summary and the details go to the news.</small></div><button class="sw" data-act="report" aria-pressed="${!!S.showReport}" aria-label="Monthly report pop-up"></button></div></div>
   <label class="hint" for="nm">Nation name</label><input type="text" id="nm" maxlength="24" value="${esc(S.name)}">
   <button class="btn wide" data-act="rename">Rename nation</button>
@@ -1473,6 +1588,7 @@ function act(a,arg,n){
     case'goto':setPanel(true);tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
     case'panel':setPanel(document.body.classList.contains('nopanel'));return;
     case'legend':UI.legend=!keyShown();saveUI();renderModes();return;
+    case'icons':{UI.icons=!UI.icons;saveUI();const b=$('#sheet [data-act=icons]');if(b)b.setAttribute('aria-pressed',!!UI.icons);MAP.dirty=true;drawSoon();return}
     case'maphelp':openSheet(`<h3>🗺️ The map</h3><div class="card">
       <div class="row"><span class="em">👆</span><div class="grow"><b>Moving around</b><small>Drag to move. Pinch, scroll, or use + and − to zoom. ⌂ returns to your capital, and the small map in the corner jumps anywhere.</small></div></div>
       <div class="row"><span class="em">🏗️</span><div class="grow"><b>Tapping tiles</b><small>Tap your own land to build or upgrade. Tap a neighbor’s province to buy, claim or contest it, or frontier to settle it.</small></div></div>
