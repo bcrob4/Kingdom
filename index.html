@@ -1,0 +1,1438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Island Kingdom</title>
+<!-- used when the game is hosted as an installable app; ignored when the file is opened directly -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2B5569">
+<style>
+:root{
+  --paper:#ECF0F1;--card:#FAFBFB;--ink:#1F2A30;--muted:#5A6870;--line:#D3DBDE;
+  --sea:#7AA9B5;--sea2:#4F8194;--grass:#AFC98E;--grass2:#9DBB7D;--sand:#DCCB9C;--forest:#5F8E5C;
+  --deep:#2B5569;--deep-ink:#fff;--coin:#E2AE2A;--berry:#D2577A;--good:#4E9A5B;--warn:#D98C2B;--bad:#C4505A;
+  --o-norvik:#B8C6D4;--o-solenne:#EAD9A6;--o-aurelia:#E2BE9C;--o-wild:#8FB07E;--o-wildf:#6E955F;--side:400px;
+  --viz-1:#2a78d6;--viz-2:#eb6834;--viz-3:#1baf7a;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#15201F;--card:#1D2A29;--ink:#E3EEEA;--muted:#9AB0AB;--line:#2E3F3D;
+  --sea:#2D5E68;--sea2:#264F58;--grass:#4F6E3A;--grass2:#466232;--sand:#7A6A42;--forest:#3E6A3B;
+  --deep:#6CC0CF;--deep-ink:#0E1A1C;--coin:#E9C25A;--berry:#E37D9A;--good:#79C286;--warn:#E8A955;--bad:#E07A83;
+  --o-norvik:#3E4B58;--o-solenne:#5E5434;--o-aurelia:#5E4634;--o-wild:#35502D;--o-wildf:#2B4424;
+  --viz-1:#3987e5;--viz-2:#d95926;--viz-3:#199e70;}}
+:root[data-theme="dark"]{
+  --paper:#15201F;--card:#1D2A29;--ink:#E3EEEA;--muted:#9AB0AB;--line:#2E3F3D;
+  --sea:#2D5E68;--sea2:#264F58;--grass:#4F6E3A;--grass2:#466232;--sand:#7A6A42;--forest:#3E6A3B;
+  --deep:#6CC0CF;--deep-ink:#0E1A1C;--coin:#E9C25A;--berry:#E37D9A;--good:#79C286;--warn:#E8A955;--bad:#E07A83;
+  --o-norvik:#3E4B58;--o-solenne:#5E5434;--o-aurelia:#5E4634;--o-wild:#35502D;--o-wildf:#2B4424;
+  --viz-1:#3987e5;--viz-2:#d95926;--viz-3:#199e70;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+.app{max-width:540px;margin:0 auto;padding:0 14px calc(150px + env(safe-area-inset-bottom,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;margin:0 -14px;padding:12px 18px 10px;background:var(--paper);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px}
+.flag{flex:1;min-width:0}
+h1{margin:0;font-family:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;font-size:1.3rem;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:.85rem;color:var(--muted)}
+.stat{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.icon{background:none;border:0;font-size:1.25rem;padding:4px;color:var(--ink);cursor:pointer;border-radius:8px}
+.bar{display:flex;gap:14px;margin-top:6px;font-size:.92rem}
+h2{font-family:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;font-size:1.12rem;margin:22px 0 8px}
+.sheet h3{font-family:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif}
+.hint{color:var(--muted);font-size:.88rem;margin:8px 0}
+.needs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.need{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 8px;font-size:.78rem}
+.need b{display:block;font-size:.95rem}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;border-radius:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 14px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.em{font-size:1.7rem;width:40px;text-align:center;flex:none}
+.grow{flex:1;min-width:0}
+.grow small{display:block;color:var(--muted);font-size:.82rem}
+.num{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.btn{font:inherit;font-size:.92rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;min-height:38px;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--deep);color:var(--deep-ink);border-color:transparent;font-weight:700}
+.btn.wide{width:100%;min-height:48px;margin-top:12px;font-size:1rem}
+.btn:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:3px solid var(--coin);outline-offset:2px}
+.sw{width:52px;height:30px;border-radius:999px;border:0;background:var(--line);position:relative;cursor:pointer;flex:none;padding:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .2s}
+.sw[aria-pressed="true"]{background:var(--deep)}
+.sw[aria-pressed="true"]::after{left:25px}
+input[type=range]{width:100%;accent-color:var(--deep);margin:8px 0}
+.big{font-size:2.6rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.mood{display:flex;align-items:center;gap:14px;margin-top:14px}
+.mood .face{font-size:3rem}
+.quote{font-style:italic}
+.chart{width:100%;height:120px;display:block}
+.endbar{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;justify-content:center;padding:0 14px 8px;pointer-events:none}
+.endbar .btn{pointer-events:auto;max-width:512px;width:100%;min-height:50px;font-size:1.02rem;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:7;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:flex;justify-content:center}
+nav div{display:flex;width:100%;max-width:540px}
+nav button{flex:1;font:inherit;font-size:.78rem;background:none;border:0;color:var(--muted);padding:7px 0 9px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer}
+nav button span{font-size:1.3rem}
+nav button.on{color:var(--deep);font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(124px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;font-size:.9rem;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.overlay{position:fixed;inset:0;background:rgba(10,25,28,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.overlay.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:540px;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));max-height:88%;overflow:auto}
+.sheet h3{margin:0 0 8px;font-size:1.25rem}
+.sheet p{margin:8px 0}
+.event{text-align:center}
+.event .pic{font-size:3.4rem;line-height:1.1;margin:4px 0 6px}
+.choice{display:block;width:100%;text-align:left;border-radius:16px;padding:12px 14px;margin-top:10px;white-space:normal;min-height:52px}
+.choice small{display:block;color:var(--muted);font-weight:400}
+.sheet input[type=text],textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);margin:6px 0}
+textarea{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;min-height:70px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tag{font-size:.75rem;padding:1px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.con{background:#12181B;color:#CFE0E6}
+.con h3{color:#fff}
+.log{font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#0A0F11;border-radius:10px;padding:10px;height:240px;overflow:auto;white-space:pre-wrap;margin:0}
+.log .e{color:#F29C8F}.log .c{color:#8FC3F2}
+.conin{display:flex;gap:8px;margin-top:10px}
+.conin input{flex:1;min-width:0;font:15px ui-monospace,Menlo,Consolas,monospace;background:#0A0F11;color:#E6F1F5;border:1px solid #33434A;border-radius:10px;padding:10px}
+.con .btn{background:#1E282D;color:#CFE0E6;border-color:#33434A}
+.con .btn.primary{background:#6FA8C0;color:#0B1417}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.seg .btn{min-height:32px;padding:4px 11px;font-size:.85rem}
+.seg .btn.on{background:var(--deep);color:var(--deep-ink);border-color:transparent;font-weight:700}
+.capbar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:6px}
+.capbar i{display:block;height:100%;background:var(--deep)}
+
+.bar{flex-wrap:wrap;gap:10px 14px}
+.empty{padding:12px 0}
+
+/* map: one canvas, drawn by drawMap() */
+.mappane{display:none}
+body.on-isle .mappane{display:block}
+.mapwrap{position:relative;height:58vh;height:58dvh;min-height:260px;border-radius:18px;margin-top:10px;background:var(--sea2);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.mapwrap canvas.cv{display:block;width:100%;height:100%;touch-action:none;cursor:grab;border-radius:inherit}
+.mapwrap canvas.cv:active{cursor:grabbing}
+.mapctl{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:1.15rem;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.minimap{position:absolute;left:8px;bottom:8px;border-radius:6px;border:2px solid var(--card);box-shadow:0 1px 5px rgba(0,0,0,.25);touch-action:none;cursor:pointer;display:none}
+.maptip{position:absolute;left:8px;top:8px;max-width:calc(100% - 70px);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.8rem;pointer-events:none;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:12px;font-size:.8rem;color:var(--muted)}
+.lg{display:inline-flex;align-items:center;gap:5px}.lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.lgbar{display:inline-block;width:90px;height:10px;border-radius:5px;vertical-align:middle}
+.modes{margin-top:10px}
+.seg.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.seg.scroll::-webkit-scrollbar{display:none}
+@media (min-width:760px){.seg.scroll{flex-wrap:wrap}}
+.seg.scroll .btn{flex:none}
+button.stat{font:inherit;font-weight:700;background:none;border:0;padding:2px 5px;margin:-2px -5px;border-radius:8px;color:var(--ink);cursor:pointer}
+button.stat:hover{background:var(--line)}
+.endbar{gap:8px}
+.endbar .btn.adv{width:auto;flex:none;min-width:58px;padding:0 16px}
+/* charts: 2px lines, 10% area wash, recessive hairline grid; the tooltip is the hover layer */
+.chartbox{position:relative;margin:4px 0 2px;outline-offset:4px}
+.chartbox svg{display:block;width:100%;overflow:visible}
+.chartbox .grid{stroke:var(--line);stroke-width:1}
+.chartbox text{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.chartbox text.end{fill:var(--ink);font-weight:700;font-size:12px}
+.chartbox .xh{stroke:var(--muted);stroke-width:1}
+.ckeys{display:flex;gap:14px;font-size:.8rem;color:var(--muted);margin:2px 0 4px}
+.ckeys span{display:inline-flex;align-items:center;gap:6px}
+.ckeys i,.ctip i{display:inline-block;width:14px;height:2px;border-radius:1px}
+.ctip{position:absolute;top:0;pointer-events:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:.78rem;box-shadow:0 3px 10px rgba(0,0,0,.18);white-space:nowrap;z-index:2}
+.ctip .tr{display:flex;align-items:center;gap:6px}
+.ctip .tt{color:var(--muted);margin-bottom:2px}
+details.tbl{margin:6px 0 0;font-size:.85rem}
+details.tbl summary{cursor:pointer;color:var(--muted)}
+details.tbl table{width:100%;border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums}
+details.tbl th,details.tbl td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)}
+details.tbl th:first-child,details.tbl td:first-child{text-align:left}
+.lg i.o-me{background:var(--grass)}.lg i.o-norvik{background:var(--o-norvik)}.lg i.o-solenne{background:var(--o-solenne)}.lg i.o-aurelia{background:var(--o-aurelia)}.lg i.o-wild{background:var(--o-wild)}
+.front{position:relative;height:12px;border-radius:6px;margin:8px 0 4px;background:linear-gradient(90deg,var(--bad),var(--line) 50%,var(--good))}
+.front i{position:absolute;top:-4px;width:6px;height:20px;border-radius:3px;background:var(--ink);transform:translateX(-50%)}
+
+/* wide screens (unfolded phone, tablet, computer): map on the left, panel on the right */
+@media (min-width:760px){
+  body{overflow:hidden}
+  .app{max-width:none;padding:0;height:100vh;height:100dvh;display:flex;flex-direction:column}
+  header{position:static;margin:0;padding:10px 18px}
+  .main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--side)}
+  .mappane,body.on-isle .mappane{display:flex;flex-direction:column;min-height:0;padding:0 12px 10px;border-right:1px solid var(--line)}
+  .mapwrap{flex:1;height:auto;min-height:0}
+  .mappane .hint{margin-bottom:0}
+  #view{overflow:auto;padding:0 16px calc(140px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}
+  nav{left:auto;right:0;width:var(--side);border-left:1px solid var(--line)}
+  .endbar{left:auto;right:0;width:var(--side)}
+  .toast{left:calc(100% - var(--side)/2)}
+  .overlay{justify-content:flex-end;align-items:stretch;background:rgba(10,25,28,.2)}
+  .sheet{width:var(--side);max-width:var(--side);max-height:none;height:100%;border-radius:0;border-left:1px solid var(--line)}
+}
+@media (min-width:1200px){:root{--side:460px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top">
+      <div class="flag"><h1 id="name"></h1><div class="sub" id="when"></div></div>
+      <span id="net" class="tag" hidden>Offline</span>
+      <button class="icon" data-act="news" aria-label="News">📰</button>
+      <button class="icon" data-act="settings" aria-label="Settings">⚙️</button>
+    </div>
+    <div class="bar"><button class="stat" id="coins" data-act="tab" data-arg="econ" title="Treasury: open the economy"></button><button class="stat" id="pop" data-act="tab" data-arg="people" title="Population: open your people"></button><button class="stat" id="hap" data-act="why" data-arg="approval" title="What drives approval?"></button><button class="stat" id="leg" data-act="why" data-arg="legitimacy" title="What drives legitimacy?"></button></div>
+  </header>
+  <div class="main">
+    <section class="mappane" aria-label="Map">
+      <div class="seg modes" id="modes" role="group" aria-label="Map mode"></div>
+      <div class="legend" id="legend"></div>
+      <div class="mapwrap" id="mapwrap">
+        <canvas class="cv" id="mapcv" tabindex="0" role="img" aria-label="Map of your kingdom and its neighbors. Arrow keys move the cursor, Enter selects, plus and minus zoom."></canvas>
+        <div class="maptip" id="maptip" aria-live="polite"></div>
+        <div class="mapctl"><button data-act="zoom" data-arg="in" aria-label="Zoom in">+</button><button data-act="zoom" data-arg="out" aria-label="Zoom out">−</button><button data-act="zoom" data-arg="home" aria-label="Center on the capital">⌂</button></div>
+        <canvas class="minimap" id="minimap" aria-hidden="true"></canvas>
+      </div>
+      <p class="hint">Drag to move, pinch or scroll to zoom. Tap your land to build, or a neighbor’s province to buy, claim or contest it. Thick lines are national borders, thin lines are provinces.</p>
+    </section>
+    <main id="view"></main>
+  </div>
+</div>
+<div class="endbar"><button class="btn primary" data-act="endMonth" id="endBtn">End month</button><button class="btn primary adv" data-act="advance" aria-label="Advance until something happens" title="Keep ending months until something needs you (up to a year)">⏩</button></div>
+<nav><div id="nav">
+  <button data-act="tab" data-arg="isle"><span>🗺️</span>Map</button>
+  <button data-act="tab" data-arg="people"><span>👥</span>People</button>
+  <button data-act="tab" data-arg="court"><span>👑</span>Court</button>
+  <button data-act="tab" data-arg="econ"><span>🪙</span>Economy</button>
+  <button data-act="tab" data-arg="world"><span>🌍</span>World</button>
+  <button data-act="tab" data-arg="tech"><span>🔬</span>Research</button>
+</div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="overlay" id="sheetWrap"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="overlay" id="conWrap"><div class="sheet con" role="dialog" aria-modal="true" aria-label="Developer console">
+  <h3>Developer console</h3>
+  <pre class="log" id="log"></pre>
+  <div class="btns">
+    <button class="btn" data-act="cmd" data-arg="help">help</button>
+    <button class="btn" data-act="cmd" data-arg="add 10000">add 10000</button>
+    <button class="btn" data-act="cmd" data-arg="skip 12">skip 12</button>
+    <button class="btn" data-act="cmd" data-arg="unlock">unlock</button>
+    <button class="btn" data-act="cmd" data-arg="status">status</button>
+    <button class="btn" data-act="lastCmd" aria-label="Repeat last command">↑ last</button>
+  </div>
+  <div class="conin"><input id="conIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a command"><button class="btn primary" data-act="runCon">Run</button></div>
+  <div class="btns" id="conSug" aria-label="Suggestions"></div>
+  <button class="btn wide" data-act="closeCon">Close</button>
+</div></div>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='islandnation.v1';
+const store={get(){try{return localStorage.getItem(KEY)}catch(e){return null}},set(v){try{localStorage.setItem(KEY,v)}catch(e){}}};
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const esc=t=>String(t).replace(/[<>&"']/g,'');
+const roman=n=>['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n]||String(n);
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let W=18,H=16;const TS=40;
+const WSIZES={small:{n:'Small',W:24,H:20},medium:{n:'Medium',W:36,H:30},large:{n:'Large',W:52,H:42},huge:{n:'Huge',W:72,H:58}};
+
+/* ---------- buildings ---------- */
+const B={
+  hall:{n:'Royal palace',e:'🏰',fixed:1,jobs:10,d:'The seat of the crown.'},
+  cottage:{n:'Cottages',e:'🏠',c:300,u:5,homes:25,d:'Housing for 25 people.'},
+  townhouse:{n:'Townhouses',e:'🏘️',c:1000,u:15,homes:80,d:'Housing for 80 people.'},
+  apartments:{n:'Apartment blocks',e:'🏢',c:2400,u:35,homes:200,nat:-2,tech:'steel',d:'Housing for 200 people.'},
+  farm:{n:'Farm',e:'🌾',c:400,u:10,food:50,jobs:10,d:'Produces food for 50 people.'},
+  dock:{n:'Fishing dock',e:'🎣',c:500,u:10,food:45,jobs:8,coast:1,trade:30,d:'Produces food for 45 people. Coast only.'},
+  greenhouse:{n:'Glasshouses',e:'🪴',c:1500,u:25,food:140,jobs:15,tech:'glass',d:'Year-round food for 140 people.'},
+  market:{n:'Market',e:'🏪',c:600,u:10,jobs:25,inc:60,fun:40,mid:10,d:'Local commerce. Strengthens the merchants.'},
+  workshop:{n:'Workshop',e:'🧰',c:1000,u:20,jobs:45,inc:60,goods:25,nat:-3,d:'Makes goods. Strengthens the workers.'},
+  factory:{n:'Factory',e:'🏭',c:2500,u:40,jobs:120,inc:150,goods:80,nat:-9,tech:'steam',d:'Large-scale manufacturing. Pollutes.'},
+  bank:{n:'Bank',e:'🏦',c:2500,u:30,jobs:50,inc:300,mid:50,tech:'banking',d:'Finance and credit. Strengthens the merchants.'},
+  clinic:{n:'Clinic',e:'🏥',c:900,u:40,health:160,jobs:12,mid:12,d:'Healthcare for 160 people.'},
+  school:{n:'School',e:'🏫',c:800,u:35,learn:180,jobs:12,mid:12,d:'Education for 180 people, and research.'},
+  library:{n:'Library',e:'📚',c:600,u:15,learn:80,fun:40,jobs:4,mid:4,d:'Education, recreation and research.'},
+  university:{n:'University',e:'🎓',c:1800,u:45,learn:220,jobs:20,mid:20,tech:'pedagogy',d:'Education for 220 people, and a big boost to research.'},
+  church:{n:'Church',e:'⛪',c:700,u:10,fun:30,d:'A place of worship. Strengthens the clergy.'},
+  park:{n:'Park',e:'🌳',c:200,u:5,fun:60,nat:2,d:'Recreation for 60 people.'},
+  garden:{n:'Botanic garden',e:'🌷',c:350,u:5,fun:40,nat:3,d:'Recreation, and good for the environment.'},
+  tent:{n:'Assembly hall',e:'🎭',c:900,u:20,fun:160,jobs:6,d:'Recreation for 160 people.'},
+  fair:{n:'Stadium',e:'🏟️',c:2000,u:40,fun:320,jobs:15,inc:60,tour:40,tech:'tourism',d:'Recreation for 320 people, and draws visitors.'},
+  bus:{n:'Omnibus depot',e:'🚌',c:700,u:25,move:220,jobs:10,d:'Transport for 220 people.'},
+  rail:{n:'Railway',e:'🚂',c:2000,u:50,move:650,jobs:20,tech:'rail',d:'Transport for 650 people.'},
+  well:{n:'Public well',e:'🪣',c:250,u:5,water:80,d:'Clean water for 80 people.'},
+  waterworks:{n:'Waterworks',e:'🚰',c:1200,u:25,water:350,jobs:8,tech:'hygiene',d:'Piped water and sewers for 350 people.'},
+  wind:{n:'Windmill generator',e:'🌬️',c:600,u:10,power:150,d:'Clean energy for 150 people.'},
+  hydro:{n:'Hydro dam',e:'💧',c:1600,u:15,power:450,tech:'electric',d:'Clean energy for 450 people.'},
+  diesel:{n:'Coal plant',e:'🛢️',c:800,u:25,power:500,nat:-10,d:'Energy for 500 people. Pollutes heavily.'},
+  barracks:{n:'Barracks',e:'🪖',c:900,u:20,jobs:10,d:'Trains your soldiers. Army quality +8% each.'},
+  shipyard:{n:'Shipyard',e:'🚢',c:1500,u:25,jobs:30,coast:1,d:'Lets you build warships. Coast only.'},
+  fort:{n:'Fort',e:'🏯',c:1200,u:15,d:'Strengthens your defense in wars fought on your soil. +10% each, up to +50%.'},
+  fcap:{n:'Provincial hall',e:'🏛️',fixed:1,jobs:10,homes:30,d:'The old seat of this province\u2019s government.'},
+  hotel:{n:'Grand hotel',e:'🏨',c:1500,u:20,jobs:20,tour:120,coast:1,mid:10,tech:'tourism',d:'Brings in tourism income. Coast only.'},
+  harbor:{n:'Harbor',e:'⚓',c:3200,u:40,jobs:60,inc:150,trade:600,coast:1,mid:15,d:'Greatly expands trade capacity. Coast only.'},
+  lighthouse:{n:'Royal monument',e:'🗼',c:4000,u:10,hap:6,leg:5,tour:100,coast:1,tech:'monument',unique:1,d:'A symbol of the crown. Approval +6 and legitimacy +5.'}
+};
+const RENAME={studio:'bank',tram:'rail',solar:'hydro'};
+// [heading, buildings, short label for the build menu's filter chips]
+const GROUPS=[['Housing',['cottage','townhouse','apartments'],'🏠 Housing'],['Food',['farm','dock','greenhouse'],'🌾 Food'],['Economy',['market','workshop','factory','bank','harbor'],'🪙 Economy'],['Public services',['clinic','school','library','university','church'],'🏥 Services'],['Recreation and environment',['park','garden','tent','fair'],'🌳 Leisure'],['Transport',['bus','rail'],'🚌 Transport'],['Water and sanitation',['well','waterworks'],'🚰 Water'],['Energy',['wind','hydro','diesel'],'⚡ Energy'],['Military',['barracks','fort','shipyard'],'🪖 Military'],['Tourism and prestige',['hotel','lighthouse'],'🗼 Prestige']];
+const UPGR={well:'waterworks',cottage:'townhouse',townhouse:'apartments',workshop:'factory',bus:'rail',wind:'hydro',farm:'greenhouse',tent:'fair'};
+const TIERS=[{n:'Settlement',p:0},{n:'Village',p:100},{n:'Town',p:200},{n:'City',p:600},{n:'Capital',p:1200}];
+const tierOf=p=>TIERS.filter(t=>p>=t.p).pop();
+
+/* ---------- needs and classes ---------- */
+const NEEDS=[
+  {k:'homes',n:'Housing',e:'🏠',tip:'Build more housing so the population can grow.',lo:'Rents keep rising and there\u2019s nothing available.',hi:'Finding a place to live was straightforward.'},
+  {k:'jobs',n:'Employment',e:'💼',tip:'Markets, workshops, factories and banks create jobs.',lo:'I\u2019ve been looking for work for months.',hi:'Work is steady, and wages are fair.'},
+  {k:'food',n:'Food',e:'🌾',tip:'Build farms or docks, or import food.',lo:'Bread costs twice what it did in spring.',hi:'The shelves are full and prices are stable.'},
+  {k:'goods',n:'Consumer goods',e:'📦',tip:'Workshops and factories, or imports. Mostly wanted by the middle and upper classes.',lo:'You can\u2019t find a decent coat on this island.',hi:'The shops are well stocked.'},
+  {k:'health',n:'Healthcare',e:'🩺',tip:'Each clinic serves 160 people.',lo:'The wait for a doctor is three weeks.',hi:'I was seen the same day.'},
+  {k:'learn',n:'Education',e:'📖',tip:'Schools, libraries and universities.',lo:'Classes are overcrowded.',hi:'The schools here are genuinely good.'},
+  {k:'fun',n:'Recreation',e:'🎭',tip:'Parks, gardens, markets and assembly halls.',lo:'There\u2019s nothing to do after work.',hi:'There\u2019s always something on at the weekend.'},
+  {k:'move',n:'Transport',e:'🚌',tip:'Omnibus depots and railways. Small populations can walk.',lo:'My commute takes over an hour.',hi:'Getting around is easy.'},
+  {k:'water',n:'Water and sanitation',e:'🚰',tip:'Build public wells, then waterworks once you know public hygiene. Poor sanitation also harms health.',lo:'The well water tasted strange again this week.',hi:'Clean water straight from the tap.'},
+  {k:'power',n:'Energy',e:'⚡',tip:'Build power plants or import energy.',lo:'Another blackout last night.',hi:'The lamps never go out.'},
+  {k:'nature',n:'Environment',e:'🌲',tip:'Protect forests, build parks, and limit polluting industry.',lo:'You can smell the smoke from the harbor.',hi:'The air is clean and the coast is beautiful.'}
+];
+const CLASSES={
+  lower:{n:'Lower class',e:'🧺',d:'Laborers, farmhands and servants.',w:{food:1.5,homes:1,jobs:1.3,health:1,water:1,power:.8,move:.5,fun:.5},tax:{percapita:1.8,proportional:1.2,progressive:.6},col:35},
+  middle:{n:'Middle class',e:'👔',d:'Clerks, shopkeepers, teachers and doctors.',w:{homes:1,learn:1,goods:1,water:.8,move:.8,fun:.8,health:.8,power:.8,jobs:.6},tax:{percapita:1,proportional:1.3,progressive:1.3},col:20},
+  upper:{n:'Upper class',e:'🎩',d:'Aristocrats, landlords and financiers.',w:{goods:1.2,fun:1,nature:1,water:.5,homes:.5,power:.5},tax:{percapita:.4,proportional:1.2,progressive:2.2},col:5,base:5}
+};
+
+/* ---------- laws ---------- */
+const LAWS={
+  labor:{n:'Labor',e:'⛓️',o:{serfdom:{n:'Serfdom',d:'Peasants are bound to the land. Food production +15%, but the lower class suffers.',cls:{lower:-15},food:15},tenant:{n:'Tenant farming',d:'Farmers rent land from the great estates.'},free:{n:'Free labor',d:'People may work where they choose. The population grows faster.',cls:{lower:8},grow:1.3}}},
+  tax:{n:'Taxation',e:'🧾',o:{percapita:{n:'Per-capita tax',d:'Everyone pays the same amount. Hard on the poor, easy on the rich. Tax income +10%.',inc:1.1},proportional:{n:'Proportional tax',d:'Everyone pays the same share of income.'},progressive:{n:'Progressive tax',d:'The wealthy pay a higher share. Tax income -5%.',inc:.95}}},
+  church:{n:'Religion',e:'⛪',o:{state:{n:'State religion',d:'The church is part of the state. Legitimacy +5.',leg:5},tolerance:{n:'Freedom of conscience',d:'Other faiths are tolerated.'},secular:{n:'Secularism',d:'Church and state are separate. Education +10.',learn:10}}},
+  trade:{n:'Trade policy',e:'⚖️',o:{protect:{n:'Protectionism',d:'Tariffs shield local business. Business revenue +15%, imports cost 20% more.'},mercantile:{n:'Mercantilism',d:'A balanced approach to trade.'},free:{n:'Free trade',d:'Exports earn 15% more and imports cost 10% less.'}}},
+  welfare:{n:'Welfare',e:'🤲',o:{none:{n:'No welfare',d:'Families fend for themselves.'},relief:{n:'Poor relief',d:'Basic support for the poor. Lower class +8. Costs 1 per lower-class citizen a month.',cls:{lower:8}},public:{n:'Public welfare',d:'Broad support. Lower class +12, middle class +6, healthcare +5. Costs 2 per citizen a month.',cls:{lower:12,middle:6},health:5}}},
+  press:{n:'Press',e:'📰',o:{censor:{n:'Censorship',d:'The crown controls the press. Legitimacy +3, and unrest builds more slowly.',leg:3},limited:{n:'Licensed press',d:'Newspapers need a royal license.'},free:{n:'Free press',d:'Anyone may publish. Approval +3, legitimacy -3.',leg:-3,hap:3}}}
+};
+const COURT=[
+  {n:'Austere',c:10,leg:-4,ig:{landowners:-8},d:'A bare-bones court. Cheap, but the crown looks diminished and the nobility feel slighted.'},
+  {n:'Modest',c:25,leg:-1,ig:{landowners:-3},d:'A simple, respectable court.'},
+  {n:'Dignified',c:45,leg:0,ig:{},d:'A court befitting a small kingdom.'},
+  {n:'Grand',c:80,leg:3,ig:{landowners:5,workers:-2},d:'Balls, banquets and ceremony. The nobility approve.'},
+  {n:'Lavish',c:130,leg:6,ig:{landowners:10,workers:-6,intelligentsia:-3},d:'Opulence on display. It impresses the nobility but galls working people.'}];
+const courtCost=()=>Math.round(COURT[S.court].c*(1+S.pop/300)*(trait('frugal')?.8:1));
+const ARMY=[{n:'Token guard',r:.005},{n:'Garrison',r:.015},{n:'Standing army',r:.03},{n:'Large army',r:.05},{n:'War footing',r:.08}];
+// On bigger worlds each nation starts with more provinces; nscale keeps their starting strength close to the classic three-province map.
+const nscaleOf=prov=>{const o={};NIDS.forEach(n=>{o[n]=Math.min(1,3/Math.max(1,prov.filter(P=>P.o===n).length))});return o};
+function theirStr(n){if(S.enemyStr&&S.enemyStr[n]!=null)return S.enemyStr[n];const pop=NBASE[n]*(1+S.turn/300)+provsOf(n).reduce((a,i)=>a+S.prov[i].pop,0)*((S.nscale||{})[n]||1);let s=pop*.03*(1+S.turn/500);if(S.tension[n]>=60||atWarWith(n))s*=1.3;if(S.nsit[n]==='troubled')s*=.8;return Math.round(s)}
+const NAVYBASE={norvik:4,aurelia:3,solenne:2};
+const theirNavy=n=>Math.round(NAVYBASE[n]*(1+S.turn/400));
+const GTRAITS={aggressive:{n:'Aggressive',d:'Attacks hit 15% harder, but losses are 30% higher.'},cautious:{n:'Cautious',d:'Losses are 40% lower, but strength is 5% lower.'},quartermaster:{n:'Quartermaster',d:'Supplies never drop below 75%.'},brilliant:{n:'Brilliant',d:'Army strength +12%.'},inspiring:{n:'Inspiring',d:'War support falls half as fast.'}};
+const GNAMES=['Harrow','Vance','Albrecht','Montclair','Reyes','Oakley','Dunmore','Stroud','Lisle','Carrow','Bellamy','Kessler'];
+const STRAT={attack:{n:'Attack',d:'Strength +15%, but losses are 50% higher.'},hold:{n:'Hold the line',d:'Losses 40% lower, but the front moves slowly.'},raid:{n:'Raid supplies',d:'Weakens the enemy a little more each month, up to 15%. The front moves more slowly, and raids can go wrong.'}};
+const gen=k=>S.general&&S.general.trait===k;
+const troopTarget=()=>Math.round(S.pop*ARMY[S.army].r*(S.mob?1.6:1));
+const DEFAULT_LAWS={labor:'tenant',tax:'percapita',church:'state',trade:'mercantile',welfare:'none',press:'censor'};
+
+/* ---------- interest groups ---------- */
+const IGS={
+  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{labor:{serfdom:20,tenant:5,free:-15},tax:{percapita:10,proportional:0,progressive:-15},welfare:{none:5,relief:0,public:-10},trade:{protect:10,mercantile:0,free:-5}}},
+  clergy:{n:'Clergy',e:'⛪',d:'The established church and its faithful.',likes:{church:{state:20,tolerance:0,secular:-25},press:{censor:8,limited:0,free:-5},welfare:{none:-5,relief:10,public:0}}},
+  merchants:{n:'Merchants',e:'💼',cls:'middle',d:'Traders, bankers and business owners.',likes:{labor:{serfdom:-15,tenant:0,free:15},trade:{protect:-5,mercantile:5,free:15},tax:{percapita:5,proportional:5,progressive:-10}}},
+  intelligentsia:{n:'Intelligentsia',e:'🎓',cls:'middle',d:'Writers, scholars and professionals.',likes:{church:{state:-10,tolerance:5,secular:15},press:{censor:-20,limited:0,free:15},welfare:{none:-5,relief:0,public:10}}},
+  workers:{n:'Workers',e:'🔨',cls:'lower',d:'Factory hands, dockers and laborers.',likes:{labor:{serfdom:-25,tenant:0,free:10},tax:{percapita:-15,proportional:0,progressive:10},welfare:{none:-10,relief:5,public:15}}}
+};
+const IGIDS=Object.keys(IGS);
+const igStatus=m=>m>=65?['Loyal','var(--good)']:m>=40?['Content','var(--muted)']:m>=25?['Discontent','var(--warn)']:['Radical','var(--bad)'];
+
+/* ---------- technology ---------- */
+const TECH=[
+  {id:'rotation',n:'Crop rotation',e:'🌾',c:60,d:'Food production +15%.'},
+  {id:'workshops',n:'Mechanized workshops',e:'⚙️',c:60,d:'Goods production +25%.'},
+  {id:'hygiene',n:'Public hygiene',e:'🧼',c:80,d:'Unlocks waterworks. Healthcare +10.'},
+  {id:'banking',n:'Banking',e:'🏦',c:100,d:'Unlocks the bank. Debt interest is halved.'},
+  {id:'pedagogy',n:'Pedagogy',e:'🎓',c:100,d:'Unlocks the university. Research +20%.'},
+  {id:'steam',n:'Steam power',e:'♨️',c:120,req:'workshops',d:'Unlocks the factory.'},
+  {id:'glass',n:'Glasshouses',e:'🪴',c:120,req:'rotation',d:'Unlocks glasshouses.'},
+  {id:'survey',n:'Land surveying',e:'🧭',c:90,d:'Settling frontier land costs 40% less and takes 4 months instead of 6.'},
+  {id:'drill',n:'Military drill',e:'🎖️',c:120,d:'Army quality +15%.'},
+  {id:'artillery',n:'Artillery',e:'💣',c:220,req:'steam',d:'Army quality +25%.'},
+  {id:'telegraph',n:'Telegraph',e:'📡',c:150,d:'Tension cools twice as fast, and envoys are more effective.'},
+  {id:'rail',n:'Railways',e:'🛤️',c:180,req:'steam',d:'Unlocks the railway.'},
+  {id:'medicine',n:'Modern medicine',e:'💉',c:200,req:'hygiene',d:'Healthcare +15.'},
+  {id:'tourism',n:'Leisure travel',e:'🧳',c:200,req:'rail',d:'Unlocks the grand hotel and the stadium.'},
+  {id:'steel',n:'Steel frames',e:'🏗️',c:220,req:'steam',d:'Unlocks apartment blocks.'},
+  {id:'electric',n:'Electrification',e:'💡',c:250,req:'steam',d:'Unlocks the hydro dam.'},
+  {id:'monument',n:'Monumental architecture',e:'🗼',c:300,req:'steel',d:'Unlocks the royal monument.'}
+];
+const techOf=id=>TECH.find(t=>t.id===id);
+
+/* ---------- decrees and trade ---------- */
+const DEC={
+  freebus:{n:'Free public transport',e:'🎟️',d:'Transport +20. Costs 1 per citizen a month.'},
+  lunches:{n:'Free school meals',e:'🍎',d:'Education +10 and healthcare +5. Costs 1 per citizen a month.'},
+  fourday:{n:'Shorter working week',e:'🗓️',d:'Recreation +15. Workers approve, merchants don\u2019t. Tax income -15%.'},
+  festival:{n:'Royal festivities',e:'🎉',d:'Approval +4 and legitimacy +2. Costs 150 a month.'},
+  green:{n:'Environmental protection',e:'🌱',d:'Environment +8. Costs 120 a month.'},
+  rentcap:{n:'Rent controls',e:'🔑',d:'Caps how high rents can climb. Landowners strongly object.'},
+  ration:{n:'Rationing',e:'🥫',d:'Cuts food and energy use by 20%. Approval -4, and the lower class resents it.'},
+  ads:{n:'Tourism promotion',e:'📣',d:'Tourism income +40%. Costs 100 a month.'}
+};
+const RES=[{k:'food',n:'Food',e:'🌾'},{k:'energy',n:'Energy',e:'⚡'},{k:'goods',n:'Goods',e:'📦'}];
+const PRICE={food:3,energy:2,goods:6};
+const NATIONS={
+  norvik:{n:'Norvik',e:'🏔️',d:'An industrial power to the north. Pays well for food, and sells goods cheaply.',pay:{food:1.3,energy:1,goods:.9},sell:{food:1.3,energy:1.1,goods:.8}},
+  solenne:{n:'Solenne',e:'🌻',d:'A farming kingdom to the south. Sells food cheaply, and pays well for goods.',pay:{food:.7,energy:1.1,goods:1.3},sell:{food:.8,energy:1.2,goods:1.2}},
+  aurelia:{n:'Aurelia',e:'🛢️',d:'An energy exporter to the east. Sells energy cheaply.',pay:{food:1.1,energy:.6,goods:1.1},sell:{food:1.1,energy:.75,goods:1.1}}
+};
+const NIDS=Object.keys(NATIONS);
+
+/* ---------- monarchs ---------- */
+const MNAMES={m:['Aldric','Edmund','Leopold','Frederick','Casimir','Otto','Henrik','Albert','Rupert','Conrad'],f:['Adelaide','Mathilde','Sophia','Charlotte','Beatrice','Eleanor','Isolde','Augusta','Theresa','Margarethe']};
+const TRAITS={diligent:{n:'Diligent',d:'Tax income +10%.'},pious:{n:'Pious',d:'The clergy approve, and legitimacy +3.'},reformer:{n:'Reformer',d:'Laws pass in 4 months instead of 6.'},frugal:{n:'Frugal',d:'Building upkeep -10%.'},charismatic:{n:'Charismatic',d:'Legitimacy +6.'},scholarly:{n:'Scholarly',d:'Research +25%.'},cautious:{n:'Cautious',d:'Unrest builds 30% more slowly.'}};
+function newRoyal(minAge,maxAge){const g=Math.random()<.5?'m':'f';return{name:pick(MNAMES[g]),g,age:minAge+rnd(maxAge-minAge+1)}}
+const title=m=>m.g==='f'?'Queen':'King';
+const regnal=name=>1+(S.reigns||[]).filter(r=>r.name===name).length;
+const trait=k=>S.monarch&&S.monarch.trait===k;
+
+/* ---------- state ---------- */
+const NBASE={norvik:500,aurelia:380,solenne:300};
+/* ---------- world generation ---------- */
+// Province names by culture: the fixed names come first, then prefix+suffix combinations.
+const NAMEP={
+  me:{fixed:['Crownlands','Westmarch','Southvale','Kingsbridge','Harrowdale','Ashford'],a:['Kings','Ash','Harrow','Elm','Oak','Wren','Kestrel','Marl','Thorn','High','Stone','Bram','Fen','Lark','Holly'],b:['ford','bridge','dale','wick','ton','field','moor','combe','ley','stead','borough','wold']},
+  norvik:{fixed:['Frostholm','Ironmark','Kaldvik','Skarheim','Vinterdal','Stormvik'],a:['Frost','Iron','Kald','Skar','Vinter','Ulf','Storm','Jarn','Bjorn','Nord','Is','Grim','Ravn','Hvit','Tor','Sval','Hald'],b:['holm','mark','vik','heim','dal','by','fell','havn','fjord','stad','berg','sund','nes']},
+  aurelia:{fixed:['Emberlands','Ashcoast','Dunmar','Cinderreach','Brasswells','Scorchridge'],a:['Ember','Cinder','Sulfur','Amber','Brass','Copper','Scorch','Dust','Flint','Sand','Tar','Coal','Dun','Red'],b:['lands','coast','mar','reach','moor','ridge','wells','hollow','flats','pass','gate','fields']},
+  solenne:{fixed:['Sunmeadow','Vineshire','Goldfield','Clairmont','Belrose','Honeyvale'],a:['Sun','Vine','Gold','Bel','Clair','Rose','Honey','Olive','Fair','Bright','Mira','Sol','Lav','Beau'],b:['meadow','shire','field','mont','vale','rive','court','bourg','lieu','dale','glen']},
+  wild:{fixed:['The Greenwild','Mistmoor','Fernhollow','Thornwood','Greymarsh','Wolfden'],a:['Fern','Mist','Thorn','Wolf','Grey','Bramble','Moss','Raven','Shadow','Brack','Gloam','Wild','Bog'],b:['hollow','moor','wood','marsh','fen','wild','heath','thicket','mire','downs']}};
+function namer(){const used=new Set();return o=>{const N=NAMEP[o];let nm=N.fixed.find(x=>!used.has(x));
+  for(let t=0;!nm&&t<300;t++){const x=pick(N.a)+pick(N.b);if(!used.has(x))nm=x}
+  if(!nm)nm=N.fixed[0]+' '+roman(2+used.size%9);used.add(nm);return nm}}
+function hpush(h,v){h.push(v);let i=h.length-1;while(i>0){const p=(i-1)>>1;if(h[p][0]<=h[i][0])break;[h[p],h[i]]=[h[i],h[p]];i=p}}
+function hpop(h){const top=h[0],last=h.pop();if(h.length){h[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<h.length&&h[l][0]<h[m][0])m=l;if(r<h.length&&h[r][0]<h[m][0])m=r;if(m===i)break;[h[m],h[i]]=[h[i],h[m]];i=m}}return top}
+function comps(test){const lab=new Int32Array(W*H).fill(-1),out=[];
+  for(let i=0;i<W*H;i++){if(lab[i]>=0||!test(i))continue;const q=[i];lab[i]=out.length;
+    for(let k=0;k<q.length;k++)NB(q[k]).forEach(j=>{if(lab[j]<0&&test(j)){lab[j]=out.length;q.push(j)}});out.push(q)}return out}
+function valueNoise(cell){const gw=Math.ceil(W/cell)+2,g=Array.from({length:gw*(Math.ceil(H/cell)+2)},Math.random),s=t=>t*t*(3-2*t);
+  return(r,c)=>{const x=c/cell,y=r/cell,x0=Math.floor(x),y0=Math.floor(y),fx=s(x-x0),fy=s(y-y0),v=(i,j)=>g[j*gw+i];
+    const a=v(x0,y0)+(v(x0+1,y0)-v(x0,y0))*fx,b=v(x0,y0+1)+(v(x0+1,y0+1)-v(x0,y0+1))*fx;return a+(b-a)*fy}}
+// One island with sea on every side: a round falloff roughened by two layers of noise.
+function islandMask(){const n1=valueNoise(Math.max(4,W/5)),n2=valueNoise(Math.max(2,W/14)),m=new Uint8Array(W*H);
+  for(let r=1;r<H-1;r++)for(let c=1;c<W-1;c++){const nx=(c+.5)/W*2-1,ny=(r+.5)/H*2-1;
+    m[r*W+c]=1-Math.hypot(nx,ny)*1.15+(n1(r,c)-.5)*.9+(n2(r,c)-.5)*.35>0?1:0}
+  const land=comps(i=>m[i]).sort((a,b)=>b.length-a.length);land.slice(1).forEach(q=>q.forEach(i=>{m[i]=0}));
+  const edge=i=>{const r=i/W|0,c=i%W;return r===0||c===0||r===H-1||c===W-1};
+  comps(i=>!m[i]).forEach(q=>{if(q.length<6&&!q.some(edge))q.forEach(i=>{m[i]=1})});
+  return m}
+// Scatter province seeds at least ~4.5 tiles apart, grow them outward with a little randomness, then fold tiny provinces into a neighbor.
+function carve(m){const L=[];for(let i=0;i<W*H;i++)if(m[i])L.push(i);L.sort(()=>Math.random()-.5);
+  const seeds=[];L.forEach(i=>{const r=i/W|0,c=i%W;if(seeds.every(s=>((s/W|0)-r)**2+(s%W-c)**2>=20))seeds.push(i)});
+  const own=new Int32Array(W*H).fill(-1),h=[];seeds.forEach((s,k)=>hpush(h,[0,s,k]));
+  while(h.length){const[d,i,k]=hpop(h);if(own[i]>=0)continue;own[i]=k;NB(i).forEach(j=>{if(m[j]&&own[j]<0)hpush(h,[d+1+Math.random()*.9,j,k])})}
+  for(;;){const size=new Array(seeds.length).fill(0);own.forEach(k=>{if(k>=0)size[k]++});
+    const k=size.findIndex(n=>n>0&&n<10);if(k<0)break;const touch={};
+    own.forEach((q,i)=>{if(q===k)NB(i).forEach(j=>{const o=own[j];if(o>=0&&o!==k)touch[o]=(touch[o]||0)+1})});
+    const best=Object.keys(touch).sort((a,b)=>touch[b]-touch[a])[0];if(best==null)break;own.forEach((q,i)=>{if(q===k)own[i]=+best})}
+  const keep=[],remap=new Map();seeds.forEach((s,k)=>{if(own[s]===k){remap.set(k,keep.length);keep.push(s)}});
+  own.forEach((q,i)=>{if(q>=0)own[i]=remap.get(q)});return{own,seeds:keep}}
+function genWorld(size){const Z=WSIZES[size]||WSIZES.medium;W=Z.W;H=Z.H;
+  let m;for(let t=0;t<30;t++){m=islandMask();const n=m.reduce((a,v)=>a+v,0);if(n>W*H*.4&&n<W*H*.7)break}
+  const{own,seeds}=carve(m),P=seeds.length,sr=k=>seeds[k]/W|0,sc=k=>seeds[k]%W,d2=(k,r,c)=>(sr(k)-r)**2+(sc(k)-c)**2;
+  const adj=Array.from({length:P},()=>new Set());
+  for(let i=0;i<W*H;i++){const k=own[i];if(k>=0)NB(i).forEach(j=>{const q=own[j];if(q>=0&&q!==k)adj[k].add(q)})}
+  // You start on the west coast, Norvik to the north, Aurelia to the east, Solenne to the south, frontier left in between.
+  const owner=new Array(P).fill(null),heart={};
+  const nearest=(fx,fy)=>{let b=-1,bd=1e9;for(let k=0;k<P;k++){if(owner[k])continue;const d=d2(k,fy*H,fx*W);if(d<bd){bd=d;b=k}}return b};
+  [['me',.14,.5],['norvik',.55,.1],['aurelia',.88,.5],['solenne',.5,.9]].forEach(([o,x,y])=>{const k=nearest(x,y);owner[k]=o;heart[o]=k});
+  const wildN=Math.max(2,Math.round(P*(size==='small'?.15:.2))),rest=Math.max(3,P-3-wildN);
+  const quota={me:3,norvik:Math.round(rest*.38),aurelia:Math.round(rest*.33)};quota.solenne=Math.max(1,rest-quota.norvik-quota.aurelia);
+  const count={me:1,norvik:1,aurelia:1,solenne:1};let active=Object.keys(count);
+  while(active.length)active=active.filter(o=>{if(count[o]>=quota[o])return false;const fr=new Set(),hk=heart[o];
+    owner.forEach((x,k)=>{if(x===o)adj[k].forEach(q=>{if(!owner[q])fr.add(q)})});if(!fr.size)return false;
+    const k=[...fr].sort((a,b)=>d2(a,sr(hk),sc(hk))-d2(b,sr(hk),sc(hk)))[0];owner[k]=o;count[o]++;return true});
+  owner.forEach((o,k)=>{if(!o)owner[k]='wild'});
+  const hearts=Object.values(heart),myAdj=[...new Set(owner.flatMap((o,k)=>o==='me'?[...adj[k]]:[]))].filter(q=>owner[q]!=='me');
+  if(!myAdj.some(q=>owner[q]==='wild')){const q=myAdj.find(q=>!hearts.includes(q));if(q!=null)owner[q]='wild'}
+  // The capital province must be index 0; hearts are named first so they get the classic names.
+  const order=[heart.me,...[...Array(P).keys()].filter(k=>k!==heart.me)],idx=new Map(order.map((k,j)=>[k,j]));
+  const cx=W/2,cy=H/2,names={},nm=namer(),dh=k=>owner[k]==='wild'?(sr(k)-cy)**2+(sc(k)-cx)**2:d2(k,sr(heart[owner[k]]),sc(heart[owner[k]]));
+  [...hearts,...order.filter(k=>!hearts.includes(k)).sort((a,b)=>dh(a)-dh(b))].forEach(k=>{names[k]=nm(owner[k])});
+  const prov=order.map(k=>({name:names[k],o:owner[k],core:owner[k],pop:0,heart:hearts.includes(k),r:sr(k),c:sc(k),settle:null}));
+  const map=[],tiles=prov.map(()=>[]);
+  for(let i=0;i<W*H;i++){if(own[i]<0){map.push({t:'w',b:null,o:null,p:-1});continue}
+    const p=idx.get(own[i]),o=prov[p].o;map.push({t:Math.random()<(o==='wild'?.5:.25)?'f':'l',b:null,o,p});tiles[p].push(i)}
+  prov.forEach((Pv,i)=>{map[Pv.r*W+Pv.c].t='l';if(Pv.o==='me'||Pv.o==='wild')return;
+    if(Pv.heart)map[Pv.r*W+Pv.c].b='fcap';const free=tiles[i].filter(j=>!map[j].b).sort(()=>Math.random()-.5);
+    const nc=Math.ceil(tiles[i].length/6),nf=Math.ceil(tiles[i].length/9);free.slice(0,nc).forEach(j=>{map[j].b='cottage';map[j].t='l'});free.slice(nc,nc+nf).forEach(j=>{map[j].b='farm';map[j].t='l'});
+    Pv.pop=Math.round((nc*25+(Pv.heart?30:0))*.9)});
+  return{map,prov,cap:prov[0].r*W+prov[0].c,W,H,size}}
+// Saves from before world sizes were added use the classic 18x16 map with the capital at row 8, column 4.
+function capIdx(){return S.cap!=null?S.cap:8*18+4}
+function startBuildings(m,cap){m[cap].b='hall';const order=['cottage','cottage','cottage','farm','market','wind','church','well'];
+  const near=m.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.p===0&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
+  order.forEach((b,k)=>{const i=near[k];if(i!=null){m[i].b=b;m[i].t='l'}})}
+const dist=(a,b)=>Math.hypot(Math.floor(a/W)-Math.floor(b/W),a%W-b%W);
+function setWorld(wd){startBuildings(wd.map,wd.cap);Object.assign(S,{map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{}})}
+function newState(name,size){const mo=newRoyal(28,38),wd=genWorld(size||'medium');startBuildings(wd.map,wd.cap);
+  return{v:2,mv:2,name:name||'Kestrel',month:3,year:1,turn:0,coins:2500,pop:60,best:60,hap:55,leg:60,unrest:5,tax:12,map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{},army:1,troops:1,mob:false,general:null,navy:0,dev:{},war:null,aggr:[],nsit:{norvik:'stable',solenne:'stable',aurelia:'stable'},wins:0,gained:0,sold:{},dec:{},mods:[],hist:[],goals:{},lastNet:0,recent:[],sel:-1,
+  rel:{norvik:50,solenne:50,aurelia:50},tension:{norvik:10,solenne:5,aurelia:15},embargo:{},crisisCd:{},demandCd:{},trade:{food:null,energy:null,goods:null},envoy:{},
+  laws:Object.assign({},DEFAULT_LAWS),enact:null,lawsPassed:0,favorCd:{},
+  tech:{done:[],cur:null,prog:0},
+  court:2,monarch:Object.assign(mo,{trait:pick(Object.keys(TRAITS)),num:1,since:1}),heir:newRoyal(6,12),aging:true,reigns:[],calm:0,sandbox:false,news:[],showReport:false}}
+let S,tab='isle',resetArmed=false;const queue=[];let curEvent=null;
+function adopt(d){
+  const base=newState();
+  if(d.v===1){d=Object.assign({},d);d.dec=d.pol||{};delete d.pol;d.v=2;d.map.forEach(x=>{if(x.b&&RENAME[x.b])x.b=RENAME[x.b];if(x.b==='hall')x.b='hall'});d.mods=(d.mods||[]).filter(m=>m.k!=='hap'||true);d.leg=60;d.unrest=5}
+  const def={rel:{...base.rel},tension:{...base.tension},trade:{...base.trade},laws:{...base.laws}};S=Object.assign(base,d);
+  S.W=d.W||18;S.H=d.H||16;S.cap=d.cap!=null?d.cap:8*18+4;S.wsize=d.wsize||(d.W?'medium':'classic');S.nscale=d.nscale||{};W=S.W;H=S.H;
+  ['rel','tension','trade','laws'].forEach(k=>{S[k]=Object.assign({},def[k],d[k]||{})});
+  S.tech=Object.assign({done:[],cur:null,prog:0},d.tech||{});S.embargo=d.embargo||{};S.crisisCd=d.crisisCd||{};S.demandCd=d.demandCd||{};S.envoy=d.envoy||{};S.favorCd=d.favorCd||{};S.reigns=d.reigns||[];
+  if(!d.monarch){S.monarch=base.monarch;S.heir=base.heir}
+  S.dev=d.dev||{};if(d.troops==null)S.troops=Math.round((d.pop||60)*ARMY[d.army!=null?d.army:1].r);S.claims=d.claims||{};S.fclaims=d.fclaims||{};S.aggr=d.aggr||[];S.nsit=Object.assign({},base.nsit,d.nsit||{});S.sold=d.sold||{};
+  if(d.mv!==2){const old=d.map.filter(x=>x.b&&x.b!=='hall'&&B[x.b]).map(x=>x.b);const wd=genWorld('small'),cap=wd.cap;wd.map[cap].b='hall';
+    const mine=wd.map.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
+    Object.assign(S,{map:wd.map,prov:wd.prov,cap,W:wd.W,H:wd.H,wsize:'small',nscale:nscaleOf(wd.prov),mv:2});let refund=0;
+    old.forEach(b=>{const k=mine.findIndex(i=>!S.map[i].b&&(!B[b].coast||isCoast(i)));if(k<0){refund+=Math.round((B[b].c||0)*.5);return}const i=mine[k];S.map[i].b=b;S.map[i].t='l'});
+    S.coins+=refund;S.migrated=true}}
+function load(){let raw=store.get();if(!raw){try{raw=localStorage.getItem('pocketisle.v1')}catch(e){}}
+  if(raw){try{const d=JSON.parse(raw);if(d&&(d.v===1||d.v===2)&&Array.isArray(d.map)){adopt(d);return true}}catch(e){}}S=newState();return false}
+const save=()=>store.set(JSON.stringify(S));
+
+/* ---------- helpers ---------- */
+const NB=i=>{const r=Math.floor(i/W),c=i%W,o=[];[[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{const rr=r+dr,cc=c+dc;if(rr>=0&&cc>=0&&rr<H&&cc<W)o.push(rr*W+cc)});return o};
+// Terrain and province membership never change after a world is made, so tile lists, neighbors and coastline are worked out once per map.
+let geoMap=null,geoTiles=[],geoAdj=[],geoCoast=null;
+function geo(){if(geoMap===S.map)return;geoMap=S.map;geoTiles=S.prov.map(()=>[]);const adj=S.prov.map(()=>new Set());geoCoast=new Uint8Array(S.map.length);
+  S.map.forEach((x,i)=>{const near=NB(i);
+    if(x.t==='w'){geoCoast[i]=near.some(j=>S.map[j].t!=='w')?2:0;return}
+    if(x.p>=0)geoTiles[x.p].push(i);let co=i%W===0;near.forEach(j=>{const y=S.map[j];if(y.t==='w')co=true;else if(y.p!==x.p&&x.p>=0&&y.p>=0)adj[x.p].add(y.p)});geoCoast[i]=co?1:0});
+  geoAdj=adj.map(s=>[...s])}
+const isCoast=i=>{geo();return geoCoast[i]===1};
+const has=b=>S.map.some(c=>c.o==='me'&&c.b===b);
+const cnt=b=>S.map.filter(c=>c.o==='me'&&c.b===b).length;
+const provTiles=i=>{geo();return geoTiles[i]||[]};
+const provsOf=o=>S.prov.map((P,i)=>[P,i]).filter(([P])=>P.o===o).map(([,i])=>i);
+function adjProvs(i){geo();return geoAdj[i]||[]}
+const touches=(i,o)=>adjProvs(i).some(q=>S.prov[q].o===o);
+const borderOf=(owner,next)=>provsOf(owner).filter(i=>touches(i,next));
+const OWN={me:'Your kingdom',wild:'Unclaimed frontier'};const ownName=o=>OWN[o]||NATIONS[o].n;
+const hasTech=id=>S.tech.done.includes(id);
+const modSum=k=>S.mods.filter(m=>m.k===k).reduce((t,m)=>t+m.v,0);
+function addMod(k,v,m,l){S.mods.push({k,v,m,l})}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+const col=v=>v>=70?'var(--good)':v>=45?'var(--warn)':'var(--bad)';
+const law=c=>LAWS[c].o[S.laws[c]];
+const tradeMult=(dir)=>S.laws.trade==='free'?(dir==='pay'?1.15:.9):S.laws.trade==='protect'?(dir==='pay'?1:1.2):1;
+const payP=(c,r)=>PRICE[r]*NATIONS[c].pay[r]*(.8+.4*S.rel[c]/100)*tradeMult('pay');
+const buyP=(c,r)=>PRICE[r]*NATIONS[c].sell[r]*(1.2-.4*S.rel[c]/100)*tradeMult('buy');
+const atWarWith=n=>!!(S.war&&S.war.foes.includes(n));
+const tradeOK=c=>c&&S.rel[c]>=20&&!S.embargo[c]&&!atWarWith(c);
+const relWord=r=>r>=75?'Close ally':r>=55?'Friendly':r>=35?'Neutral':r>=20?'Cool':'Hostile';
+const tenWord=t=>t>=80?'On the brink':t>=60?'Crisis':t>=35?'Strained':'Calm';
+const relA=(c,v)=>{S.rel[c]=clamp(S.rel[c]+v,0,100)};
+const tenA=(c,v)=>{S.tension[c]=clamp(S.tension[c]+v,0,100)};
+const monarchName=m=>`${title(m)} ${m.name}${m.num>1?' '+roman(m.num):''}`;
+const lockReason=d=>d.tech&&!hasTech(d.tech)?`Needs ${techOf(d.tech).n.toLowerCase()}`:'';
+
+function calc(){
+  const t={homes:0,jobs:0,food:0,health:0,learn:0,fun:0,move:100,power:0,water:50,inc:0,tour:0,up:0,nat:0,hap:0,leg:0,goods:0,trade:150,mid:0};
+  S.map.forEach(c=>{if(c.o!=='me'||!c.b)return;const d=B[c.b];if(!d)return;const f=S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1;for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]:d[k]*f;t.up+=d.u||0});
+  t.trade+=S.navy*40;const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
+  if(trait('frugal'))t.up*=.9;
+  const forests=S.map.filter(c=>c.o==='me'&&c.t==='f'&&!c.b).length,D=k=>!!S.dec[k];
+  const pop=S.pop,soldiers=Math.min(S.troops,Math.round(pop*.2)),workers=Math.max(0,Math.round(pop*.6)-soldiers),employed=Math.min(workers,t.jobs);
+  const share={upper:.05+(S.laws.labor==='serfdom'?.02:0)};share.middle=clamp(.08+t.mid/pop*.5,.08,.45);share.lower=1-share.upper-share.middle;
+  const foodMult=1+(hasTech('rotation')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100,goodsMult=1+(hasTech('workshops')?.25:0);
+  const prod={food:t.food*foodMult,energy:t.power,goods:t.goods*goodsMult};
+  const rat=D('ration')?.8:1;const dem={food:Math.round(pop*rat),energy:Math.round(pop*rat),goods:Math.round(pop*share.middle+pop*share.upper*3)};
+  let cap=t.trade;const tr={};let expV=0,impV=0;
+  RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r];if(diff<0&&tradeOK(c)){const amt=Math.min(-diff,cap);cap-=amt;const v=amt*buyP(c,r);impV+=v;tr[r]={dir:'import',amt,v,c}}});
+  RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r];if(diff>0&&tradeOK(c)){const amt=Math.min(diff,cap);cap-=amt;const v=amt*payP(c,r);expV+=v;tr[r]={dir:'export',amt,v,c}}});
+  const sup={};RES.forEach(({k:r})=>{const T=tr[r];sup[r]=prod[r]+(T&&T.dir==='import'?T.amt:0)-(T&&T.dir==='export'?T.amt:0)});
+  const price={};RES.forEach(({k:r})=>{price[r]=dem[r]<=0?PRICE[r]*.5:PRICE[r]*clamp(Math.pow(dem[r]/Math.max(1,sup[r]),.8),.5,2.5)});
+  const occ=pop/Math.max(1,t.homes);let rentIdx=1+clamp((occ-.8)/.2,0,1)*1.2;if(D('rentcap'))rentIdx=Math.min(rentIdx,1.2);
+  const rent=8*rentIdx;
+  const colIdx=.45*price.food/PRICE.food+.2*price.energy/PRICE.energy+.1*price.goods/PRICE.goods+.25*rentIdx;
+  const sc={};
+  sc.homes=occ<=.8?100:100-clamp((occ-.8)/.2,0,1)*45;
+  sc.jobs=workers?Math.min(100,t.jobs/workers*100):100;
+  sc.food=Math.min(100,sup.food/dem.food*100);
+  sc.water=Math.min(100,t.water/pop*100);
+  sc.goods=dem.goods?Math.min(100,sup.goods/dem.goods*100):100;
+  sc.health=Math.min(100,t.health/pop*100+(D('lunches')?5:0)+(hasTech('hygiene')?10:0)+(hasTech('medicine')?15:0)+(law('welfare').health||0));
+  sc.learn=Math.min(100,t.learn/pop*100+(D('lunches')?10:0)+(law('church').learn||0));
+  sc.fun=Math.min(100,t.fun/pop*100+(D('fourday')?15:0));
+  sc.move=Math.min(100,t.move/pop*100+(D('freebus')?20:0));
+  sc.power=Math.min(100,sup.energy/dem.energy*100);
+  sc.nature=55+forests*1.5+t.nat+(D('green')?8:0);
+  NEEDS.forEach(n=>{sc[n.k]=clamp(Math.round(sc[n.k]+modSum(n.k)),0,100)});
+  sc.health=clamp(Math.round(sc.health-(100-sc.water)*.25),0,100);
+  const cls={};
+  Object.entries(CLASSES).forEach(([k,C])=>{const ws=Object.entries(C.w),tot=ws.reduce((a,[,w])=>a+w,0);
+    let v=ws.reduce((a,[n,w])=>a+sc[n]*w,0)/tot+(10-S.tax)*C.tax[S.laws.tax]-(colIdx-1)*C.col+(C.base||0)+((law('labor').cls||{})[k]||0)+((law('welfare').cls||{})[k]||0)-6;
+    cls[k]=clamp(Math.round(v),0,100)});
+  const debt=S.coins<0?Math.min(10,-S.coins/500):0,weary=S.war?Math.min(15,S.war.months*1.2):0;
+  const quality=1+cnt('barracks')*.08+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
+  const str=Math.round(soldiers*quality*supply*morale*10)/10,forts=Math.min(1.5,1+cnt('fort')*.1);
+  const target=clamp(Math.round(cls.lower*share.lower+cls.middle*share.middle+cls.upper*share.upper+t.hap+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0)),0,100);
+  // interest groups
+  const L=S.laws,raw={
+    landowners:25+(L.labor==='serfdom'?10:0)+cnt('farm'),
+    clergy:15+(L.church==='state'?10:L.church==='secular'?-8:0)+cnt('church')*4,
+    merchants:8+(cnt('market')+cnt('harbor')*2+cnt('bank')*3)*3+(L.trade==='free'?5:0),
+    intelligentsia:5+(cnt('school')+cnt('library')+cnt('university')*2)*2+(L.press==='free'?5:0),
+    workers:6+cnt('factory')*5+cnt('workshop')*2+(L.labor==='free'?5:0)};
+  const rsum=IGIDS.reduce((a,k)=>a+Math.max(1,raw[k]),0),clout={},mood={};
+  IGIDS.forEach(k=>{clout[k]=Math.max(1,raw[k])/rsum;const G=IGS[k];let m=50;
+    Object.entries(G.likes).forEach(([c,o])=>{m+=o[L[c]]||0});
+    if(G.cls)m+=(cls[G.cls]-50)*.4;
+    if(k==='landowners')m+=(rentIdx-1)*8-(D('rentcap')?12:0)+(S.army-1)*3;
+    if(k==='merchants')m-=Math.max(0,S.army-2)*3+(S.mob?8:0);
+    if(k==='clergy')m+=cnt('church')*2+(trait('pious')?10:0);
+    if(k==='intelligentsia')m+=(sc.learn-50)*.15;
+    if(k==='workers'&&D('fourday'))m+=8;if(k==='merchants'&&D('fourday'))m-=8;
+    m+=COURT[S.court].ig[k]||0;m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
+  const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')),0,100);
+  // research
+  const rp=Math.round((5+t.learn/20)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1));
+  // money
+  const fill=t.jobs?employed/t.jobs:0;
+  const tax=employed*S.tax/100*45*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
+  const biz=t.inc*fill*(L.trade==='protect'?1.15:1);
+  const tour=t.tour*(.4+(sc.fun+sc.nature)/250)*(D('ads')?1.4:1)*(1+modSum('tour')/100);
+  const extra=modSum('inc');
+  const decCost=(D('freebus')?pop:0)+(D('lunches')?pop:0)+(D('festival')?150:0)+(D('green')?120:0)+(D('ads')?100:0);
+  const welfare=L.welfare==='relief'?Math.round(pop*share.lower):L.welfare==='public'?pop*2:0;
+  const interest=S.coins<0?Math.ceil(-S.coins*.03*(hasTech('banking')?.5:1)):0;
+  const income=[['Taxes',tax],['Business revenue',biz],['Tourism',tour],['Exports',expV]];if(extra>0)income.push(['Agreements and grants',extra]);
+  const army=soldiers*4+(S.war?soldiers*8:0)+S.navy*20+(S.general?30:0);
+  const costs=[['Building upkeep',t.up],['Royal household',courtCost()],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Imports',impV],['Debt interest',interest]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
+  const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
+  return{t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap}}
+
+/* ---------- events ---------- */
+const summer=()=>S.month>=5&&S.month<=7,winter=()=>S.month===11||S.month<=1;
+const igM=(k,v,m,l)=>addMod('ig:'+k,v,m,l);
+const EVENTS=[
+  {id:'storm',e:'⛈️',t:'Severe storm warning',d:'The harbor master expects gale-force winds within two days.',ch:[
+    {l:'Fund emergency reinforcement',c:600,f(){return'Buildings are secured. The storm passes with minimal damage.'}},
+    {l:'Accept the risk',f(){if(Math.random()<.5){S.coins-=1000;addMod('hap',-4,3,'Storm damage');return'The storm damages homes and roads. Repairs cost 🪙1,000.'}return'The storm weakens before landfall.'}}]},
+  {id:'strike',e:'🪧',t:'Dock workers strike',d:'Port workers demand higher pay. Food deliveries are slowing.',cond:()=>has('dock')||has('harbor'),ch:[
+    {l:'Agree to their demands',f(){addMod('inc',-90,12,'Dock wage settlement');igM('workers',10,12,'Won the dock strike');igM('merchants',-5,12,'Dock wage settlement');return'Work resumes the next morning.'}},
+    {l:'Send in the constabulary',f(){addMod('foodprod',-15,2,'Dock strike');igM('workers',-15,12,'Strike broken');S.unrest+=8;return'The strike is broken, but resentment lingers.'}}]},
+  {id:'flu',e:'🦠',t:'A severe flu season',d:'Physicians report a sharp rise in cases.',cond:()=>S.pop>100,ch:[
+    {l:'Fund a public health campaign',c:500,f(){addMod('health',10,6,'Health campaign');return'Case numbers fall within a month.'}},
+    {l:'Let it run its course',f(){addMod('health',-20,3,'Flu season');addMod('hap',-3,3,'Flu season');return'The clinics are overwhelmed for a while.'}}]},
+  {id:'nobles',e:'🏡',t:'The landowners petition the crown',d:'The great families ask for relief from estate taxes.',ch:[
+    {l:'Grant the relief',f(){addMod('inc',-80,12,'Estate tax relief');igM('landowners',15,12,'Estate tax relief');igM('workers',-5,12,'Favoring the rich');return'The landowners toast your wisdom.'}},
+    {l:'Refuse',f(){igM('landowners',-15,12,'Petition refused');return'The great families grumble at their estates.'}}]},
+  {id:'sermon',e:'⛪',t:'The archbishop calls for moral renewal',d:'He asks the crown to fund new parish schools and missions.',ch:[
+    {l:'Fund the parishes',c:500,f(){igM('clergy',15,12,'Parish funding');igM('intelligentsia',-5,12,'Church influence');addMod('learn',5,12,'Parish schools');return'The bells ring in your honor.'}},
+    {l:'Politely decline',f(){igM('clergy',-8,12,'Parishes unfunded');return'The archbishop\u2019s next sermon is noticeably cooler.'}}]},
+  {id:'pamphlets',e:'📜',t:'Radical pamphlets circulate',d:'Anonymous pamphlets call for limits on royal power.',ch:[
+    {l:'Suppress them',f(){igM('intelligentsia',-12,12,'Pamphlets suppressed');S.unrest=Math.max(0,S.unrest-8);return'The presses are seized. The cafés go quiet, for now.'}},
+    {l:'Let people read',f(){igM('intelligentsia',10,12,'Tolerance of dissent');addMod('leg',-3,6,'Open criticism');return'The pamphlets are widely read, and widely debated.'}}]},
+  {id:'union',e:'🔨',t:'Workers form a union',d:'Factory hands have organized and want recognition.',cond:()=>has('workshop')||has('factory'),ch:[
+    {l:'Recognize the union',f(){igM('workers',15,24,'Union recognized');igM('merchants',-10,24,'Union recognized');return'The union holds its first meeting to cheers.'}},
+    {l:'Ban it',f(){igM('workers',-20,24,'Union banned');S.unrest+=10;return'The union goes underground.'}}]},
+  {id:'resort',e:'🏝️',t:'A foreign resort proposal',d:'An overseas company wants to build a luxury resort on the north coast.',ch:[
+    {l:'Approve it',f(){addMod('inc',160,24,'Resort revenue');addMod('nature',-6,24,'Resort construction');igM('merchants',5,12,'Foreign investment');return'The resort opens to steady business.'}},
+    {l:'Reject it',f(){addMod('nature',2,12,'Protected coastline');return'The coast stays wild.'}}]},
+  {id:'drought',e:'☀️',t:'Drought',d:'A dry summer threatens the harvest.',cond:()=>summer()&&(has('farm')||has('greenhouse')),ch:[
+    {l:'Fund irrigation',c:500,f(){return'The irrigation works protect most of the harvest.'}},
+    {l:'Ration water',f(){addMod('foodprod',-25,4,'Drought');return'Harvests fall short for several months, and food prices climb.'}}]},
+  {id:'grid',e:'🔌',t:'Power failure',d:'A generator has failed, cutting power to half the country.',cond:()=>S.pop>150,ch:[
+    {l:'Pay for emergency repairs',c:700,f(){return'Power is restored within a day.'}},
+    {l:'Ration power',f(){addMod('power',-25,2,'Power failure');addMod('hap',-4,2,'Blackouts');return'Blackouts continue for two months.'}}]},
+  {id:'loan',e:'🏦',t:'A loan from foreign bankers',d:'A banking house offers 🪙3,000 now, repaid at 🪙160 a month for two years.',ch:[
+    {l:'Accept the loan',f(){S.coins+=3000;addMod('inc',-160,24,'Loan repayments');return'🪙3,000 is deposited in the treasury.'}},
+    {l:'Decline',f(){return'The treasury stays free of foreign debt.'}}]},
+  {id:'bribe',e:'🗂️',t:'A minister is accused of corruption',d:'He is said to have sold building permits.',ch:[
+    {l:'Dismiss him publicly',c:300,f(){addMod('leg',4,12,'Clean government');return'The crown is seen to act decisively.'}},
+    {l:'Protect him',f(){if(Math.random()<.5){addMod('leg',-8,12,'Court scandal');return'The story reaches the newspapers. It\u2019s a scandal.'}return'The matter is buried quietly.'}}]},
+  {id:'spill',e:'🛢️',t:'Coal dust in the bay',d:'Runoff from the coal plant has fouled the fishing grounds.',cond:()=>has('diesel')||has('factory'),ch:[
+    {l:'Fund a cleanup',c:900,f(){return'The bay recovers within weeks.'}},
+    {l:'Minimal response',f(){addMod('nature',-15,12,'Polluted bay');addMod('tour',-30,12,'Polluted bay');return'The beaches stay empty all season.'}}]},
+  {id:'wedding',e:'💍',t:'A royal wedding',d:'The court proposes a lavish celebration for a royal cousin\u2019s wedding.',ch:[
+    {l:'Celebrate grandly',c:800,f(){addMod('leg',8,12,'Royal wedding');addMod('hap',3,3,'Royal wedding');return'The whole kingdom celebrates.'}},
+    {l:'Keep it modest',f(){addMod('leg',1,6,'Modest wedding');igM('merchants',3,6,'Royal thrift');return'A quiet ceremony. The merchants admire the thrift.'}}]},
+  {id:'crime',e:'🚨',t:'Rising crime',d:'Reports of theft have doubled this quarter.',cond:()=>S.pop>200,ch:[
+    {l:'Expand the constabulary',f(){addMod('inc',-70,12,'Constabulary');addMod('hap',3,12,'Safer streets');S.unrest=Math.max(0,S.unrest-5);return'Reports fall steadily over the year.'}},
+    {l:'Fund workhouses and charity',c:400,f(){igM('clergy',5,12,'Charity work');addMod('hap',2,6,'Charity');return'Results are slower, but lasting.'}}]},
+  {id:'visas',e:'🛂',t:'Skilled migrants seek to settle',d:'Engineers and nurses from abroad ask for residency.',cond:()=>calc().t.homes>S.pop,ch:[
+    {l:'Welcome them',f(){const n=Math.min(20,calc().t.homes-S.pop);S.pop+=n;addMod('health',5,12,'New nurses');igM('landowners',-3,6,'Newcomers');return`${n} new residents arrive and start work.`}},
+    {l:'Keep the borders as they are',f(){return'Nothing changes.'}}]},
+  {id:'audit',e:'🧾',t:'The treasury audit',d:'Auditors found waste in public works contracts.',ch:[
+    {l:'Reform the contracts',f(){S.coins+=600;addMod('leg',2,6,'Sound finances');return'🪙600 is recovered.'}},
+    {l:'File the report away',f(){return'Nothing changes.'}}]},
+  {id:'fort',e:'🏰',t:'The old fortress',d:'Historians want to restore the medieval fortress.',ch:[
+    {l:'Fund the restoration',c:900,f(){addMod('fun',10,24,'Restored fortress');addMod('tour',15,24,'Restored fortress');addMod('leg',3,24,'National heritage');return'The fortress becomes a proud landmark.'}},
+    {l:'Decline',f(){return'The fortress remains a ruin.'}}]},
+  {id:'seawall',e:'🧱',t:'The sea wall is cracking',d:'Winter swells have damaged the defenses around the capital.',cond:winter,ch:[
+    {l:'Repair it now',c:700,f(){return'The wall is repaired before the next storm.'}},
+    {l:'Delay the repairs',f(){if(Math.random()<.5){S.coins-=1400;return'A storm surge floods the waterfront. Repairs cost 🪙1,400.'}return'The wall holds through the winter.'}}]},
+  {id:'aid',e:'🌊',t:'Floods in Solenne',d:'Solenne\u2019s court asks for aid after severe flooding.',ch:[
+    {l:'Send aid',c:500,f(){relA('solenne',15);tenA('solenne',-15);return'Solenne\u2019s queen thanks you publicly.'}},
+    {l:'Decline politely',f(){relA('solenne',-6);return'Solenne notes the refusal.'}}]},
+  {id:'summit',e:'🤝',t:'A congress of nations',d:'Norvik, Solenne and Aurelia invite you to a peace congress.',ch:[
+    {l:'Attend in person',c:400,f(){NIDS.forEach(c=>{relA(c,6);tenA(c,-10)});addMod('leg',3,6,'Statesmanship');return'Tensions ease across the region.'}},
+    {l:'Send an ambassador',f(){NIDS.forEach(c=>relA(c,-2));return'The other courts notice your absence.'}}]},
+  {id:'heirstudy',e:'📚',t:'The heir\u2019s education',d:'Tutors propose sending the heir to study abroad.',cond:()=>S.aging&&S.heir&&S.heir.age>=12&&S.heir.age<20,ch:[
+    {l:'Send them to Norvik',c:300,f(){relA('norvik',8);igM('intelligentsia',5,12,'Educated heir');return'The heir returns well read and well connected.'}},
+    {l:'Educate them at court',f(){igM('landowners',5,12,'Traditional upbringing');igM('clergy',5,12,'Traditional upbringing');return'The old families approve.'}}]}
+];
+function crisisEvent(n){const Nn=NATIONS[n];
+  const claimed=provsOf('me').filter(i=>i!==0&&(S.fclaims[i]===n||(S.tension[n]>=80&&touches(i,n))));
+  if(claimed.length){const i=pick(claimed),P=S.prov[i],c=calc(),th=theirStr(n);const ch=[
+      {l:`Cede ${P.name}`,f(){transfer(i,n,'treaty');tenA(n,-50);relA(n,8);addMod('leg',-10,24,`Ceded ${P.name}`);return`${P.name} passes to ${Nn.n}. Peace holds, but the court is humiliated.`}},
+      {l:'Refuse',f(){tenA(n,25);relA(n,-10);addMod('leg',4,12,`Defended ${P.name}`);return`You refuse. ${Nn.n} is furious${S.tension[n]>=90?', and war is now a real risk':''}.`}}];
+    if(c.str*c.forts>=th*1.3){const their=borderOf(n,'me').filter(q=>!S.prov[q].heart);if(their.length)ch.push({l:'Refuse, and demand land in return',f(){if(Math.random()<.5){const q=pick(their);transfer(q,'me','treaty');tenA(n,30);addMod('leg',6,12,'Diplomatic triumph');return`Faced with your army, ${Nn.n} backs down and cedes ${S.prov[q].name}.`}tenA(n,40);relA(n,-15);return`${Nn.n} refuses outright. Tension soars.`}})}
+    return{id:'crisis',e:Nn.e,t:`${Nn.n} demands ${P.name}`,d:`${Nn.n} claims your province of ${P.name} and demands you hand it over. Tension is at ${Math.round(S.tension[n])}. Their army strength is ${th}, yours is ${c.str}.`,ch}}const dem=pick([['fishing rights in your northern waters','Their fleet wants access to your fishing grounds.'],['lower tariffs on their goods','Their merchants say your markets are unfairly closed.'],['compensation for a harbor incident','One of their ships was damaged in your harbor.'],['the return of a disputed islet','They claim a rocky islet off your coast.']]);
+  return{id:'crisis',e:Nn.e,t:`${Nn.n} issues an ultimatum`,d:`${Nn.n} demands ${dem[0]}. ${dem[1]} Tension is at ${Math.round(S.tension[n])}.`,ch:[
+    {l:'Concede',c:400,f(){tenA(n,-40);relA(n,5);addMod('leg',-6,12,`Conceded to ${Nn.n}`);return`${Nn.n} is satisfied. Some at court call it weakness.`}},
+    {l:'Stand firm',f(){tenA(n,25);relA(n,-10);addMod('leg',5,12,`Stood up to ${Nn.n}`);if(S.tension[n]>=100)return embargoNow(n);return`${Nn.n} backs down for now, but tension rises.`}}]}}
+function transfer(i,to,how){if(i===0)return;const P=S.prov[i],from=P.o,tiles=provTiles(i);
+  if(to==='me'){S.pop+=P.pop;P.pop=0;tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];if(from!=='wild')addMod('hap',-3,24,`Integrating ${P.name}`);S.gained++}
+  else{let homes=0;tiles.forEach(t=>{const x=S.map[t];if(x.b&&B[x.b])homes+=B[x.b].homes||0;x.o=to});const lost=Math.min(Math.max(0,S.pop-10),homes);S.pop-=lost;P.pop=lost;if(from==='me'&&how!=='sold')S.claims[i]=true;delete S.fclaims[i]}
+  P.o=to;P.settle=null}
+const rebuildCost=i=>200+provTiles(i).filter(t=>S.map[t].b).length*100;
+function provValue(i){const P=S.prov[i],tiles=provTiles(i);let v=tiles.length*60+P.pop*25;tiles.forEach(t=>{const b=S.map[t].b;if(b&&B[b])v+=(B[b].c||800)*.5});if(tiles.some(t=>isCoast(t)))v*=1.15;return v}
+function buyPrice(i){const P=S.prov[i],n=P.o;let m=1.6-S.rel[n]/100;m*={stable:1,indebted:.75,troubled:.6}[S.nsit[n]];m*=1+S.tension[n]/100;if(S.claims[i])m*=.7;if(P.heart)m*=2.5;if(provsOf(n).length===1)m*=2;return Math.round(provValue(i)*m/10)*10}
+const settleCost=i=>Math.round((300+provTiles(i).length*40)*(hasTech('survey')?.6:1));
+function startWar(n,goal,attacker){const claim=!!S.claims[goal];
+  S.war={foes:[n],main:n,goal,attacker,score:0,months:0,occ:{},occd:{},strat:'hold',raid:0,support:attacker==='me'?(claim?70:45):85,lowSup:0};S.sold={};
+  if(attacker==='me'){addMod('leg',claim?-2:-10,12,claim?'War over a claim':'War of aggression');igM('landowners',8,12,'War');igM('merchants',-10,12,'War');igM('workers',-8,12,'War');igM('intelligentsia',-5,12,'War');
+    S.aggr.push(S.turn);NIDS.filter(o=>o!==n).forEach(o=>tenA(o,claim?10:20));
+    if(S.aggr.filter(t=>S.turn-t<120).length>=2)NIDS.filter(o=>o!==n&&S.rel[o]<50).forEach(o=>{S.war.foes.push(o);relA(o,-15)});S.war.strat='attack'}
+  else{addMod('hap',3,6,'Rally to the crown');igM('landowners',5,12,'Defensive war')}}
+function warStr(){const c=calc(),W_=S.war;let us=c.soldiers*c.quality*c.supply*c.morale;
+  if(S.general){if(gen('brilliant'))us*=1.12;if(gen('cautious'))us*=.95;if(gen('aggressive')&&W_.strat==='attack')us*=1.15}
+  if(W_.strat==='attack')us*=1.15;if(W_.attacker!=='me')us*=1.25*c.forts;
+  let them=W_.foes.reduce((a,n)=>a+theirStr(n),0)*(W_.attacker==='me'?1.25:1)*(1-.05*W_.raid);
+  const ourNavy=S.navy,theirN=W_.foes.reduce((a,n)=>a+theirNavy(n),0);if(ourNavy>theirN)them*=.9;
+  return{us:Math.round(us*10)/10,them:Math.round(them*10)/10,c,ourNavy,theirN}}
+function frontProvs(side){const W_=S.war,foes=W_.foes;
+  if(side==='me'){const lib=Object.keys(W_.occ).map(Number).filter(i=>W_.occ[i]==='them');if(lib.length)return{lib};
+    const held=i=>(S.prov[i].o==='me'&&W_.occ[i]!=='them')||W_.occ[i]==='me';
+    const c=S.prov.map((P,i)=>i).filter(i=>foes.includes(S.prov[i].o)&&W_.occ[i]!=='me'&&adjProvs(i).some(held));
+    return{take:c.includes(W_.goal)?[W_.goal]:c}}
+  const ours=Object.keys(W_.occ).map(Number).filter(i=>W_.occ[i]==='me');if(ours.length)return{lib:ours};
+  const held=i=>(foes.includes(S.prov[i].o)&&W_.occ[i]!=='me')||W_.occ[i]==='them';
+  return{take:provsOf('me').filter(i=>i!==0&&W_.occ[i]!=='them'&&adjProvs(i).some(held))}}
+function warMonth(notes){const W_=S.war;W_.months++;const w=warStr();
+  let d=((w.us-w.them)/Math.max(1,w.us+w.them))*30+(Math.random()*12-6);let lossM=1,ev='';
+  if(W_.strat==='attack')lossM*=1.5;if(W_.strat==='hold'){lossM*=.6;d*=.6}
+  if(W_.strat==='raid'){d*=.7;W_.raid=Math.min(3,W_.raid+1);if(Math.random()<.25){lossM*=1.6;ev=' A raid was ambushed.'}}else W_.raid=Math.max(0,W_.raid-1);
+  if(gen('aggressive'))lossM*=1.3;if(gen('cautious'))lossM*=.6;
+  W_.push=(W_.push||0)+d;
+  if(W_.push>=10){W_.push-=10;const f=frontProvs('me');if(f.lib&&f.lib.length){const i=pick(f.lib);delete W_.occ[i];ev+=` You retook ${S.prov[i].name}.`}else if(f.take&&f.take.length){const i=pick(f.take);W_.occ[i]='me';W_.occd[i]=1;ev+=` Your troops occupy ${S.prov[i].name}.`}}
+  if(W_.push<=-10){W_.push+=10;const f=frontProvs('them');if(f.lib&&f.lib.length){const i=pick(f.lib);delete W_.occ[i];ev+=` The enemy retook ${S.prov[i].name}.`}else if(f.take&&f.take.length){const i=pick(f.take);W_.occ[i]='them';W_.occd[i]=1;ev+=` The enemy occupies ${S.prov[i].name}.`}}
+  const occMe=Object.values(W_.occ).filter(v=>v==='me').length,occThem=Object.values(W_.occ).filter(v=>v==='them').length;
+  if(w.ourNavy>w.theirN)d+=1;else if(w.theirN>w.ourNavy)d-=1;
+  W_.score=clamp(Math.round(W_.score+d+(occMe-occThem)*2),-100,100);
+  const loss=Math.max(1,Math.round(w.c.soldiers*(.02+(d<0?-d/400:0))*lossM));S.troops=Math.max(0,S.troops-loss);S.pop=Math.max(10,S.pop-loss);
+  let sd=(d>0?2:-3)-1-(loss>w.c.soldiers*.05?2:0);if(sd<0&&gen('inspiring'))sd/=2;W_.support=clamp(Math.round(W_.support+sd),0,100);
+  W_.lowSup=W_.support<20?W_.lowSup+1:0;
+  if(S.general&&Math.random()<(S.general.heir?.015:.01)){if(S.general.heir){ev+=` Tragedy: ${S.heir.name}, the heir, has fallen in battle.`;S.heir=newRoyal(0,6);addMod('leg',-8,24,'Heir killed in battle')}else ev+=` General ${S.general.name} has been killed.`;S.general=null}
+  notes.push(['⚔️',`War with ${W_.foes.map(n=>NATIONS[n].n).join(' and ')}: ${W_.score>0?'+':''}${W_.score}`,`The front ${d>=0?'moved in your favor':'turned against you'}. You lost ${loss} soldiers.${ev} War support ${W_.support}%.${w.theirN>w.ourNavy?' Enemy ships are blockading your coast.':w.ourNavy>w.theirN?' Your navy is blockading their coast.':''}`]);
+  if(W_.score>=60)return'win';if(W_.score<=-60)return'lose';if(W_.lowSup>=2)return'support';if(W_.months>=24)return'exhausted';return null}
+// peace terms
+function termCost(k){if(k==='rep1')return 10;if(k==='rep2')return 25;if(k==='renounce')return 10;if(k==='humiliate')return 10;const i=+k.slice(1),P=S.prov[i];return clamp(15+Math.round(provValue(i)/300),15,40)*(P.heart?2:1)}
+function termLabel(k){if(k==='rep1')return'🪙1,000 in reparations';if(k==='rep2')return'🪙2,500 in reparations';if(k==='renounce')return'They renounce all claims on your land';if(k==='humiliate')return'Public humiliation (legitimacy +6)';return`Cede ${S.prov[+k.slice(1)].name}`}
+function ourTermOptions(){const W_=S.war,o=[];S.prov.forEach((P,i)=>{if(W_.foes.includes(P.o)&&(W_.occ[i]==='me'||i===W_.goal))o.push('p'+i)});o.push('rep1','rep2');if(provsOf('me').some(i=>W_.foes.includes(S.fclaims[i])))o.push('renounce');o.push('humiliate');return o}
+function theirTerms(pts){const W_=S.war,o=[];const cand=[...provsOf('me').filter(i=>i!==0&&W_.occ[i]==='them'),...(S.prov[W_.goal].o==='me'&&W_.goal!==0&&W_.occ[W_.goal]!=='them'?[W_.goal]:[])];
+  cand.forEach(i=>{const k='p'+i;if(!o.includes(k)&&termCost(k)<=pts){o.push(k);pts-=termCost(k)}});if(pts>=25){o.push('rep2');pts-=25}else if(pts>=10){o.push('rep1');pts-=10}return o}
+function finishWar(title,gain,lose,extra){const W_=S.war,n=W_.main,msgs=[];
+  gain.forEach(k=>{if(k[0]==='p'){const i=+k.slice(1),from=S.prov[i].o;transfer(i,'me','war');msgs.push(`${S.prov[i].name} is now yours.`)}
+    if(k==='rep1'||k==='rep2'){const v=k==='rep1'?1000:2500;S.coins+=v;msgs.push(`They pay 🪙${fmt(v)}.`)}
+    if(k==='renounce'){provsOf('me').forEach(i=>{if(W_.foes.includes(S.fclaims[i]))delete S.fclaims[i]});msgs.push('They renounce their claims.')}
+    if(k==='humiliate'){addMod('leg',6,24,'Humiliated the enemy');relA(n,-10);msgs.push('Their court is humiliated.')}});
+  lose.forEach(k=>{if(k[0]==='p'){const i=+k.slice(1);transfer(i,n,'war');msgs.push(`${S.prov[i].name} is lost.`)}if(k==='rep1'||k==='rep2'){const v=k==='rep1'?1000:2500;S.coins-=v;msgs.push(`You pay 🪙${fmt(v)}.`)}});
+  if(gain.length&&!lose.length){S.wins++;addMod('leg',S.general&&S.general.heir?10:5,24,'Victory');igM('landowners',8,12,'Victory')}
+  if(lose.length){addMod('leg',-8-lose.filter(k=>k[0]==='p').length*4,24,'Defeat')}
+  Object.keys(W_.occd).forEach(i=>{S.dev[i]=12});
+  W_.foes.forEach(o=>{S.tension[o]=40;relA(o,-5)});const vets=S.troops>=5;S.war=null;S.mob=false;
+  if(vets)queue.push({e:'🎖️',t:'The veterans come home',d:'Soldiers are returning from the front. Many are wounded, and all expect to be looked after.',ch:[
+    {l:'Grant veterans\u2019 pensions',f(){addMod('inc',-Math.max(30,Math.round(S.troops*1.5)),24,'Veterans\u2019 pensions');addMod('hap',3,12,'Veterans honored');igM('workers',5,12,'Veterans honored');return'The veterans are grateful, and the public approves.'}},
+    {l:'Thank them and move on',f(){S.unrest+=6;addMod('hap',-3,6,'Neglected veterans');return'Bitter veterans gather in the taverns.'}}]});
+  return{t:title,d:(msgs.length?msgs.join(' '):'Borders stay as they were.')+(extra?' '+extra:'')+' Provinces that were fought over are devastated for a year.'}}
+function autoResolve(r){const W_=S.war;
+  if(r==='win'){const opts=ourTermOptions();let pts=W_.score,g=[];opts.forEach(k=>{if(k!=='humiliate'&&termCost(k)<=pts){g.push(k);pts-=termCost(k)}});return finishWar(`${NATIONS[W_.main].n} surrenders`,g,[])}
+  if(r==='lose')return finishWar('Defeat',[],theirTerms(-W_.score),'Your army has collapsed.');
+  if(r==='support'){if(W_.score>=0)return finishWar('Forced to the table',[],[],'War support at home collapsed, forcing a white peace.');return finishWar('Forced to the table',[],theirTerms(-W_.score),'War support at home collapsed, and you had to accept their terms.')}
+  return finishWar('An exhausted peace',[],[],'After two years, neither side can fight on.')}
+let peaceSel=[],genCands=[];
+function genSheet(){if(!genCands.length)genCands=[0,1,2].map(()=>({name:pick(GNAMES),trait:pick(Object.keys(GTRAITS))}));
+  openSheet(`<h3>🎖️ Choose a general</h3><p class="hint">A general costs 🪙200 to appoint and 🪙30 a month.</p><div class="card">${genCands.map((g,i)=>`<div class="row"><div class="grow"><b>General ${g.name}</b><small>${GTRAITS[g.trait].n}: ${GTRAITS[g.trait].d}</small></div><button class="btn" data-act="appoint" data-arg="${i}" ${S.coins<200?'disabled':''}>Appoint</button></div>`).join('')}
+  ${S.aging&&S.heir.age>=16?`<div class="row"><div class="grow"><b>${S.heir.g==='f'?'Princess':'Prince'} ${S.heir.name}, the heir</b><small>Gains a random trait. Victory brings extra legitimacy, but there’s a risk to the heir’s life each month of war.</small></div><button class="btn" data-act="appoint" data-arg="heir">Appoint</button></div>`:''}</div>
+  ${S.general?'<button class="btn wide" data-act="dismissGen">Dismiss the current general</button>':''}<button class="btn wide" data-act="closeSheet">Cancel</button>`)}
+let peaceSel2=0;
+function peaceSheet(){const W_=S.war;if(!W_)return;const sc=W_.score;
+  if(sc>10){const opts=ourTermOptions(),used=peaceSel.reduce((a,k)=>a+termCost(k),0);
+    openSheet(`<h3>🕊️ Your peace terms</h3><p class="hint">Your war score of ${sc} lets you demand up to ${sc} points. Pick your terms. Occupied provinces and your war goal can be claimed.</p><div class="card">${opts.map(k=>{const on=peaceSel.includes(k),cost=termCost(k);return `<div class="row"><div class="grow"><b>${termLabel(k)}</b><small>${cost} points</small></div><button class="btn ${on?'primary':''}" data-act="term" data-arg="${k}" ${!on&&used+cost>sc?'disabled':''}>${on?'Selected':'Add'}</button></div>`}).join('')}</div>
+    <p class="hint">${used} of ${sc} points used.</p><button class="btn primary wide" data-act="sendTerms" ${peaceSel.length?'':'disabled'}>Send these terms</button><button class="btn wide" data-act="white">Offer a white peace instead</button><button class="btn wide" data-act="closeSheet">Keep fighting</button>`);return}
+  if(sc<-10){const t=theirTerms(-sc);openSheet(`<h3>🕊️ Their terms</h3><p class="hint">With the war score at ${sc}, ${NATIONS[W_.main].n} will only make peace on these terms:</p><div class="card">${t.length?t.map(k=>`<div class="row"><div class="grow"><b>${termLabel(k).replace('Cede','You cede')}</b></div></div>`).join(''):'<div class="row"><div class="grow">A white peace</div></div>'}</div><button class="btn primary wide" data-act="acceptTheirs">Accept their terms</button><button class="btn wide" data-act="closeSheet">Keep fighting</button>`);return}
+  openSheet(`<h3>🕊️ Negotiate peace</h3><p>The war is close to even (score ${sc}). Both sides would accept a white peace, with borders left as they were.</p><button class="btn primary wide" data-act="white">Make a white peace</button><button class="btn wide" data-act="closeSheet">Keep fighting</button>`)}
+function embargoNow(n){S.embargo[n]=12;S.tension[n]=60;relA(n,-20);return`${NATIONS[n].n} breaks off trade and imposes an embargo for a year.`}
+
+/* ---------- goals ---------- */
+const GOALS=[
+  {id:'pop100',d:'Reach 100 subjects',r:500,f:()=>S.pop>=100},
+  {id:'school',d:'Open a school',r:300,f:()=>has('school')},
+  {id:'clinic',d:'Open a clinic',r:300,f:()=>has('clinic')},
+  {id:'trade',d:'Sign your first trade agreement',r:400,f:()=>Object.values(S.trade).some(Boolean)},
+  {id:'law',d:'Pass a new law',r:500,f:()=>S.lawsPassed>=1},
+  {id:'tech3',d:'Research 3 technologies',r:600,f:()=>S.tech.done.length>=3},
+  {id:'town',d:'Grow into a town (200 subjects)',r:1000,f:()=>S.pop>=200},
+  {id:'leg75',d:'Reach 75 legitimacy',r:800,f:()=>S.leg>=75},
+  {id:'net500',d:'Run a 🪙500 monthly surplus',r:600,f:()=>S.lastNet>=500},
+  {id:'ally',d:'Become a close ally of one neighbor',r:800,f:()=>NIDS.some(c=>S.rel[c]>=75)},
+  {id:'calm',d:'Keep unrest under 20 for 24 months in a row',r:1500,f:()=>S.calm>=24},
+  {id:'tech8',d:'Research 8 technologies',r:1500,f:()=>S.tech.done.length>=8},
+  {id:'expand',d:'Gain a new province',r:1000,f:()=>S.gained>=1},
+  {id:'marry',d:'Arrange a royal marriage',r:500,f:()=>!!(S.heir.spouse||S.monarch.spouse)},
+  {id:'wonwar',d:'Win a war',r:1500,f:()=>S.wins>=1},
+  {id:'city',d:'Grow into a city (600 subjects)',r:2500,f:()=>S.pop>=600},
+  {id:'monument',d:'Build the royal monument',r:1500,f:()=>has('lighthouse')},
+  {id:'capital',d:'Become a capital (1,200 subjects)',r:5000,f:()=>S.pop>=1200}
+];
+function checkGoals(){const got=[];GOALS.forEach(g=>{if(!S.goals[g.id]&&g.f()){S.goals[g.id]=1;S.coins+=g.r;got.push(g)}});return got}
+
+/* ---------- monarchy ---------- */
+function succeed(reason){const old=S.monarch,h=S.heir;
+  S.reigns.push({name:old.name,num:old.num,g:old.g,from:old.since,to:S.year,reason});
+  S.monarch={name:h.name,g:h.g,age:h.age,trait:pick(Object.keys(TRAITS)),num:regnal(h.name),since:S.year,spouse:h.spouse||null};
+  S.heir=newRoyal(0,6);addMod('leg',-12,24,'A new reign');
+  if(S.monarch.age<16)addMod('leg',-6,(16-S.monarch.age)*12,'Regency council');
+  return old}
+function successionSheet(old,reason){const m=S.monarch;
+  return{e:'👑',t:reason==='abdicated'?`${monarchName(old)} abdicates`:`${monarchName(old)} has died`,d:`${reason==='abdicated'?'After a long reign, the crown passes on.':`The ${title(old).toLowerCase()} died at the age of ${old.age}. The kingdom mourns.`} ${monarchName(m)}, aged ${m.age}, takes the throne${m.age<16?' under a regency council until coming of age':''}. The new ${title(m).toLowerCase()} is known to be ${TRAITS[m.trait].n.toLowerCase()}: ${TRAITS[m.trait].d.toLowerCase()} A new reign always tests legitimacy.`,ch:[{l:'Long live the '+title(m).toLowerCase(),f(){return`${monarchName(m)} is crowned. The heir is now ${S.heir.name}, aged ${S.heir.age}.`}}]}}
+function revoltSheet(){return{e:'🔥',t:'Revolution!',d:'Unrest has boiled over. Crowds fill the streets demanding change, and parts of the army waver.',ch:[
+  {l:'Make sweeping concessions',c:2000,f(){S.unrest=40;S.leg=45;IGIDS.forEach(k=>igM(k,10,12,'Royal concessions'));return'The crown survives, humbled. Order slowly returns.'}},
+  {l:'Abdicate and start a new nation',f(){setTimeout(()=>{S=newState();tab='isle';render();welcome()},50);return'The old order falls.'}}]}}
+
+/* ---------- month ---------- */
+function endMonth(silent){
+  queue.length=0;const c=calc(),oldPop=S.pop,oldHap=S.hap,oldLeg=S.leg,oldTier=tierOf(S.best).n,notes=[];
+  // stop collects reasons for the ⏩ button to pause; endedM/endedY label this month's news
+  const stop=[],endedM=S.month,endedY=S.year,oldCoins=S.coins,oldUnrest=S.unrest;
+  S.coins+=c.net;S.lastNet=c.net;
+  S.hap=Math.round(S.hap+(c.target-S.hap)*.35);
+  S.leg=Math.round(S.leg+(c.legT-S.leg)*.2);
+  const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
+  let du=(S.leg<40?(40-S.leg)/4:-3)+angry*12+(S.hap<35?3:0);if(du>0)du*=(S.laws.press==='censor'?.7:1)*(trait('cautious')?.7:1);
+  S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
+  const room=c.t.homes-S.pop,grow=law('labor').grow||1;
+  if(S.hap>=50&&room>0)S.pop+=Math.max(1,Math.ceil(room*.22*grow*(S.hap-40)/60));
+  else if(S.hap<35)S.pop-=Math.ceil(S.pop*.03*(35-S.hap)/35)+1;
+  S.pop=clamp(S.pop,10,Math.max(10,c.t.homes));S.best=Math.max(S.best,S.pop);
+  if(S.tech.cur){S.tech.prog+=c.rp;const T=techOf(S.tech.cur);if(S.tech.prog>=T.c){S.tech.done.push(T.id);S.tech.cur=null;S.tech.prog=0;notes.push(['🔬',`${T.n} researched`,T.d]);stop.push(`${T.n} researched`)}}
+  else notes.push(['🔬','Nothing is being researched','Choose a technology in the Research tab.']);
+  if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
+  NIDS.forEach(n=>{let r=S.rel[n]+(50-S.rel[n])*.04;if(Object.values(c.tr).some(x=>x.c===n))r+=1.5;S.rel[n]=clamp(Math.round(r*10)/10,0,100);
+    tenA(n,-(hasTech('telegraph')?4:2)+(S.rel[n]<30?2:0));S.tension[n]=Math.round(S.tension[n]*10)/10;
+    if(S.embargo[n]){S.embargo[n]--;if(!S.embargo[n]){delete S.embargo[n];notes.push([NATIONS[n].e,`${NATIONS[n].n} lifts its embargo`,'Trade can resume.'])}}
+    if(S.crisisCd[n])S.crisisCd[n]--;if(S.demandCd[n])S.demandCd[n]--});
+  // settling
+  S.prov.forEach((P,i)=>{if(P.settle){P.settle--;if(P.settle<=0){P.settle=null;if(P.o==='wild'){transfer(i,'me','settled');notes.push(['🧭',`${P.name} is settled`,'The frontier is now part of your kingdom. Build roads and homes to make it useful.']);stop.push(`${P.name} is settled`)}}}});
+  // yearly: neighbor situations and frontier competition
+  if(S.month===11){NIDS.forEach(n=>{const r=Math.random();S.nsit[n]=r<.7?'stable':r<.9?'indebted':'troubled'});
+    provsOf('wild').forEach(i=>{const ns=NIDS.filter(n=>touches(i,n));if(ns.length&&Math.random()<(S.prov[i].settle?.08:.18)){const n=pick(ns);const was=S.prov[i].settle;S.prov[i].settle=null;transfer(i,n,'settled');notes.push([NATIONS[n].e,`${NATIONS[n].n} settles ${S.prov[i].name}`,was?'They got there first. Half your settlement cost is refunded.':'The frontier shrinks.']);if(was)S.coins+=Math.round(settleCost(i)/2)}})}
+  // royal inheritance
+  const sp=S.heir.spouse||S.monarch.spouse;if(sp&&!atWarWith(sp)&&Math.random()<.004){const opts=borderOf(sp,'me').filter(i=>!S.prov[i].heart);if(opts.length){const i=opts.find(q=>S.claims[q])!=null?opts.find(q=>S.claims[q]):pick(opts);transfer(i,'me','inherited');notes.push(['💍',`You inherit ${S.prov[i].name}`,`A branch of the ${NATIONS[sp].n} royal line has died out, and through marriage the province passes to your crown.`]);stop.push(`You inherit ${S.prov[i].name}`)}}
+  // war
+  // army reinforcement and devastation
+  {const tg=troopTarget();if(S.troops<tg)S.troops=Math.min(tg,S.troops+Math.max(1,Math.ceil(S.pop*.006*(1+cnt('barracks')*.25))));else if(!S.war)S.troops=tg}
+  Object.keys(S.dev).forEach(k=>{S.dev[k]--;if(S.dev[k]<=0)delete S.dev[k]});
+  if(S.war){const r=warMonth(notes);if(r){const res=autoResolve(r);queue.push({e:r==='win'?'🏆':r==='lose'?'🏳️':'🕊️',t:res.t,d:res.d,ch:[{l:'Continue',f(){return'The war is over.'}}]});const v=queue.findIndex(q=>q.e==='🎖️');if(v>=0)queue.push(queue.splice(v,1)[0])}}
+  else{const c2=calc();NIDS.forEach(n=>{if(S.war||S.embargo[n])return;if(S.tension[n]>=90&&theirStr(n)>c2.str*1.2&&Math.random()<.2){const goals=borderOf('me',n).filter(i=>i!==0);if(!goals.length)return;const g=goals.find(i=>S.fclaims[i]===n)!=null?goals.find(i=>S.fclaims[i]===n):pick(goals);startWar(n,g,n);
+    queue.push({e:'⚔️',t:`${NATIONS[n].n} declares war!`,d:`${NATIONS[n].n} has invaded, aiming to seize ${S.prov[g].name}. Their strength is ${theirStr(n)}, yours is ${c2.str}. Check the World tab to manage the war.`,ch:[{l:'To arms',f(){return'The kingdom mobilizes.'}}]})}})}
+  NIDS.forEach(n=>{if(provsOf('me').some(i=>S.fclaims[i]===n))tenA(n,1)});
+  S.envoy={};Object.keys(S.favorCd).forEach(k=>{S.favorCd[k]--;if(S.favorCd[k]<=0)delete S.favorCd[k]});
+  S.mods.forEach(m=>m.m--);S.mods=S.mods.filter(m=>m.m>0);
+  S.month++;if(S.month>11){S.month=0;S.year++;if(S.aging){S.monarch.age++;S.heir.age++}}
+  S.turn++;
+  S.hist.push([S.pop,S.hap,S.leg]);if(S.hist.length>60)S.hist.shift();
+  const got=checkGoals(),newTier=tierOf(S.best).n;
+  if(S.aging){const a=S.monarch.age,p=a>50?Math.pow(a-50,2)/60000:0;if(Math.random()<p){const old=succeed('died');queue.push(successionSheet(old,'died'))}}
+  if(S.unrest>=100)queue.push(revoltSheet());
+  const cr=NIDS.find(n=>S.tension[n]>=60&&!S.crisisCd[n]&&!S.embargo[n]);if(cr&&Math.random()<.5){S.crisisCd[cr]=8;queue.push(crisisEvent(cr))}
+  if(!S.noEvents&&!queue.length&&S.hist.length>1&&Math.random()<.55){const pool=EVENTS.filter(e=>(!e.cond||e.cond())&&!S.recent.includes(e.id));if(pool.length){const e=pick(pool);S.recent.push(e.id);if(S.recent.length>10)S.recent.shift();queue.push(e)}}
+  if(silent){while(queue.length){const e=queue.shift();if(e.id==='crisis'){e.ch[1].f()}else if(e.t==='Revolution!'){e.ch[0].f()}else if(e.ch)e.ch[e.ch.length-1].f()}return}
+  const dp=S.pop-oldPop,dh=S.hap-oldHap,dl=S.leg-oldLeg;
+  const row=(e,b,s,n,cls)=>[e,b,s,n,cls];
+  const lines=[row('🪙','Treasury',`${c.net>=0?'Surplus':'Deficit'} this month`,(c.net>=0?'+':'')+fmt(c.net),c.net>=0?'pos':'neg'),
+    row('👥',`Population ${fmt(S.pop)}`,dp>0?`${dp} people moved here`:dp<0?`${-dp} people emigrated`:room<=0?'Growth is blocked by a housing shortage.':'No change',(dp>=0?'+':'')+dp,dp>=0?'pos':'neg'),
+    row('📊',`Approval ${S.hap}%`,`Trending toward ${c.target}%`,(dh>=0?'+':'')+dh,dh>=0?'pos':'neg'),
+    row('👑',`Legitimacy ${S.leg}`,`Trending toward ${c.legT}`,(dl>=0?'+':'')+dl,dl>=0?'pos':'neg')];
+  if(S.unrest>=40)lines.push(row('🔥',`Unrest ${Math.round(S.unrest)}`,S.unrest>=75?'Revolution is close. Raise legitimacy or win back angry interest groups.':'Unrest is building. Low legitimacy and radical interest groups feed it.'));
+  notes.forEach(n=>lines.push(row(n[0],n[1],n[2])));
+  NIDS.forEach(n=>{if(S.tension[n]>=50&&!S.embargo[n]&&!atWarWith(n))lines.push(row(NATIONS[n].e,`Tension with ${NATIONS[n].n} is ${Math.round(S.tension[n])}`,'Above 60, they may issue an ultimatum. Send an envoy to calm things.'))});
+  got.forEach(g=>lines.push(row('✅',g.d,`Objective complete. +🪙${fmt(g.r)}`)));
+  if(newTier!==oldTier)lines.push(row('📈',`Your nation is now a ${newTier.toLowerCase()}`,''));
+  const cc=calc();if(cc.rentIdx>=1.6)lines.push(row('🏠','Rents are soaring',`Homes are ${Math.round(cc.occ*100)}% full. Build more housing or decree rent controls.`));
+  if(S.coins<0)lines.push(row('⚠️','The treasury is in debt','You pay interest every month, and debt erodes approval.'));
+  got.forEach(g=>stop.push(g.d));if(newTier!==oldTier)stop.push(`Your nation is now a ${newTier.toLowerCase()}`);
+  if(oldCoins>=0&&S.coins<0)stop.push('The treasury is in debt');if(oldUnrest<75&&S.unrest>=75)stop.push('Revolution is close');
+  S.news=S.news||[];S.news.unshift({m:endedM,y:endedY,items:lines});if(S.news.length>36)S.news.length=36;
+  return{stop,net:c.net,dp}
+}
+/* ---------- news ---------- */
+const newsRow=([e,b,s,n,cls])=>`<div class="row"><span class="em">${e}</span><div class="grow"><b>${b}</b>${s?`<small>${s}</small>`:''}</div>${n!=null?`<span class="num ${cls||''}">${n}</span>`:''}</div>`;
+const newsTitle=x=>`${MONTHS[x.m]}, year ${x.y}`;
+function logNews(e,b,s){S.news=S.news||[];if(!S.news.length)S.news.unshift({m:S.month,y:S.year,items:[]});S.news[0].items.push([e,b,s])}
+function newsSheet(){const N=S.news||[];
+  openSheet(`<h3>📰 News</h3>${N.length?N.map(x=>`<h2>${newsTitle(x)}</h2><div class="card">${x.items.map(newsRow).join('')}</div>`).join(''):'<p class="hint">Nothing has happened yet. End the month to see how the kingdom fares.</p>'}<button class="btn primary wide" data-act="closeSheet">Done</button>`)}
+function reportSheet(){const x=(S.news||[])[0];if(!x)return;
+  openSheet(`<h3>Monthly report: ${newsTitle(x)}</h3><div class="card">${x.items.map(newsRow).join('')}</div><button class="btn primary wide" data-act="${queue.length?'nextEvent':'closeSheet'}">${queue.length?'Continue':'Return to the map'}</button>`)}
+// After one or more months: events that need a decision open straight away; otherwise a short toast, and the full story waits in the news.
+function afterMonths(rs){const last=rs[rs.length-1],net=rs.reduce((a,r)=>a+r.net,0),dp=rs.reduce((a,r)=>a+r.dp,0),why=last.stop[0]||(S.war&&rs.length>1?'The war needs your attention':'');
+  const head=rs.length>1?`⏩ ${rs.length} months passed`:`${MONTHS[(S.news[0]||{}).m]} is over`;
+  if(S.showReport)reportSheet();else if(queue.length)showNext();
+  toast(`${head}: 🪙 ${net>=0?'+':''}${fmt(net)}, 👥 ${dp>=0?'+':''}${dp}${why?'. '+why+'.':''}`)}
+function showNext(){curEvent=queue.shift();if(!curEvent){closeSheet();return}
+  openSheet(`<div class="event"><div class="pic" aria-hidden="true">${curEvent.e}</div><h3>${curEvent.t}</h3><p>${curEvent.d}</p></div>${curEvent.ch.map((ch,i)=>`<button class="btn choice" data-act="choose" data-arg="${i}">${ch.l}<small>${ch.c?`Costs 🪙${fmt(ch.c)}`:'No upfront cost'}</small></button>`).join('')}`)}
+
+/* ---------- views ---------- */
+const bar=(v,c)=>`<div class="meter"><i style="width:${clamp(v,0,100)}%;background:${c||col(v)}"></i></div>`;
+function isleHTML(){const c=calc();
+  const needs=NEEDS.map(n=>`<div class="need"><span aria-hidden="true">${n.e}</span> ${n.n}<b style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</b>${bar(c.sc[n.k])}</div>`).join('');
+  const x=(S.news||[])[0];
+  const news=x?`<h2>News: ${newsTitle(x)}</h2><div class="card">${x.items.map(newsRow).join('')}</div>${S.news.length>1?'<button class="btn wide" data-act="news">Earlier news</button>':''}`
+    :'<h2>News</h2><p class="hint">Nothing has happened yet. <b>End month</b> moves time forward one month, and <b>⏩</b> keeps going until something needs you, up to a year.</p>';
+  return `${news}<h2>Public needs</h2><div class="needs">${needs}</div>`}
+
+/* ---------- map canvas ---------- */
+// cam.cx/cy is the tile position at the middle of the view; cam.z is the size of one tile in CSS pixels.
+const MAP={cam:{cx:0,cy:0,z:TS},vw:0,vh:0,dpr:1,dirty:true,raf:0,pal:null,base:null,camMap:null,kc:-1,glyphs:new Map(),pat:null};
+const MAXZ=88,minZ=()=>Math.max(5,Math.min(MAP.vw/(W+2),MAP.vh/(H+2)));
+function clampCam(){const c=MAP.cam;c.z=clamp(c.z,minZ(),MAXZ);const hw=MAP.vw/2/c.z,hh=MAP.vh/2/c.z;
+  c.cx=W+2<=hw*2?W/2:clamp(c.cx,hw-1,W+1-hw);c.cy=H+2<=hh*2?H/2:clamp(c.cy,hh-1,H+1-hh)}
+function centerOn(i,z){const c=MAP.cam;if(z)c.z=z;c.cx=i%W+.5;c.cy=Math.floor(i/W)+.5;clampCam()}
+function drawSoon(){if(!MAP.raf)MAP.raf=requestAnimationFrame(()=>{MAP.raf=0;drawMap()})}
+function zoomAt(sx,sy,f){const c=MAP.cam,wx=c.cx+(sx-MAP.vw/2)/c.z,wy=c.cy+(sy-MAP.vh/2)/c.z;c.z=clamp(c.z*f,minZ(),MAXZ);c.cx=wx-(sx-MAP.vw/2)/c.z;c.cy=wy-(sy-MAP.vh/2)/c.z;clampCam();drawSoon()}
+function tileAt(sx,sy){const c=MAP.cam,col=Math.floor(c.cx+(sx-MAP.vw/2)/c.z),row=Math.floor(c.cy+(sy-MAP.vh/2)/c.z);return col<0||row<0||col>=W||row>=H?-1:row*W+col}
+function palette(){const cs=getComputedStyle(document.documentElement),g=k=>cs.getPropertyValue(k).trim();
+  return{sea:g('--sea2'),shallow:g('--sea'),grass:g('--grass'),grass2:g('--grass2'),forest:g('--forest'),sand:g('--sand'),coin:g('--coin'),ink:g('--ink'),
+    norvik:g('--o-norvik'),solenne:g('--o-solenne'),aurelia:g('--o-aurelia'),wild:g('--o-wild'),wildf:g('--o-wildf'),
+    line:g('--line'),muted:g('--muted'),good:g('--good'),bad:g('--bad'),card:g('--card')}}
+function tileColor(x,P){const pc=MAP.pcol&&MAP.pcol[x.p];if(pc)return pc;
+  if(x.o==='me')return x.b?P.grass2:x.t==='f'?P.forest:P.grass;if(x.o==='wild')return x.t==='f'&&!x.b?P.wildf:P.wild;return P[x.o]||P.wild}
+/* ---------- map modes ---------- */
+// Relations is diverging (hostile red, neutral gray at 50, friendly green); tension is one hue from calm gray to red.
+const UI=(()=>{try{return JSON.parse(localStorage.getItem('islandnation.ui'))||{}}catch(e){return{}}})();
+const saveUI=()=>{try{localStorage.setItem('islandnation.ui',JSON.stringify(UI))}catch(e){}};
+const MODES={political:'Political',relations:'Relations',tension:'Tension',claims:'Claims'};
+let mapMode=MODES[UI.mapMode]?UI.mapMode:'political';
+const hexRgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]};
+const mixHex=(a,b,t)=>{const A=hexRgb(a),B=hexRgb(b);return`rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')})`};
+// null means "use the normal political colour" for that province
+function provColors(P){if(mapMode==='political')return null;
+  // neutral is the gray midpoint; frontier gets a fainter gray so it never reads as a neutral nation
+  const neutral=mixHex(P.line,P.muted,.4),wild=mixHex(P.line,P.card,.5),hex=c=>'#'+c.match(/\d+/g).map(v=>(+v).toString(16).padStart(2,'0')).join(''),N=hex(neutral);
+  return S.prov.map((Pv,i)=>{const o=Pv.o;
+    if(mapMode==='claims'){if(o==='me')return S.fclaims[i]?mixHex(P.grass,P.bad,.6):null;return S.claims[i]?mixHex(N,P.good,.75):o==='wild'?wild:neutral}
+    if(o==='me')return null;if(o==='wild')return wild;
+    if(mapMode==='relations'){const r=S.rel[o];return r>=50?mixHex(N,P.good,(r-50)/50):mixHex(N,P.bad,(50-r)/50)}
+    return mixHex(N,P.bad,S.tension[o]/100)})}
+function renderModes(){$('#modes').innerHTML=Object.entries(MODES).map(([k,n])=>`<button class="btn ${mapMode===k?'on':''}" data-act="mapmode" data-arg="${k}" aria-pressed="${mapMode===k}">${n}</button>`).join('');
+  const sw=(cls,n,style)=>`<span class="lg"><i class="${cls}"${style?` style="${style}"`:''}></i>${n}</span>`,bar=(g,a,b)=>`<span class="lg">${a} <span class="lgbar" style="background:${g}"></span> ${b}</span>`;
+  $('#legend').innerHTML=mapMode==='political'?sw('o-me','Your kingdom')+sw('o-norvik','Norvik')+sw('o-solenne','Solenne')+sw('o-aurelia','Aurelia')+sw('o-wild','Frontier')
+    :mapMode==='relations'?bar(`linear-gradient(90deg,var(--bad),${NEU},var(--good))`,'Hostile','Close ally')+sw('o-me','Your kingdom')+sw('','Frontier',WILD)
+    :mapMode==='tension'?bar(`linear-gradient(90deg,${NEU},var(--bad))`,'Calm','On the brink')+sw('o-me','Your kingdom')+sw('','Frontier',WILD)
+    :sw('','Your claim',`background:color-mix(in srgb,${NEU} 25%,var(--good))`)+sw('','Claimed by a neighbor','background:color-mix(in srgb,var(--grass) 40%,var(--bad))')+sw('o-me','Your kingdom')+sw('','Other land',`background:${NEU}`)}
+const NEU='color-mix(in srgb,var(--line) 60%,var(--muted))',WILD='background:color-mix(in srgb,var(--line) 50%,var(--card))';
+function stripes(color,dir){const s=9,cv=document.createElement('canvas');cv.width=cv.height=s;const x=cv.getContext('2d');x.strokeStyle=color;x.lineWidth=3;x.beginPath();
+  for(const d of[-s,0,s]){if(dir>0){x.moveTo(d,s);x.lineTo(d+s,0)}else{x.moveTo(d,0);x.lineTo(d+s,s)}}x.stroke();return MAP.ctx.createPattern(cv,'repeat')}
+// Emoji are drawn once per size into a small bitmap and reused, which is much faster than drawing text every frame.
+function glyph(e,px){const k=e+'|'+px;let g=MAP.glyphs.get(k);if(g)return g;if(MAP.glyphs.size>500)MAP.glyphs.clear();
+  const s=Math.ceil(px*1.3);g=document.createElement('canvas');g.width=g.height=s;const x=g.getContext('2d');
+  x.font=`${px}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillStyle=MAP.pal.ink;x.fillText(e,s/2,s/2+px*.06);MAP.glyphs.set(k,g);return g}
+function buildBase(){const P=MAP.pal,b=MAP.base||(MAP.base=document.createElement('canvas'));b.width=W;b.height=H;const x=b.getContext('2d');x.fillStyle=P.sea;x.fillRect(0,0,W,H);
+  S.map.forEach((t,i)=>{if(t.t==='w')return;x.fillStyle=tileColor(t,P);x.fillRect(i%W,i/W|0,1,1)})}
+function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh||!S)return;
+  if(MAP.camMap!==S.map){MAP.camMap=S.map;MAP.kc=-1;centerOn(capIdx(),TS)}
+  if(MAP.dirty){MAP.pal=palette();MAP.pcol=provColors(MAP.pal);MAP.glyphs.clear();MAP.pat={settle:stripes('rgba(255,255,255,.3)',1),me:stripes('rgba(60,140,80,.6)',1),them:stripes('rgba(190,60,60,.6)',-1)};buildBase();MAP.dirty=false}
+  geo();const P=MAP.pal,c=MAP.cam,z=c.z,ox=vw/2-c.cx*z,oy=vh/2-c.cy*z;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=P.sea;ctx.fillRect(0,0,vw,vh);
+  const c0=Math.max(0,Math.floor(-ox/z)),c1=Math.min(W-1,Math.floor((vw-ox)/z)),r0=Math.max(0,Math.floor(-oy/z)),r1=Math.min(H-1,Math.floor((vh-oy)/z));
+  const X=col=>Math.round(ox+col*z),Y=row=>Math.round(oy+row*z),war=S.war;
+  if(window.DOMMatrix)for(const k in MAP.pat)if(MAP.pat[k]&&MAP.pat[k].setTransform)MAP.pat[k].setTransform(new DOMMatrix([1,0,0,1,Math.round(ox),Math.round(oy)]));
+  const lw=Math.max(1.5,z*.075),thick=new Path2D(),thin=new Path2D(),marks=[];
+  for(let r=r0;r<=r1;r++)for(let col=c0;col<=c1;col++){const i=r*W+col,x=S.map[i],sx=X(col),sy=Y(r),w=X(col+1)-sx,h=Y(r+1)-sy;
+    if(x.t==='w'){if(geoCoast[i]===2){ctx.globalAlpha=.35;ctx.fillStyle=P.shallow;ctx.fillRect(sx,sy,w,h);ctx.globalAlpha=1}continue}
+    const Pv=S.prov[x.p];ctx.fillStyle=tileColor(x,P);ctx.fillRect(sx,sy,w,h);
+    if(Pv&&Pv.settle){ctx.fillStyle=MAP.pat.settle;ctx.fillRect(sx,sy,w,h)}
+    if(war&&war.occ[x.p]){ctx.fillStyle=MAP.pat[war.occ[x.p]==='me'?'me':'them'];ctx.fillRect(sx,sy,w,h)}
+    if(S.dev[x.p]){ctx.fillStyle='rgba(105,105,105,.42)';ctx.fillRect(sx,sy,w,h)}
+    if(x.o==='me'&&geoCoast[i]===1){ctx.strokeStyle=P.sand;ctx.lineWidth=lw;ctx.strokeRect(sx+lw/2,sy+lw/2,w-lw,h-lw)}
+    // borders: check the right and lower neighbor so every edge is drawn once
+    if(col+1<W){const y=S.map[i+1];if(y.t!=='w'&&y.p!==x.p){const p=y.o!==x.o?thick:thin;p.moveTo(sx+w,sy);p.lineTo(sx+w,sy+h)}}
+    if(r+1<H){const y=S.map[i+W];if(y.t!=='w'&&y.p!==x.p){const p=y.o!==x.o?thick:thin;p.moveTo(sx,sy+h);p.lineTo(sx+w,sy+h)}}
+    const e=x.b&&B[x.b]?B[x.b].e:x.t==='f'&&mapMode==='political'?'🌲':'';if(e&&z>=14)marks.push([e,sx+w/2,sy+h/2,x.o==='me'?.56:.46])}
+  ctx.lineCap='round';ctx.strokeStyle='rgba(20,30,35,.3)';ctx.lineWidth=Math.max(.75,z*.0375);ctx.stroke(thin);
+  ctx.strokeStyle='rgba(20,30,35,.75)';ctx.lineWidth=lw;ctx.stroke(thick);
+  marks.forEach(([e,mx,my,f])=>{const t=z*f,px=Math.max(8,Math.ceil(t*dpr/4)*4),g=glyph(e,px),s=t*1.3;ctx.drawImage(g,mx-s/2,my-s/2,s,s)});
+  const ring=(i,color,dash)=>{if(i<0)return;const sx=X(i%W),sy=Y(i/W|0),w=X(i%W+1)-sx;ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=3;ctx.strokeRect(sx+1.5,sy+1.5,w-3,w-3);ctx.setLineDash([])};
+  ring(S.sel,P.coin);if(document.activeElement===cv)ring(MAP.kc,P.coin,[5,4]);
+  drawMini()}
+function drawMini(){const m=MAP.mini,c=MAP.cam,show=MAP.vw/c.z<W||MAP.vh/c.z<H;m.style.display=show?'block':'none';if(!show)return;
+  const lim=MAP.vw<500?104:150,s=lim/Math.max(W,H),w=Math.round(W*s),h=Math.round(H*s),d=MAP.dpr;
+  if(m.width!==Math.round(w*d)||m.height!==Math.round(h*d)){m.width=Math.round(w*d);m.height=Math.round(h*d);m.style.width=w+'px';m.style.height=h+'px'}
+  const x=m.getContext('2d');x.setTransform(d,0,0,d,0,0);x.imageSmoothingEnabled=false;x.drawImage(MAP.base,0,0,w,h);
+  const vw=MAP.vw/c.z,vh=MAP.vh/c.z;x.strokeStyle=MAP.pal.coin;x.lineWidth=2;x.strokeRect((c.cx-vw/2)*s,(c.cy-vh/2)*s,vw*s,vh*s);MAP.miniScale=s}
+function tileLabel(i){const x=S.map[i];if(!x||x.t==='w')return'';const P=S.prov[x.p];
+  const extra=NATIONS[x.o]&&mapMode==='relations'?` · relations ${Math.round(S.rel[x.o])}`:NATIONS[x.o]&&mapMode==='tension'?` · tension ${Math.round(S.tension[x.o])}`
+    :mapMode==='claims'&&S.claims[x.p]?' · your claim':mapMode==='claims'&&S.fclaims[x.p]?` · claimed by ${NATIONS[S.fclaims[x.p]].n}`:'';
+  return(x.o==='me'?`${x.b&&B[x.b]?B[x.b].e+' '+B[x.b].n:x.t==='f'?'🌲 Forest':'Open land'} · ${P.name}`:`${P.name} · ${ownName(x.o)}`)+extra}
+function showTip(t){const el=$('#maptip');el.textContent=t;el.style.display=t?'block':'none'}
+function mapResize(){const w=$('#mapwrap');MAP.vw=w.clientWidth;MAP.vh=w.clientHeight;if(!MAP.vw||!MAP.vh)return;MAP.dpr=window.devicePixelRatio||1;
+  MAP.cv.width=Math.round(MAP.vw*MAP.dpr);MAP.cv.height=Math.round(MAP.vh*MAP.dpr);clampCam();drawMap()}
+function mapInit(){const cv=MAP.cv=$('#mapcv');MAP.ctx=cv.getContext('2d');MAP.mini=$('#minimap');
+  if(window.ResizeObserver)new ResizeObserver(mapResize).observe($('#mapwrap'));else addEventListener('resize',mapResize);
+  const ptr=new Map();let g=null;
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  // One finger (or the mouse) pans, two fingers pinch-zoom; a press that barely moves is a tap on a tile.
+  const begin=moved=>{const p=[...ptr.values()],c=MAP.cam;if(!p.length){g=null;return}
+    if(p.length===1)g={pinch:false,x:p[0].x,y:p[0].y,cx:c.cx,cy:c.cy,moved};
+    else{const[a,b]=p,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;g={pinch:true,d:Math.hypot(a.x-b.x,a.y-b.y)||1,z:c.z,wx:c.cx+(mx-MAP.vw/2)/c.z,wy:c.cy+(my-MAP.vh/2)/c.z,moved:true}}};
+  cv.addEventListener('pointerdown',e=>{if(e.button>0)return;cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,pos(e));begin(ptr.size>1)});
+  cv.addEventListener('pointermove',e=>{const q=pos(e);
+    if(!ptr.has(e.pointerId)){if(e.pointerType==='mouse')showTip(tileLabel(tileAt(q.x,q.y)));return}
+    ptr.set(e.pointerId,q);const c=MAP.cam,p=[...ptr.values()];
+    if(!g.pinch){const dx=q.x-g.x,dy=q.y-g.y;if(!g.moved&&Math.hypot(dx,dy)>8)g.moved=true;if(g.moved){c.cx=g.cx-dx/c.z;c.cy=g.cy-dy/c.z;clampCam();drawSoon()}}
+    else if(p.length>1){const[a,b]=p,mx=(a.x+b.x)/2,my=(a.y+b.y)/2;c.z=clamp(g.z*Math.hypot(a.x-b.x,a.y-b.y)/g.d,minZ(),MAXZ);c.cx=g.wx-(mx-MAP.vw/2)/c.z;c.cy=g.wy-(my-MAP.vh/2)/c.z;clampCam();drawSoon()}});
+  const end=e=>{if(!ptr.has(e.pointerId))return;const q=ptr.get(e.pointerId),tap=e.type==='pointerup'&&g&&!g.pinch&&!g.moved&&ptr.size===1;ptr.delete(e.pointerId);begin(true);
+    if(tap){const i=tileAt(q.x,q.y);if(i>=0&&S.map[i].t!=='w'){MAP.kc=i;act('tile',i)}}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  cv.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')showTip('')});
+  cv.addEventListener('wheel',e=>{e.preventDefault();const q=pos(e);zoomAt(q.x,q.y,Math.exp(-e.deltaY*(e.deltaMode?.05:.0015)))},{passive:false});
+  cv.addEventListener('keydown',e=>{const k=e.key,mv={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];
+    if(mv){e.preventDefault();let i=MAP.kc;if(i<0)i=tileAt(MAP.vw/2,MAP.vh/2);if(i<0)i=capIdx();
+      const col=clamp(i%W+mv[0],0,W-1),row=clamp((i/W|0)+mv[1],0,H-1);i=row*W+col;MAP.kc=i;
+      const c=MAP.cam,hw=MAP.vw/2/c.z-1,hh=MAP.vh/2/c.z-1;if(Math.abs(col+.5-c.cx)>hw)c.cx+=mv[0];if(Math.abs(row+.5-c.cy)>hh)c.cy+=mv[1];clampCam();showTip(tileLabel(i));drawSoon()}
+    else if((k==='Enter'||k===' ')&&MAP.kc>=0&&S.map[MAP.kc].t!=='w'){e.preventDefault();act('tile',MAP.kc)}
+    else if(k==='+'||k==='='){e.preventDefault();zoomAt(MAP.vw/2,MAP.vh/2,1.25)}
+    else if(k==='-'||k==='_'){e.preventDefault();zoomAt(MAP.vw/2,MAP.vh/2,.8)}});
+  cv.addEventListener('focus',drawSoon);cv.addEventListener('blur',()=>{showTip('');drawSoon()});
+  const jump=e=>{const r=MAP.mini.getBoundingClientRect(),s=MAP.miniScale||1;MAP.cam.cx=(e.clientX-r.left)/s;MAP.cam.cy=(e.clientY-r.top)/s;clampCam();drawSoon()};
+  MAP.mini.addEventListener('pointerdown',e=>{e.stopPropagation();MAP.mini.setPointerCapture(e.pointerId);jump(e)});
+  MAP.mini.addEventListener('pointermove',e=>{if(MAP.mini.hasPointerCapture(e.pointerId))jump(e)});
+  if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{MAP.dirty=true;drawSoon()})}
+/* ---------- history charts ---------- */
+// S.hist holds [population, approval, legitimacy] for each finished month, newest last.
+function histDate(i,n){const t=S.year*12+S.month-1-(n-1-i);return`${MONTHS[((t%12)+12)%12].slice(0,3)}, year ${Math.floor(t/12)}`}
+function histHTML(){const h=S.hist||[];if(h.length<2)return'<p class="hint">Charts appear after your first two months.</p>';
+  const rows=h.map((x,i)=>`<tr><td>${histDate(i,h.length)}</td><td>${fmt(x[0])}</td><td>${x[1]}%</td><td>${x[2]}</td></tr>`).reverse().join('');
+  return `<div class="card" style="padding:10px 14px"><b>Population</b><div class="chartbox" data-chart="pop" tabindex="0" aria-label="Population chart, last ${h.length} months"></div>
+    <b style="display:block;margin-top:10px">Approval and legitimacy</b><div class="ckeys"><span><i style="background:var(--viz-1)"></i>Approval</span><span><i style="background:var(--viz-2)"></i>Legitimacy</span></div>
+    <div class="chartbox" data-chart="mood" tabindex="0" aria-label="Approval and legitimacy chart, last ${h.length} months"></div>
+    <details class="tbl"><summary>Show as a table</summary><table><thead><tr><th>Month</th><th>Population</th><th>Approval</th><th>Legitimacy</th></tr></thead><tbody>${rows}</tbody></table></details></div>`}
+const niceMax=v=>{const p=Math.pow(10,Math.floor(Math.log10(Math.max(1,v)))),f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p};
+function drawCharts(){const h=S.hist||[];if(h.length<2)return;
+  document.querySelectorAll('.chartbox[data-chart]').forEach(box=>{
+    if(box.dataset.chart==='pop'){const top=niceMax(Math.max(...h.map(x=>x[0]))*1.1);
+      lineChart(box,{min:0,max:top,ticks:[0,top/2,top],fmtv:fmt,series:[{n:'Population',c:'var(--viz-3)',v:h.map(x=>x[0]),area:1}]})}
+    else lineChart(box,{min:0,max:100,ticks:[0,50,100],fmtv:v=>Math.round(v),series:[{n:'Approval',c:'var(--viz-1)',v:h.map(x=>x[1]),suf:'%'},{n:'Legitimacy',c:'var(--viz-2)',v:h.map(x=>x[2])}]})})}
+function lineChart(box,o){const w=Math.max(220,box.clientWidth),hh=130,m={l:36,r:40,t:8,b:20},n=o.series[0].v.length;
+  const X=i=>m.l+i/(n-1)*(w-m.l-m.r),Y=v=>m.t+(1-(v-o.min)/(o.max-o.min))*(hh-m.t-m.b),bottom=Y(o.min);
+  const line=v=>v.map((y,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(y).toFixed(1)}`).join('');
+  const ends=o.series.map(s=>Y(s.v[n-1])),apart=ends.length<2||Math.abs(ends[0]-ends[1])>=14;
+  let svg=`<svg width="${w}" height="${hh}" viewBox="0 0 ${w} ${hh}" aria-hidden="true">`;
+  o.ticks.forEach(t=>{svg+=`<line class="grid" x1="${m.l}" x2="${w-m.r}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${m.l-6}" y="${Y(t)+4}" text-anchor="end">${o.fmtv(t)}</text>`});
+  svg+=`<text x="${m.l}" y="${hh-4}">${histDate(0,n)}</text><text x="${w-m.r}" y="${hh-4}" text-anchor="end">${histDate(n-1,n)}</text>`;
+  o.series.forEach(s=>{if(s.area)svg+=`<path d="${line(s.v)}L${X(n-1)},${bottom}L${X(0)},${bottom}Z" fill="${s.c}" opacity=".1"/>`;
+    svg+=`<path d="${line(s.v)}" fill="none" stroke="${s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`});
+  o.series.forEach((s,k)=>{svg+=`<circle cx="${X(n-1)}" cy="${ends[k]}" r="4" fill="${s.c}" stroke="var(--card)" stroke-width="2"/>`;
+    if(apart)svg+=`<text class="end" x="${X(n-1)+8}" y="${ends[k]+4}">${o.fmtv(s.v[n-1])}${s.suf||''}</text>`});
+  svg+=`<line class="xh" y1="${m.t}" y2="${bottom}" visibility="hidden"/>${o.series.map(s=>`<circle class="hd" r="4" fill="${s.c}" stroke="var(--card)" stroke-width="2" visibility="hidden"/>`).join('')}</svg>`;
+  box.innerHTML=svg+'<div class="ctip" hidden></div>';
+  const xh=box.querySelector('.xh'),dots=box.querySelectorAll('.hd'),tip=box.querySelector('.ctip');
+  // Crosshair snaps to the nearest month and lists every series there; the same readout follows arrow keys when the chart has focus.
+  const show=i=>{i=clamp(i,0,n-1);box.dataset.i=i;const x=X(i);xh.setAttribute('x1',x);xh.setAttribute('x2',x);xh.setAttribute('visibility','visible');
+    dots.forEach((d,k)=>{d.setAttribute('cx',x);d.setAttribute('cy',Y(o.series[k].v[i]));d.setAttribute('visibility','visible')});
+    tip.replaceChildren();const t=document.createElement('div');t.className='tt';t.textContent=histDate(i,n);tip.append(t);
+    o.series.forEach(s=>{const r=document.createElement('div');r.className='tr';const k=document.createElement('i');k.style.background=s.c;const b=document.createElement('b');b.textContent=o.fmtv(s.v[i])+(s.suf||'');r.append(k,b,document.createTextNode(' '+s.n));tip.append(r)});
+    tip.hidden=false;const tw=tip.offsetWidth;tip.style.left=clamp(x>w/2?x-tw-12:x+12,0,w-tw)+'px'};
+  const hide=()=>{xh.setAttribute('visibility','hidden');dots.forEach(d=>d.setAttribute('visibility','hidden'));tip.hidden=true;delete box.dataset.i};
+  const at=e=>{const r=box.getBoundingClientRect();show(Math.round((e.clientX-r.left-m.l)/(w-m.l-m.r)*(n-1)))};
+  box.onpointermove=at;box.onpointerdown=at;box.onpointerleave=hide;box.onblur=hide;
+  box.onkeydown=e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();const i=box.dataset.i!=null?+box.dataset.i:n-1;show(i+(e.key==='ArrowLeft'?-1:1))}}
+function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.sc[b.k]),hi=low[low.length-1];
+  const NAMES=['M. Arden','J. Okafor','L. Brandt','S. Moreau','D. Kowal','R. Silva','A. Lindqvist','T. Hale','N. Petrov','E. Castell'];
+  const quotes=[low[0],low[1],hi].map((n,i)=>{const nm=NAMES[(S.turn*3+i*4)%NAMES.length];const good=c.sc[n.k]>=70;return `<div class="row"><span class="em">${n.e}</span><div class="grow"><span class="quote">\u201c${good?n.hi:n.lo}\u201d</span><small>${nm}</small></div></div>`}).join('');
+  const classes=Object.entries(CLASSES).map(([k,C])=>{const v=c.cls[k],p=Math.round(S.pop*c.share[k]);const worst=Object.keys(C.w).sort((a,b)=>c.sc[a]-c.sc[b])[0],wn=NEEDS.find(n=>n.k===worst);
+    return `<div class="row"><span class="em">${C.e}</span><div class="grow"><b>${C.n}</b> <span class="tag">${fmt(p)} people</span><small>${C.d} Biggest worry: ${wn.n.toLowerCase()}.</small>${bar(v)}</div><span class="num" style="color:${col(v)}">${v}</span></div>`}).join('');
+  const needs=NEEDS.map(n=>`<div class="row"><span class="em">${n.e}</span><div class="grow"><b>${n.n}</b>${bar(c.sc[n.k])}${c.sc[n.k]<70?`<small>${n.tip}</small>`:''}</div><span class="num" style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</span></div>`).join('');
+  const lbl={hap:'Approval',inc:'Monthly budget',tour:'Tourism',foodprod:'Food production',leg:'Legitimacy'};
+  const mods=S.mods.map(m=>{const nm=m.k.startsWith('ig:')?IGS[m.k.slice(3)].n+' mood':lbl[m.k]||(NEEDS.find(n=>n.k===m.k)||{n:m.k}).n;return `<div class="row"><div class="grow"><b>${m.l}</b><small>${nm} ${m.v>0?'+':''}${m.v}${m.k==='inc'?' a month':m.k==='tour'||m.k==='foodprod'?'%':''} for ${m.m} more month${m.m>1?'s':''}</small></div></div>`}).join('');
+  return `<div class="mood"><div class="grow"><div class="big" style="color:${col(S.hap)}">${S.hap}%</div><div class="sub">approval, trending toward ${c.target}%</div></div><button class="btn" data-act="why" data-arg="approval">Why?</button></div>
+  <h2>History</h2>${histHTML()}
+  <p class="hint">${fmt(S.pop)} subjects, ${fmt(c.workers)} of working age, ${fmt(c.employed)} employed. Housing for ${fmt(c.t.homes)}. Cost of living is ${c.colIdx>1.05?`${Math.round((c.colIdx-1)*100)}% above normal`:c.colIdx<.95?`${Math.round((1-c.colIdx)*100)}% below normal`:'normal'}.</p>
+  <h2>Social classes</h2><div class="card">${classes}</div>
+  <p class="hint">Each class cares about different things, and tax laws weigh on them differently. Approval is the average, weighted by class size.</p>
+  <h2>Public opinion</h2><div class="card">${quotes}</div>
+  <h2>Needs</h2><div class="card">${needs}</div>
+  ${mods?`<h2>Active effects</h2><div class="card">${mods}</div>`:''}`}
+function courtHTML(){const c=calc(),m=S.monarch,h=S.heir;
+  const igs=IGIDS.map(k=>{const G=IGS[k],md=c.mood[k],[st,sc]=igStatus(md),cl=Math.round(c.clout[k]*100);
+    return `<div class="row"><span class="em">${G.e}</span><div class="grow"><b>${G.n}</b> <span class="tag" style="color:${sc}">${st}</span><small>${G.d} Clout ${cl}%. Mood ${md}.</small>${bar(md)}</div><button class="btn" data-act="favor" data-arg="${k}" ${S.favorCd[k]||S.coins<400?'disabled':''}>${S.favorCd[k]?`${S.favorCd[k]} mo`:'Favor 🪙400'}</button></div>`}).join('');
+  const laws=Object.entries(LAWS).map(([cat,L])=>{const cur=S.laws[cat],en=S.enact&&S.enact.cat===cat;
+    const opts=Object.entries(L.o).map(([k,o])=>{const sup=IGIDS.filter(g=>(IGS[g].likes[cat]||{})[k]>=10).map(g=>IGS[g].e).join(''),opp=IGIDS.filter(g=>(IGS[g].likes[cat]||{})[k]<=-10).map(g=>IGS[g].e).join('');
+      return `<div class="row"><div class="grow"><b>${o.n}${k===cur?' (current)':''}</b><small>${o.d}</small>${sup||opp?`<small>${sup?`Supported by ${sup}. `:''}${opp?`Opposed by ${opp}.`:''}</small>`:''}</div>${k===cur?'':en&&S.enact.opt===k?`<span class="tag">${S.enact.left} mo left</span>`:`<button class="btn" data-act="enact" data-arg="${cat}" data-n="${k}" ${S.enact?'disabled':''}>Enact</button>`}</div>`}).join('');
+    return `<h2>${L.e} ${L.n}</h2><div class="card">${opts}</div>`}).join('');
+  const list=GOALS.map(g=>`<div class="row"><span class="em">${S.goals[g.id]?'✅':'⬜'}</span><div class="grow"><b>${g.d}</b><small>Reward: 🪙${fmt(g.r)}</small></div></div>`).join('');
+  return `<h2>The crown</h2><div class="card">
+    <div class="row"><span class="em">👑</span><div class="grow"><b>${monarchName(m)}</b><small>${S.aging?`Aged ${m.age}. `:''}Reigning since year ${m.since}.${m.spouse?` Married into the ${NATIONS[m.spouse].n} royal family.`:''} ${TRAITS[m.trait].n}: ${TRAITS[m.trait].d}</small></div></div>
+    ${S.aging?`<div class="row"><span class="em">🧒</span><div class="grow"><b>Heir: ${h.g==='f'?'Princess':'Prince'} ${h.name}</b><small>Aged ${h.age}.${h.age>=16?' Old enough to rule.':''}${h.spouse?` Married into the ${NATIONS[h.spouse].n} royal family.`:''}</small></div>${h.age>=16?`<button class="btn" data-act="abdicate" id="abdBtn">Abdicate</button>`:''}</div>
+    ${h.age>=16&&!h.spouse?`<div class="row"><span class="em">💍</span><div class="grow"><b>Arrange a marriage for the heir</b><small>Costs 🪙500. Improves relations, eases tension, and brings a claim on one of their border provinces. Sometimes the province comes as a dowry, and one day you may inherit land.</small><div class="seg">${NIDS.map(n=>`<button class="btn" data-act="marry" data-arg="${n}" ${atWarWith(n)||S.coins<500?'disabled':''}>${NATIONS[n].e} ${NATIONS[n].n}</button>`).join('')}</div></div></div>`:''}`:''}
+    <div class="row"><span class="em">⚖️</span><div class="grow"><b>Legitimacy ${S.leg}</b><small>How accepted your rule is. It follows the mood of powerful interest groups and public approval. Trending toward ${c.legT}.</small>${bar(S.leg)}</div><button class="btn" data-act="why" data-arg="legitimacy">Why?</button></div>
+    <div class="row"><span class="em">🔥</span><div class="grow"><b>Unrest ${Math.round(S.unrest)}</b><small>Builds when legitimacy falls below 40 or powerful groups turn radical. At 100, revolution breaks out.</small>${bar(100-S.unrest)}</div><button class="btn" data-act="why" data-arg="unrest">Why?</button></div></div>
+  <h2>Royal household: <span id="courtVal">${COURT[S.court].n}</span></h2>
+  <input type="range" id="court" min="0" max="4" step="1" value="${S.court}" aria-label="Royal household spending">
+  <p class="hint" id="courtHint">${courtHint(S.court)}</p>
+  <h2>Interest groups</h2><p class="hint">Groups with more clout matter more to your legitimacy. Granting a favor improves a group\u2019s mood for a year.</p><div class="card">${igs}</div>
+  <h2>Laws</h2><p class="hint">${S.enact?`${LAWS[S.enact.cat].o[S.enact.opt].n} passes in ${S.enact.left} month${S.enact.left>1?'s':''}. Opponents are unhappy until then.`:`Only one law can be debated at a time. It takes ${trait('reformer')?4:6} months to pass.`} ${S.enact?'<button class="btn" data-act="cancelLaw">Withdraw</button>':''}</p>${laws}
+  <h2>Royal agenda</h2><div class="card">${list}</div>
+  ${S.reigns.length?`<h2>Past rulers</h2><div class="card">${S.reigns.slice(-6).reverse().map(r=>`<div class="row"><div class="grow"><b>${r.g==='f'?'Queen':'King'} ${r.name}${r.num>1?' '+roman(r.num):''}</b><small>Year ${r.from} to ${r.to}. ${r.reason==='abdicated'?'Abdicated':'Died'}.</small></div></div>`).join('')}</div>`:''}`}
+function courtHint(i){const C=COURT[i],fx=[];if(C.leg)fx.push(`legitimacy ${C.leg>0?'+':''}${C.leg}`);Object.entries(C.ig).forEach(([k,v])=>fx.push(`${IGS[k].n.toLowerCase()} ${v>0?'+':''}${v}`));
+  const cost=Math.round(C.c*(1+S.pop/300)*(trait('frugal')?.8:1));return `${C.d} Costs 🪙${fmt(cost)} a month, rising as the kingdom grows.${fx.length?' Effects: '+fx.join(', ')+'.':''}`}
+function econHTML(){const c=calc();
+  const rows=(a,cls)=>a.filter(x=>Math.round(x[1])).map(([l,v])=>`<div class="row"><div class="grow">${l}</div><span class="num ${cls}">${fmt(v)}</span></div>`).join('')||'<div class="row"><div class="grow"><small>None</small></div></div>';
+  const decs=Object.entries(DEC).map(([k,p])=>`<div class="row"><span class="em">${p.e}</span><div class="grow"><b>${p.n}</b><small>${p.d}</small></div><button class="sw" data-act="dec" data-arg="${k}" aria-pressed="${!!S.dec[k]}" aria-label="${p.n}"></button></div>`).join('');
+  const market=RES.map(({k,n,e})=>{const p=c.price[k],ratio=p/PRICE[k];return `<div class="row"><span class="em">${e}</span><div class="grow"><b>${n}</b><small>Supply ${fmt(c.sup[k])}, demand ${fmt(c.dem[k])}. ${ratio>1.15?'Scarce, so prices are high.':ratio<.85?'Plentiful, so prices are low.':'Balanced.'}</small></div><span class="num" style="color:${ratio>1.15?'var(--bad)':ratio<.85?'var(--good)':'var(--ink)'}">${p.toFixed(1)} <small style="display:inline;color:var(--muted)">(${Math.round(ratio*100)}%)</small></span></div>`}).join('');
+  const rentRow=`<div class="row"><span class="em">🏠</span><div class="grow"><b>Rent</b><small>Homes are ${Math.round(c.occ*100)}% full. ${c.rentIdx>1.3?'Housing is scarce, so landlords are raising rents.':c.rentIdx>1.05?'Rents are starting to climb.':'Plenty of vacancies keep rents low.'}${S.dec.rentcap?' Rent controls are in force.':''}</small></div><span class="num" style="color:${c.rentIdx>1.3?'var(--bad)':c.rentIdx>1.05?'var(--warn)':'var(--good)'}">${c.rent.toFixed(1)} <small style="display:inline;color:var(--muted)">(${Math.round(c.rentIdx*100)}%)</small></span></div>`;
+  return `<h2>Monthly budget</h2><div class="mood" style="margin-top:0"><div><div class="big ${c.net>=0?'pos':'neg'}">${c.net>=0?'+':''}${fmt(c.net)}</div><div class="sub">projected ${c.net>=0?'surplus':'deficit'} next month</div></div></div>
+  <h2>Tax rate: <span id="taxVal">${S.tax}%</span></h2>
+  <input type="range" id="tax" min="0" max="30" step="1" value="${S.tax}" aria-label="Tax rate">
+  <p class="hint">Under ${law('tax').n.toLowerCase()}, ${S.laws.tax==='percapita'?'the lower class feels taxes most':S.laws.tax==='progressive'?'the upper class feels taxes most':'every class feels taxes about equally'}. Change the tax law in the Court tab.</p>
+  <h2>Prices and rent</h2><p class="hint">Prices follow supply and demand, and rent rises once homes are more than 80% full. Together they set the cost of living, which hits the lower class hardest. Building homes brings rent down, and imports lower prices.</p><div class="card">${market}${rentRow}</div>
+  <h2>Revenue</h2><div class="card">${rows(c.income,'pos')}</div>
+  <h2>Spending</h2><div class="card">${rows(c.costs,'neg')}</div>
+  <h2>Royal decrees</h2><div class="card">${decs}</div>`}
+function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
+  const res=RES.map(r=>{const diff=Math.round(c.prod[r.k]-c.dem[r.k]),T=c.tr[r.k],cur=S.trade[r.k];
+    const status=diff>=0?`Surplus of ${fmt(diff)} a month available to export.`:`Shortfall of ${fmt(-diff)} a month. Importing lowers prices at home.`;
+    const dir=diff>0?'export':diff<0?'import':null;
+    const opts=NIDS.map(n=>{const p=dir==='import'?buyP(n,r.k):payP(n,r.k);return `<button class="btn ${cur===n?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="${n}" ${tradeOK(n)?'':'disabled'} aria-pressed="${cur===n}">${NATIONS[n].e} ${NATIONS[n].n} ${p.toFixed(1)}</button>`}).join('');
+    const now=T?`${T.dir==='import'?'Importing':'Exporting'} ${fmt(T.amt)} with ${NATIONS[T.c].n} for 🪙${fmt(T.v)} a month.`:cur&&!tradeOK(cur)?`${NATIONS[cur].n} isn\u2019t trading with you right now.`:'';
+    return `<div class="row"><span class="em">${r.e}</span><div class="grow"><b>${r.n}</b><small>${status}</small>${dir?`<small>${dir==='import'?'Price you pay':'Price they pay'} per unit:</small><div class="seg">${opts}<button class="btn ${!cur?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="">None</button></div>`:''}${now?`<small><b>${now}</b></small>`:''}</div></div>`}).join('');
+  const nats=NIDS.map(n=>{const Nn=NATIONS[n],r=Math.round(S.rel[n]),tn=Math.round(S.tension[n]);
+    return `<div class="card" style="margin-bottom:10px"><div class="row"><span class="em">${Nn.e}</span><div class="grow"><b>${Nn.n}</b> <span class="tag">${relWord(r)}</span>${atWarWith(n)?' <span class="tag" style="color:var(--bad)">At war</span>':''}${S.nsit[n]!=='stable'?` <span class="tag">${S.nsit[n][0].toUpperCase()+S.nsit[n].slice(1)}</span>`:''}${S.embargo[n]?` <span class="tag" style="color:var(--bad)">Embargo, ${S.embargo[n]} mo</span>`:''}<small>${Nn.d} They hold ${provsOf(n).length} province${provsOf(n).length===1?'':'s'} on the map${provsOf(n).filter(i=>S.claims[i]).length?`, and you have claims on ${provsOf(n).filter(i=>S.claims[i]).map(i=>S.prov[i].name).join(', ')}`:''}.</small></div></div>
+    <div class="row"><div class="grow"><small>Relations ${r}/100. Better relations mean better prices, and below 20 they stop trading.</small>${bar(r)}<small style="margin-top:6px">Tension ${tn}/100, ${tenWord(tn).toLowerCase()}. At 60 they may issue ultimatums, and at 100 they impose an embargo.</small>${bar(tn,tn>=60?'var(--bad)':tn>=35?'var(--warn)':'var(--good)')}</div></div>
+    <div class="row"><div class="grow btns" style="margin-top:0"><button class="btn" data-act="envoy" data-arg="${n}" ${S.envoy[n]||S.coins<300?'disabled':''}>${S.envoy[n]?'Envoy sent':'Send envoy 🪙300'}</button><button class="btn" data-act="demand" data-arg="${n}" ${S.demandCd[n]?'disabled':''}>${S.demandCd[n]?`Demand again in ${S.demandCd[n]} mo`:'Make a demand'}</button></div></div></div>`}).join('');
+  const war=S.war?(()=>{const w=warStr(),W_=S.war,sc=W_.score,occ=Object.entries(W_.occ);const bonds=S.mods.filter(m=>m.l==='War bonds').length;
+    return `<h2>⚔️ At war</h2><div class="card"><div class="row"><div class="grow"><b>Against ${W_.foes.map(n=>NATIONS[n].n).join(' and ')} over ${S.prov[W_.goal].name}</b><small>${W_.attacker==='me'?'You are attacking.':'You are defending.'} Month ${W_.months}. Your strength ${w.us}, theirs ${w.them}.</small>
+    <div class="front"><i style="left:${50+sc/2}%"></i></div><small>War score ${sc>0?'+':''}${sc}. The enemy surrenders at +60, and you collapse at -60.</small>
+    ${occ.length?`<small>Occupied: ${occ.map(([i,v])=>`${S.prov[i].name} (${v==='me'?'by you':'by the enemy'})`).join(', ')}.</small>`:''}</div></div>
+    <div class="row"><div class="grow"><b>War support ${W_.support}%</b>${bar(W_.support)}<small>Falls when the war goes badly or drags on. Below 20% for two months, you\u2019re forced to negotiate. War weariness costs ${Math.round(w.c.weary)} approval.</small></div></div>
+    <div class="row"><div class="grow"><b>Strategy this month</b><div class="seg">${Object.entries(STRAT).map(([k,v])=>`<button class="btn ${W_.strat===k?'on':''}" data-act="strat" data-arg="${k}">${v.n}</button>`).join('')}</div><small>${STRAT[W_.strat].d}</small></div></div>
+    <div class="row"><div class="grow"><b>Mobilization</b><small>${S.mob?'Reserves are called up: 60% more soldiers, but fewer workers, approval -3, and the merchants object.':'Call up reserves for 60% more soldiers. Costs workers, approval and merchant support.'}</small></div><button class="sw" data-act="mobilize" aria-pressed="${S.mob}" aria-label="Mobilization"></button></div>
+    <div class="row"><div class="grow"><b>Navy</b><small>Your ships ${w.ourNavy}, theirs ${w.theirN}. ${w.ourNavy>w.theirN?'You control the seas: their army is weakened and the war score drifts your way.':w.theirN>w.ourNavy?'They blockade your coast: trade capacity is halved and the war score drifts against you.':'Neither side controls the seas.'}</small></div></div>
+    <div class="row"><div class="grow"><b>War bonds</b><small>Raise 🪙2,000 now, repaid at 🪙110 a month for two years. ${bonds}/3 issued.</small></div><button class="btn" data-act="bonds" ${bonds>=3?'disabled':''}>Issue</button></div>
+    <div class="row"><div class="grow"><small>Rationing is available as a decree in the Economy tab.</small></div><button class="btn primary" data-act="peaceSheet">Negotiate peace</button></div></div>`})():'';
+  const g=S.general;
+  const mil=`<h2>🪖 Army</h2><div class="card"><div class="row"><div class="grow"><b id="armyVal">${ARMY[S.army].n}</b><small>${fmt(c.soldiers)} of ${fmt(troopTarget())} soldiers${c.soldiers<troopTarget()?', recruiting':''}. Losses are replaced slowly from the population, faster with barracks. Quality ${Math.round(c.quality*100)}%, supplies ${Math.round(c.supply*100)}%, morale ${Math.round(c.morale*100)}%.</small>
+    <input type="range" id="army" min="0" max="4" step="1" value="${S.army}" aria-label="Army size"><small>Bigger armies cost more and please landowners. Merchants dislike large ones.</small></div></div>
+    <div class="row"><span class="em">🎖️</span><div class="grow"><b>${g?`${g.heir?(S.heir.g==='f'?'Princess ':'Prince ')+S.heir.name+', the heir':'General '+g.name}`:'No general'}</b><small>${g?`${GTRAITS[g.trait].n}: ${GTRAITS[g.trait].d}${g.heir?' A victory under the heir brings extra legitimacy, but the heir could fall in battle.':''}`:'Appoint a commander to lead your army.'}</small></div><button class="btn" data-act="genSheet">${g?'Replace':'Appoint'}</button></div>
+    <div class="row"><span class="em">🚢</span><div class="grow"><b>Navy: ${S.navy} warship${S.navy===1?'':'s'}</b><small>${has('shipyard')?'Each ship costs 🪙400 and 🪙20 a month, and adds 40 trade capacity in peacetime.':'Build a shipyard on the coast to build warships.'}</small></div><button class="btn" data-act="ship" ${!has('shipyard')||S.coins<400?'disabled':''}>Build 🪙400</button></div>
+    ${NIDS.map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b><small>Army ${theirStr(n)}${theirStr(n)>c.str*1.2?', stronger than yours':theirStr(n)*1.2<c.str?', weaker than yours':', evenly matched'}. Navy ${theirNavy(n)}.</small></div></div>`).join('')}</div>`;
+  return `${war}${mil}<h2>Trade capacity</h2><p class="hint">${fmt(used)} of ${fmt(c.cap)} units used this month. Fishing docks add 30 and a harbor adds 600. Imports are filled first. Your trade law: ${law('trade').n.toLowerCase()}.</p><div class="capbar"><i style="width:${c.cap?Math.min(100,used/c.cap*100):0}%"></i></div>
+  <h2>Agreements</h2><div class="card">${res}</div>
+  <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}`}
+function techHTML(){const c=calc(),cur=S.tech.cur&&techOf(S.tech.cur);
+  const avail=TECH.filter(t=>!hasTech(t.id)&&(!t.req||hasTech(t.req))),locked=TECH.filter(t=>!hasTech(t.id)&&t.req&&!hasTech(t.req)),done=TECH.filter(t=>hasTech(t.id));
+  const row=(t,btn,sub)=>`<div class="row"><span class="em">${t.e}</span><div class="grow"><b>${t.n}</b><small>${t.d}${sub?' '+sub:''}</small></div>${btn||''}</div>`;
+  return `<h2>Research</h2><p class="hint">Your scholars produce ${c.rp} research points a month. Schools, libraries and universities add more.</p>
+  ${cur?`<div class="card">${row(cur,'',`${Math.round(S.tech.prog)} of ${cur.c} points, about ${Math.max(1,Math.ceil((cur.c-S.tech.prog)/c.rp))} months left.`)}<div class="capbar" style="margin-bottom:12px"><i style="width:${S.tech.prog/cur.c*100}%"></i></div></div>`:'<p class="hint"><b>Nothing is being researched. Choose a technology below.</b></p>'}
+  <h2>Available</h2><div class="card">${avail.length?avail.map(t=>row(t,t.id===S.tech.cur?'<span class="tag">Researching</span>':`<button class="btn" data-act="research" data-arg="${t.id}">${t.c} pts</button>`)).join(''):'<p class="empty hint">Everything available has been researched.</p>'}</div>
+  ${locked.length?`<h2>Later</h2><div class="card">${locked.map(t=>row(t,'',`Requires ${techOf(t.req).n.toLowerCase()}.`)).join('')}</div>`:''}
+  ${done.length?`<h2>Known</h2><div class="card">${done.map(t=>row(t,'<span>✅</span>')).join('')}</div>`:''}`}
+
+function render(){
+  $('#name').textContent=S.name;
+  $('#when').textContent=`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}`;
+  $('#coins').textContent=`🪙 ${fmt(S.coins)}`;$('#coins').style.color=S.coins<0?'var(--bad)':'';
+  $('#pop').textContent=`👥 ${fmt(S.pop)}`;
+  $('#hap').textContent=`📊 ${S.hap}%`;$('#hap').style.color=col(S.hap);
+  $('#leg').textContent=`👑 ${S.leg}`;$('#leg').style.color=col(S.leg);
+  document.body.classList.toggle('on-isle',tab==='isle');
+  $('#view').innerHTML={isle:isleHTML,people:peopleHTML,court:courtHTML,econ:econHTML,world:worldHTML,tech:techHTML}[tab]();
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.arg===tab));
+  MAP.dirty=true;drawSoon();if(tab==='people')drawCharts();
+  const ar=$('#army');if(ar){ar.addEventListener('input',e=>{$('#armyVal').textContent=ARMY[+e.target.value].n});ar.addEventListener('change',e=>{S.army=+e.target.value;render()})}
+  const ct=$('#court');if(ct){ct.addEventListener('input',e=>{const i=+e.target.value;$('#courtVal').textContent=COURT[i].n;$('#courtHint').textContent=courtHint(i)});ct.addEventListener('change',e=>{S.court=+e.target.value;render()})}
+  const tx=$('#tax');if(tx){tx.addEventListener('input',e=>{S.tax=+e.target.value;$('#taxVal').textContent=S.tax+'%'});tx.addEventListener('change',()=>render())}
+  save()}
+
+/* ---------- sheets ---------- */
+function openSheet(h){$('#sheet').innerHTML=h;$('#sheetWrap').classList.add('open');$('#sheet').scrollTop=0}
+function closeSheet(){$('#sheetWrap').classList.remove('open');resetArmed=false;if(S.sel>=0){S.sel=-1;render()}}
+function effStr(d){const p=[];if(d.homes)p.push(`Housing +${d.homes}`);if(d.food)p.push(`Food for ${d.food}`);if(d.jobs)p.push(`${d.jobs} jobs`);if(d.inc)p.push(`+🪙${d.inc}/mo`);if(d.goods)p.push(`${d.goods} goods/mo`);
+  if(d.health)p.push(`Healthcare for ${d.health}`);if(d.learn)p.push(`Education for ${d.learn}`);if(d.fun)p.push(`Recreation for ${d.fun}`);if(d.move)p.push(`Transport for ${d.move}`);
+  if(d.power)p.push(`Energy for ${d.power}`);if(d.trade)p.push(`Trade capacity +${d.trade}`);if(d.tour)p.push('Tourism');if(d.hap)p.push(`Approval +${d.hap}`);if(d.nat)p.push(`Environment ${d.nat>0?'+':''}${d.nat}`);if(d.u)p.push(`Upkeep ${d.u}/mo`);return p.join('. ')+'.'}
+function provSheet(i){const P=S.prov[i],tiles=provTiles(i),o=P.o,bl=tiles.map(t=>S.map[t].b).filter(b=>b&&B[b]);
+  const bsum=bl.length?Object.entries(bl.reduce((a,b)=>(a[b]=(a[b]||0)+1,a),{})).map(([b,n])=>`${n} ${B[b].e}`).join('  '):'None';
+  let body=`<p class="hint">${ownName(o)}. ${tiles.length} tiles${P.pop?`, about ${fmt(P.pop)} residents`:', uninhabited'}.${P.heart?' This is their heartland.':''}${tiles.some(t=>isCoast(t))?' Has coastline.':''}</p><p class="hint">Buildings: ${bsum}</p>`;
+  if(S.claims[i])body+=`<p><b>You hold a claim on this province.</b> It\u2019s cheaper to buy, and a war to take it costs little legitimacy.</p>`;
+  if(o==='me'&&S.dev[i])body+=`<div class="card"><div class="row"><span class="em">🏚️</span><div class="grow"><b>Devastated by war</b><small>Buildings here work at half capacity for ${S.dev[i]} more month${S.dev[i]>1?'s':''}.</small></div><button class="btn" data-act="rebuild" data-arg="${i}" ${S.coins<rebuildCost(i)?'disabled':''}>Rebuild 🪙${fmt(rebuildCost(i))}</button></div></div>`;
+  if(S.war&&S.war.occ[i])body+=`<p><b>Occupied by ${S.war.occ[i]==='me'?'your troops':'the enemy'}.</b>${S.war.occ[i]==='them'?' Buildings here produce nothing until it\u2019s liberated.':''}</p>`;
+  if(o==='me'){body+=S.fclaims[i]?`<p>${NATIONS[S.fclaims[i]].n} claims this province and may demand it back.</p>`:'';body+=i===0?'<p>Your capital province. It can never be taken.</p>':''}
+  else if(o==='wild'){body+=P.settle?`<p><b>Settlers are at work.</b> ${P.settle} month${P.settle>1?'s':''} to go. A neighbor could still get there first.</p>`:touches(i,'me')?`<div class="card"><div class="row"><span class="em">🧭</span><div class="grow"><b>Settle this frontier</b><small>Takes ${hasTech('survey')?4:6} months. Neighbors may try to settle it too.</small></div><button class="btn primary" data-act="settle" data-arg="${i}" ${S.coins<settleCost(i)?'disabled':''}>🪙${fmt(settleCost(i))}</button></div></div>`:'<p>Only frontier bordering your kingdom can be settled.</p>'}
+  else{const n=o,Nn=NATIONS[n],price=buyPrice(i),war=atWarWith(n),c=calc(),th=theirStr(n);
+    const why=[S.rel[n]>=60?'friendly relations':S.rel[n]<35?'poor relations':'',S.nsit[n]!=='stable'?`${Nn.n} is ${S.nsit[n]}`:'',S.tension[n]>=40?'high tension':'',S.claims[i]?'your claim':'',P.heart?'it\u2019s their heartland':'',provsOf(n).length===1?'it\u2019s their last province here':''].filter(Boolean);
+    body+=`<div class="card">
+      <div class="row"><span class="em">💰</span><div class="grow"><b>Buy it</b><small>${war?'Not possible while at war.':`Price reflects ${why.length?why.join(', '):'a fair valuation'}. They always sell at the right price.`}</small></div><button class="btn primary" id="buyBtn" data-act="buyProv" data-arg="${i}" ${war||S.coins<price?'disabled':''}>🪙${fmt(price)}</button></div>
+      <div class="row"><span class="em">📜</span><div class="grow"><b>Demand it</b><small>${S.claims[i]||S.tension[n]>=60?`Works best if your army is much stronger. Yours ${c.str}, theirs ${th}. Refusal raises tension sharply.`:'You need a claim, or tension of 60 or more.'}</small></div><button class="btn" data-act="demandProv" data-arg="${i}" ${war||S.demandCd[n]||!(S.claims[i]||S.tension[n]>=60)?'disabled':''}>${S.demandCd[n]?`${S.demandCd[n]} mo`:'Demand'}</button></div>
+      <div class="row"><span class="em">⚔️</span><div class="grow"><b>Declare war for it</b><small>${S.war?'You\u2019re already at war.':S.claims[i]?'Your claim justifies it. Legitimacy -2.':'Without a claim this is naked aggression. Legitimacy -10, and all neighbors grow tense.'} Yours ${c.str}, theirs ${th}, and defenders fight 25% harder.</small></div><button class="btn" id="warBtn" data-act="declare" data-arg="${i}" ${S.war?'disabled':''}>Declare</button></div></div>`}
+  openSheet(`<h3>${o==='me'?'🏠':o==='wild'?'🌿':NATIONS[o].e} ${P.name}</h3>${body}<button class="btn primary wide" data-act="closeSheet">Done</button>`)}
+function tileSheet(i){const x=S.map[i];if(x.o!=='me'){S.sel=i;render();provSheet(x.p);return}const coast=isCoast(i);S.sel=i;render();
+  if(x.b){const d=B[x.b],up=UPGR[x.b],U=up&&B[up],upCost=U?Math.max(0,U.c-Math.round(d.c*.5)):0,lr=U&&lockReason(U);
+    openSheet(`<h3>${d.e} ${d.n}</h3><p>${d.d}</p><p class="hint">${S.prov[x.p].name}. ${effStr(d)}</p>
+    ${U?`<div class="card"><div class="row"><span class="em">${U.e}</span><div class="grow"><b>Upgrade to ${U.n.toLowerCase()}</b><small>${lr?lr+'.':effStr(U)}</small></div><button class="btn primary" data-act="upgrade" data-arg="${i}" ${lr||S.coins<upCost?'disabled':''}>🪙${fmt(upCost)}</button></div></div>`:''}
+    ${d.fixed?'':`<button class="btn wide" data-act="demolish" data-arg="${i}" id="demoBtn">Demolish (recover 🪙${fmt(Math.round(d.c*.25))})</button>`}
+    <button class="btn primary wide" data-act="closeSheet">Done</button>`);return}
+  const F=UI.bfilt||(UI.bfilt={cat:'all',afford:false});if(F.cat!=='all'&&!GROUPS.some(([g])=>g===F.cat))F.cat='all';
+  const groups=GROUPS.filter(([g])=>F.cat==='all'||F.cat===g).map(([g,ids])=>{const rows=ids.map(id=>{const d=B[id];let why=lockReason(d);
+    if(!why&&d.coast&&!coast)why='Coast only';else if(!why&&d.unique&&has(id))why='Built';if(F.afford&&(why||S.coins<d.c))return'';
+    return `<div class="row"><span class="em" ${why?'style="opacity:.45"':''}>${d.e}</span><div class="grow"><b>${d.n}</b><small>${effStr(d)}</small></div><button class="btn" data-act="build" data-arg="${i}" data-n="${id}" ${why||S.coins<d.c?'disabled':''}>${why||'🪙'+fmt(d.c)}</button></div>`}).join('');
+    return rows?`<h2>${g}</h2><div class="card">${rows}</div>`:''}).join('');
+  const chips=`<div class="seg scroll" role="group" aria-label="Building category">${[['all','All'],...GROUPS.map(([g,,s])=>[g,s])].map(([k,n])=>`<button class="btn ${F.cat===k?'on':''}" data-act="bfilt" data-arg="${k}" data-n="${i}" aria-pressed="${F.cat===k}">${n}</button>`).join('')}</div>
+    <div class="row" style="border:0;padding:6px 0 0"><div class="grow"><b>Only what I can build now</b></div><button class="sw" data-act="bfilt" data-arg="afford" data-n="${i}" aria-pressed="${!!F.afford}" aria-label="Only show what I can build now"></button></div>`;
+  openSheet(`<h3>${x.t==='f'?'🌲 Forest':'Open land'}${coast?', coastal':''}</h3><p class="hint">${S.prov[x.p].name}. Treasury: 🪙${fmt(S.coins)}. ${x.t==='f'?'Building here clears the forest.':''} <button class="btn" data-act="provInfo" data-arg="${x.p}">Province info</button></p>${chips}${groups||`<p class="hint">Nothing ${F.cat==='all'?'':'in this category '}can be built here right now${F.afford?' with 🪙'+fmt(S.coins):''}.</p>`}<button class="btn wide" data-act="closeSheet">Cancel</button>`);
+  const on=$('#sheet .seg.scroll .on');if(on)on.parentNode.scrollLeft=on.offsetLeft-on.parentNode.offsetLeft-40}
+function settings(){openSheet(`<h3>Settings</h3>
+  <p>The game runs entirely on this device and saves automatically. It works without an internet connection once it\u2019s open.</p>
+  <div class="card"><div class="row"><span class="em">⏳</span><div class="grow"><b>Aging and succession</b><small>Monarchs grow older, and the crown passes to the heir when they die or abdicate. Turn off to rule forever.</small></div><button class="sw" data-act="aging" aria-pressed="${S.aging}" aria-label="Aging and succession"></button></div>
+    <div class="row"><span class="em">📰</span><div class="grow"><b>Monthly report pop-up</b><small>Show the full report after every month. When off, you get a short summary and the details go to the news.</small></div><button class="sw" data-act="report" aria-pressed="${!!S.showReport}" aria-label="Monthly report pop-up"></button></div></div>
+  <label class="hint" for="nm">Nation name</label><input type="text" id="nm" maxlength="24" value="${esc(S.name)}">
+  <button class="btn wide" data-act="rename">Rename nation</button>
+  <button class="btn wide" data-act="openCon">🧪 Open developer console</button>
+  <h2>Save code</h2><p class="hint">Copy this to back up your nation or move it between devices or versions.</p>
+  <textarea id="code" aria-label="Save code">${saveCode()}</textarea>
+  <div class="btns"><button class="btn" data-act="copyCode">Copy code</button><button class="btn" data-act="loadCode">Load code</button></div>
+  <button class="btn wide" data-act="reset" id="resetBtn">Start a new nation</button>
+  <button class="btn primary wide" data-act="closeSheet">Done</button>`)}
+function saveCode(){try{return btoa(unescape(encodeURIComponent(JSON.stringify(S))))}catch(e){return''}}
+function welcome(){const m=S.monarch;openSheet(`<div class="event"><div class="pic" aria-hidden="true">👑</div><h3>The crown is yours</h3><p>You are ${monarchName(m)}, absolute ruler of a small island kingdom of 60 subjects.</p></div>
+  <p>Build up the realm, balance the treasury, and keep the powerful on your side. Your legitimacy depends on the landowners, clergy, merchants, intelligentsia and workers. Let it fall too far, and unrest may end in revolution.</p>
+  <label class="hint" for="nm">Name your kingdom</label><input type="text" id="nm" maxlength="24" value="${esc(S.name)}">
+  <p class="hint" style="margin-bottom:0">World size</p><div class="seg">${Object.entries(WSIZES).map(([k,v])=>`<button class="btn ${S.wsize===k?'on':''}" data-act="wsize" data-arg="${k}" aria-pressed="${S.wsize===k}">${v.n}</button>`).join('')}<button class="btn" data-act="wsize" data-arg="${S.wsize}" aria-label="Draw a new map">🎲 New map</button></div>
+  <p class="hint">${S.W} by ${S.H} tiles, ${S.prov.length} provinces. Bigger worlds have more frontier to settle and larger neighbors.</p>
+  <button class="btn primary wide" data-act="start">Take the throne</button>`)}
+
+/* ---------- console ---------- */
+const LOG=[{t:'Developer console. Type help to see commands.'}];
+function out(t,c){(Array.isArray(t)?t:[t]).forEach(x=>LOG.push({t:x,c}));if(LOG.length>200)LOG.splice(0,LOG.length-200)}
+function renderLog(){const l=$('#log');l.innerHTML=LOG.map(x=>`<span class="${x.c||''}">${String(x.t).replace(/</g,'&lt;')}</span>`).join('\n');l.scrollTop=l.scrollHeight}
+const num=(v,d)=>{const n=parseInt(v,10);return isNaN(n)?d:n};
+const E=m=>({err:m});
+function freeTile(id){const d=B[id];return S.map.findIndex((x,i)=>x.o==='me'&&x.t!=='w'&&!x.b&&(!d.coast||isCoast(i)))}
+// The same breakdown feeds the tap-to-explain sheets and the console's "why" command. Rows mirror the formulas in calc() and endMonth().
+function whyData(kind){const c=calc(),D=k=>!!S.dec[k],R=[];const add=(l,v,note)=>{if(Math.round(v*10))R.push({l,v,note})};
+  if(kind==='approval'){
+    Object.keys(CLASSES).forEach(k=>R.push({l:CLASSES[k].n,v:c.cls[k]*c.share[k],note:`${c.cls[k]} satisfaction × ${Math.round(c.share[k]*100)}% of people`,plain:1}));
+    add('Buildings',c.t.hap);add('Royal festivities',D('festival')?4:0);add('Press law',law('press').hap||0);S.mods.filter(m=>m.k==='hap').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
+    add('Debt',-(S.coins<0?Math.min(10,-S.coins/500):0));add('War weariness',-c.weary);add('Rationing',D('ration')?-4:0);add('Mobilization',S.mob?-3:0);
+    return{e:'📊',title:'Approval',now:S.hap+'%',intro:'Approval is how happy your subjects are. Each class counts in proportion to its size, and then these effects are added.',
+      total:`Target ${c.target}%`,outro:`Approval is ${S.hap}% now and moves 35% of the way toward the target each month. The People tab shows what each class needs.`,rows:R}}
+  if(kind==='legitimacy'){R.push({l:'Base',v:30,plain:1});
+    IGIDS.forEach(k=>add(IGS[k].n,c.clout[k]*(c.mood[k]-50)/50*40,`Mood ${c.mood[k]}, clout ${Math.round(c.clout[k]*100)}%`));
+    add(`Approval (${S.hap}%)`,(S.hap-50)*.3);add('Charismatic monarch',trait('charismatic')?6:0);add('Pious monarch',trait('pious')?3:0);
+    add('Religion law',law('church').leg||0);add('Press law',law('press').leg||0);add('Royal festivities',D('festival')?2:0);add(`Royal household (${COURT[S.court].n.toLowerCase()})`,COURT[S.court].leg);add('Buildings',c.t.leg);
+    S.mods.filter(m=>m.k==='leg').forEach(m=>add(m.l,m.v,`${m.m} more month${m.m>1?'s':''}`));
+    return{e:'👑',title:'Legitimacy',now:S.leg,intro:'Legitimacy is how accepted your rule is. Powerful interest groups count most: a group above mood 50 adds legitimacy, and a group below 50 takes it away.',
+      total:`Target ${c.legT}`,outro:`Legitimacy is ${S.leg} now and moves 20% of the way toward the target each month. Below 40, unrest starts to build.`,rows:R}}
+  const angry=IGIDS.filter(k=>c.mood[k]<25);
+  add(S.leg<40?`Low legitimacy (${S.leg})`:`Legitimacy ${S.leg}, 40 or above`,S.leg<40?(40-S.leg)/4:-3);
+  angry.forEach(k=>add(`${IGS[k].n} are radical`,c.clout[k]*12,`Mood ${c.mood[k]}, clout ${Math.round(c.clout[k]*100)}%`));add('Approval below 35%',S.hap<35?3:0);
+  let du=R.reduce((a,r)=>a+r.v,0);
+  if(du>0&&S.laws.press==='censor'){add('Censorship slows it',-du*.3);du*=.7}if(du>0&&trait('cautious')){add('Cautious monarch slows it',-du*.3);du*=.7}
+  const next=clamp(S.unrest+du,0,100);
+  return{e:'🔥',title:'Unrest',now:Math.round(S.unrest),intro:'Unrest builds when legitimacy is low or powerful groups turn radical. At 100, revolution breaks out.',
+    total:`${du>=0?'+':''}${Math.round(du*10)/10} a month`,outro:`Unrest will be about ${Math.round(next)} next month.${S.god?' God mode stops it rising.':''}`,rows:R}}
+const whyLines=k=>{const w=whyData(k);return w.rows.map(r=>`${r.l}${r.note?` (${r.note})`:''}: ${r.plain?'':r.v>0?'+':''}${Math.round(r.v*10)/10}`).concat(`${w.total}. ${w.outro}`)};
+const whyApproval=()=>whyLines('approval'),whyLegitimacy=()=>whyLines('legitimacy');
+function whySheet(k){const w=whyData(k),n=v=>Math.round(v*10)/10;
+  openSheet(`<h3>${w.e} ${w.title}: ${w.now}</h3><p class="hint">${w.intro}</p><div class="card">${w.rows.map(r=>`<div class="row"><div class="grow">${r.l}${r.note?`<small>${r.note}</small>`:''}</div><span class="num ${r.plain?'':r.v>0?'pos':'neg'}">${r.plain?'':r.v>0?'+':''}${n(r.v)}</span></div>`).join('')}
+    <div class="row"><div class="grow"><b>${w.total}</b></div></div></div><p class="hint">${w.outro}</p>
+    <div class="btns">${['approval','legitimacy','unrest'].filter(x=>x!==k).map(x=>`<button class="btn" data-act="why" data-arg="${x}">Why ${x}?</button>`).join('')}</div>
+    <button class="btn primary wide" data-act="closeSheet">Done</button>`)}
+const monthIdx=m=>{const i=MONTHS.findIndex(x=>x.toLowerCase().startsWith(String(m).toLowerCase().slice(0,3)));return i>=0?i:clamp(num(m,1)-1,0,11)};
+function statusLines(){const c=calc();return[`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}, aged ${S.monarch.age}.`,`Treasury ${fmt(S.coins)}, net ${c.net>=0?'+':''}${fmt(c.net)} a month.`,`Population ${fmt(S.pop)} of ${fmt(c.t.homes)} housing. Approval ${S.hap}% (to ${c.target}).`,`Legitimacy ${S.leg} (to ${c.legT}). Unrest ${Math.round(S.unrest)}.`,`Army ${c.soldiers} soldiers, strength ${c.str}. Navy ${S.navy}.`,S.war?`At war with ${S.war.foes.map(n=>NATIONS[n].n).join(', ')}: score ${S.war.score}, support ${S.war.support}%.`:'At peace.',`Provinces: ${provsOf('me').length}. Research: ${S.tech.cur?techOf(S.tech.cur).n:'none'}.${S.god?' God mode on.':''}${S.noEvents?' Random events off.':''}`]}
+const CMDS={
+  help:()=>['money N           set the treasury','add N             add to the treasury','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
+  money:n=>{S.coins=num(n,0);return`Treasury set to ${fmt(S.coins)}`},
+  add:n=>{S.coins+=num(n,10000);return`Treasury now ${fmt(S.coins)}`},
+  pop:n=>{S.pop=Math.max(10,num(n,S.pop));S.best=Math.max(S.best,S.pop);return`Population set to ${fmt(S.pop)}`},
+  approval:n=>{S.hap=clamp(num(n,S.hap),0,100);return`Approval set to ${S.hap}%`},
+  legitimacy:n=>{S.leg=clamp(num(n,S.leg),0,100);return`Legitimacy set to ${S.leg}`},
+  unrest:n=>{S.unrest=clamp(num(n,0),0,100);return`Unrest set to ${S.unrest}`},
+  skip:n=>{const k=clamp(num(n,1),1,240);for(let i=0;i<k;i++)endMonth(true);return`Skipped ${k} months. Now ${MONTHS[S.month]}, year ${S.year}`},
+  build:(id,n)=>{if(!B[id]||B[id].fixed)return E('Unknown building. Try buildings.');let k=clamp(num(n,1),1,50),b=0;while(k--){const i=freeTile(id);if(i<0)break;S.map[i].b=id;S.map[i].t='l';b++}return b?`Built ${b} ${B[id].n.toLowerCase()}`:E('No free tile available')},
+  buildings:()=>Object.keys(B).filter(k=>!B[k].fixed).join(', '),
+  unlock:()=>{TECH.forEach(t=>{if(!hasTech(t.id))S.tech.done.push(t.id)});S.tech.cur=null;return'Every technology researched'},
+  tech:id=>{const t=techOf(id);if(!t)return E('Unknown technology. Try techs.');if(!hasTech(id))S.tech.done.push(id);if(S.tech.cur===id){S.tech.cur=null;S.tech.prog=0}return`${t.n} researched`},
+  techs:()=>TECH.map(t=>t.id).join(', '),
+  law:(c,o)=>{if(!LAWS[c]||!LAWS[c].o[o])return E('Try laws for valid options');S.laws[c]=o;if(S.enact&&S.enact.cat===c)S.enact=null;S.lawsPassed++;return`${LAWS[c].o[o].n} is now law`},
+  laws:()=>Object.entries(LAWS).map(([c,L])=>`${c}: ${Object.keys(L.o).join(', ')}`),
+  mood:(g,n)=>{if(!IGS[g])return E('Use '+IGIDS.join(', '));igM(g,num(n,20),12,'Console');return`${IGS[g].n} mood shifted by ${num(n,20)}`},
+  event:id=>{const e=id==='crisis'?crisisEvent(pick(NIDS)):EVENTS.find(x=>x.id===id);if(!e)return E('Unknown event. Try events.');queue.length=0;queue.push(e);$('#conWrap').classList.remove('open');showNext();return`Showing ${id}`},
+  events:()=>EVENTS.map(e=>e.id).concat('crisis').join(', '),
+  rel:(c,n)=>{if(!NATIONS[c])return E('Use norvik, solenne or aurelia');S.rel[c]=clamp(num(n,50),0,100);return`${NATIONS[c].n} relations: ${S.rel[c]}`},
+  tension:(c,n)=>{if(!NATIONS[c])return E('Use norvik, solenne or aurelia');S.tension[c]=clamp(num(n,50),0,100);S.crisisCd[c]=0;return`${NATIONS[c].n} tension: ${S.tension[c]}`},
+  age:n=>{S.monarch.age=clamp(num(n,S.monarch.age),0,120);return`${monarchName(S.monarch)} is now ${S.monarch.age}`},
+  die:()=>{const old=succeed('died');queue.length=0;queue.push(successionSheet(old,'died'));$('#conWrap').classList.remove('open');showNext();return`${monarchName(old)} has died`},
+  provinces:()=>S.prov.map((P,i)=>`${i}: ${P.name} (${ownName(P.o)})`),
+  take:i=>{i=num(i,-1);if(!S.prov[i]||S.prov[i].o==='me')return E('Use provinces to find an ID you don\u2019t own');transfer(i,'me','console');return`${S.prov[i].name} is yours`},
+  give:(i,n)=>{i=num(i,-1);if(!S.prov[i]||i===0||!(NATIONS[n]||n==='wild'))return E('Usage: give ID NATION');transfer(i,n,'console');return`${S.prov[i].name} given to ${ownName(n)}`},
+  claim:i=>{i=num(i,-1);if(!S.prov[i])return E('Unknown province');S.claims[i]=true;return`Claim on ${S.prov[i].name}`},
+  army:n=>{S.army=clamp(num(n,1),0,4);return`Army set to ${ARMY[S.army].n.toLowerCase()}`},
+  war:(n,i)=>{if(!NATIONS[n])return E('Usage: war NATION [PROVINCE_ID]');if(S.war)return E('Already at war');const g=i!=null?num(i,-1):(borderOf(n,'me')[0]);if(g==null||!S.prov[g]||S.prov[g].o!==n)return E('No valid target province');startWar(n,g,'me');return`War declared on ${NATIONS[n].n} over ${S.prov[g].name}`},
+  invade:n=>{if(!NATIONS[n])return E('Usage: invade NATION');if(S.war)return E('Already at war');const g=borderOf('me',n).filter(i=>i!==0)[0];if(g==null)return E('No border province to attack');startWar(n,g,n);return`${NATIONS[n].n} invades ${S.prov[g].name}`},
+  score:n=>{if(!S.war)return E('Not at war');S.war.score=clamp(num(n,0),-100,100);return`War score set to ${S.war.score}`},
+  peace:()=>{if(!S.war)return E('Not at war');const r=finishWar('Peace',[],[]);return r.d},
+  troops:n=>{S.troops=Math.max(0,num(n,troopTarget()));return`Troops set to ${S.troops}`},
+  navy:n=>{S.navy=Math.max(0,num(n,5));return`Navy set to ${S.navy} ships`},
+  mobilize:()=>{S.mob=!S.mob;return`Mobilization ${S.mob?'on':'off'}`},
+  support:n=>{if(!S.war)return E('Not at war');S.war.support=clamp(num(n,50),0,100);return`War support ${S.war.support}%`},
+  occupy:i=>{i=num(i,-1);if(!S.war||!S.prov[i])return E('Usage: occupy ID (during a war)');S.war.occ[i]=S.prov[i].o==='me'?'them':'me';S.war.occd[i]=1;return`${S.prov[i].name} occupied`},
+  general:t=>{const k=GTRAITS[t]?t:pick(Object.keys(GTRAITS));S.general={name:pick(GNAMES),trait:k};return`General ${S.general.name} (${GTRAITS[k].n}) appointed`},
+  court:n=>{S.court=clamp(num(n,2),0,4);return`Royal household set to ${COURT[S.court].n.toLowerCase()}`},
+  aging:v=>{S.aging=v!=='off';return`Aging and succession ${S.aging?'on':'off'}`},
+  goals:()=>{GOALS.forEach(g=>S.goals[g.id]=1);return'All objectives marked complete'},
+  status:()=>statusLines(),
+  province:i=>{i=num(i,-1);const P=S.prov[i];if(!P)return E('Usage: province ID (see provinces)');const tl=provTiles(i),bl=tl.map(t=>S.map[t].b).filter(b=>b&&B[b]);
+    return[`${i}: ${P.name}. Owner ${ownName(P.o)}${P.o!==P.core?`, originally ${ownName(P.core)}`:''}.`,`${tl.length} tiles, ${P.pop} foreign residents${P.heart?', a heartland':''}.`,`Buildings: ${bl.length?bl.join(', '):'none'}.`,`Your claim: ${S.claims[i]?'yes':'no'}. Claimed by: ${S.fclaims[i]?NATIONS[S.fclaims[i]].n:'nobody'}.`,
+      `Occupied: ${S.war&&S.war.occ[i]?(S.war.occ[i]==='me'?'by you':'by the enemy'):'no'}. Devastated: ${S.dev[i]?S.dev[i]+' months':'no'}. Settling: ${P.settle?P.settle+' months':'no'}.`,NATIONS[P.o]?`Buy price: ${fmt(buyPrice(i))}.`:'']},
+  why:w=>w&&w.startsWith('leg')?whyLegitimacy():w&&w.startsWith('app')?whyApproval():w&&w.startsWith('unr')?whyLines('unrest'):E('Usage: why approval, why legitimacy or why unrest'),
+  events:v=>{if(v==='off'||v==='on'){S.noEvents=v==='off';return`Random events ${v}`}return EVENTS.map(e=>e.id).concat('crisis').join(', ')},
+  date:(m,y)=>{if(m==null)return E('Usage: date MONTH [YEAR]');S.month=monthIdx(m);if(y!=null)S.year=Math.max(1,num(y,S.year));return`Date set to ${MONTHS[S.month]}, year ${S.year}`},
+  next:()=>{endMonth(false);return['A month passes. Details are in the news.'].concat(statusLines())},
+  trait:t=>{if(!TRAITS[t])return E('Use '+Object.keys(TRAITS).join(', '));S.monarch.trait=t;return`${monarchName(S.monarch)} is now ${TRAITS[t].n.toLowerCase()}`},
+  heir:n=>{S.heir.age=clamp(num(n,S.heir.age),0,90);return`${S.heir.name} is now ${S.heir.age}`},
+  marry:n=>{if(!NATIONS[n])return E('Usage: marry NATION');S.heir.age=Math.max(16,S.heir.age);S.heir.spouse=n;relA(n,20);tenA(n,-20);const o=borderOf(n,'me').filter(i=>!S.prov[i].heart);if(o.length)S.claims[pick(o)]=true;return`${S.heir.name} marries into the ${NATIONS[n].n} royal family`},
+  settle:i=>{i=num(i,-1);if(!S.prov[i]||S.prov[i].o!=='wild')return E('Usage: settle ID (a frontier province)');transfer(i,'me','settled');return`${S.prov[i].name} settled`},
+  devastate:(i,m)=>{i=num(i,-1);if(!S.prov[i])return E('Usage: devastate ID [MONTHS]');S.dev[i]=Math.max(1,num(m,12));return`${S.prov[i].name} devastated for ${S.dev[i]} months`},
+  rebuild:a=>{if(a!=='all')return E('Usage: rebuild all');const n=Object.keys(S.dev).length;S.dev={};return`${n} province${n===1?'':'s'} rebuilt`},
+  demolish:i=>{i=num(i,-1);if(!S.prov[i]||S.prov[i].o!=='me')return E('Usage: demolish ID (one of your provinces)');let k=0;provTiles(i).forEach(t=>{const x=S.map[t];if(x.b&&!B[x.b].fixed){x.b=null;k++}});return`Demolished ${k} building${k===1?'':'s'} in ${S.prov[i].name}`},
+  win:()=>{if(!S.war)return E('Not at war');S.war.score=Math.max(S.war.score,60);const r=autoResolve('win');return[r.t+'.',r.d]},
+  lose:()=>{if(!S.war)return E('Not at war');S.war.score=Math.min(S.war.score,-60);const r=autoResolve('lose');return[r.t+'.',r.d]},
+  enemy:(n,v)=>{if(!NATIONS[n])return E('Usage: enemy NATION N, or enemy NATION off');S.enemyStr=S.enemyStr||{};if(v==='off'||v==null){delete S.enemyStr[n];return`${NATIONS[n].n} strength back to normal (${theirStr(n)})`}S.enemyStr[n]=Math.max(0,num(v,0));return`${NATIONS[n].n} army strength fixed at ${S.enemyStr[n]}`},
+  embargo:(n,m)=>{if(!NATIONS[n])return E('Usage: embargo NATION MONTHS (0 lifts it)');const k=Math.max(0,num(m,12));if(k)S.embargo[n]=k;else delete S.embargo[n];return k?`${NATIONS[n].n} embargo for ${k} months`:`${NATIONS[n].n} embargo lifted`},
+  situation:(n,st)=>{if(!NATIONS[n]||!['stable','indebted','troubled'].includes(st))return E('Usage: situation NATION stable|indebted|troubled');S.nsit[n]=st;return`${NATIONS[n].n} is now ${st}`},
+  god:()=>{S.god=!S.god;if(S.god)S.coins=Math.max(S.coins,999999);return`God mode ${S.god?'on: infinite money, and unrest can\u2019t rise':'off'}`},
+  clear:()=>{LOG.length=0;return[]},
+  reset:y=>{if(y!=='yes')return E('Type reset yes to start over');S=newState();return'New nation created'}
+};
+CMDS.coins=CMDS.money;
+const CHIST=[];let chIdx=-1;
+function suggest(){const v=$('#conIn').value.trim().toLowerCase(),box=$('#conSug');if(!v||v.includes(' ')){box.innerHTML='';return}
+  const m=Object.keys(CMDS).filter(k=>k.startsWith(v)&&k!==v).slice(0,6);box.innerHTML=m.map(k=>`<button class="btn" data-act="sug" data-arg="${k}">${k}</button>`).join('')}
+function runCmd(line){line=line.trim();if(!line)return;if(CHIST[CHIST.length-1]!==line)CHIST.push(line);chIdx=-1;if($('#conSug'))$('#conSug').innerHTML='';out('> '+line,'c');const [c,...a]=line.split(/\s+/);const f=CMDS[c.toLowerCase()];
+  if(!f)out('Unknown command. Type help.','e');else{const r=f(...a);if(r&&r.err)out(r.err,'e');else out(r)}render();renderLog()}
+function openCon(){$('#sheetWrap').classList.remove('open');$('#conWrap').classList.add('open');renderLog();setTimeout(()=>$('#conIn').focus(),50)}
+
+/* ---------- actions ---------- */
+function act(a,arg,n){
+  switch(a){
+    case'tab':tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
+    case'zoom':if(arg==='home')centerOn(capIdx(),TS);else zoomAt(MAP.vw/2,MAP.vh/2,arg==='in'?1.35:1/1.35);drawSoon();return;
+    case'wsize':{if(!WSIZES[arg]||S.turn>0)return;const v=($('#nm')||{}).value;setWorld(genWorld(arg));welcome();if(v!=null)$('#nm').value=v;render();return}
+    case'tile':tileSheet(+arg);return;
+    case'build':{const i=+arg,d=B[n],x=S.map[i];if(!d||x.o!=='me'||x.b||x.t==='w'||S.coins<d.c||lockReason(d)||(d.coast&&!isCoast(i))||(d.unique&&has(n)))return;
+      S.coins-=d.c;x.b=n;x.t='l';S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${d.e} ${d.n} built`);checkGoals().forEach(g=>setTimeout(()=>toast(`✅ ${g.d}. +🪙${fmt(g.r)}`),1200));break}
+    case'upgrade':{const i=+arg,x=S.map[i],d=B[x.b],U=B[UPGR[x.b]];if(!U)return;const cost=Math.max(0,U.c-Math.round(d.c*.5));if(S.coins<cost||lockReason(U))return;
+      S.coins-=cost;x.b=UPGR[x.b];S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${U.e} Upgraded to ${U.n.toLowerCase()}`);checkGoals();break}
+    case'demolish':{const i=+arg,x=S.map[i],d=B[x.b];if(!d||d.fixed)return;if(!resetArmed){resetArmed=true;$('#demoBtn').textContent='Tap again to demolish';return}
+      S.coins+=Math.round(d.c*.25);x.b=null;S.sel=-1;resetArmed=false;$('#sheetWrap').classList.remove('open');toast(`${d.n} demolished`);break}
+    case'dec':S.dec[arg]=!S.dec[arg];toast(`${DEC[arg].n} ${S.dec[arg]?'decreed':'revoked'}`);break;
+    case'provInfo':provSheet(+arg);return;
+    case'bfilt':{const F=UI.bfilt||(UI.bfilt={cat:'all',afford:false});if(arg==='afford')F.afford=!F.afford;else F.cat=arg;saveUI();tileSheet(+n);return}
+    case'settle':{const i=+arg,P=S.prov[i],cost=settleCost(i);if(P.o!=='wild'||P.settle||S.coins<cost||!touches(i,'me'))return;S.coins-=cost;P.settle=hasTech('survey')?4:6;closeSheet();toast(`🧭 Settlers set out for ${P.name}`);break}
+    case'buyProv':{const i=+arg,P=S.prov[i];if(!NATIONS[P.o]||atWarWith(P.o))return;const price=buyPrice(i);if(S.coins<price)return;if(!resetArmed){resetArmed=true;$('#buyBtn').textContent='Tap to confirm';return}resetArmed=false;
+      const n=P.o;S.coins-=price;transfer(i,'me','bought');relA(n,-3);closeSheet();toast(`💰 ${P.name} is now part of your kingdom`);checkGoals();break}
+    case'demandProv':{const i=+arg,P=S.prov[i],n=P.o;if(!NATIONS[n]||S.demandCd[n]||atWarWith(n)||!(S.claims[i]||S.tension[n]>=60))return;S.demandCd[n]=12;const c=calc(),ratio=c.str/Math.max(1,theirStr(n));
+      if(ratio>=1.5&&Math.random()<.5+(ratio-1.5)*.3){transfer(i,'me','demand');tenA(n,20);relA(n,-15);addMod('leg',5,12,`Took ${P.name}`);toast(`${NATIONS[n].n} yields ${P.name}`)}
+      else{tenA(n,30);relA(n,-15);toast(`${NATIONS[n].n} refuses. Tension rises sharply.`)}closeSheet();break}
+    case'declare':{const i=+arg,P=S.prov[i],n=P.o;if(S.war||!NATIONS[n])return;if(!resetArmed){resetArmed=true;$('#warBtn').textContent='Tap to confirm';return}resetArmed=false;
+      startWar(n,i,'me');closeSheet();toast(`⚔️ War is declared on ${NATIONS[n].n}${S.war.foes.length>1?`. ${S.war.foes.slice(1).map(o=>NATIONS[o].n).join(' and ')} join${S.war.foes.length>2?'':'s'} against you!`:''}`);tab='world';break}
+    case'peaceSheet':peaceSel=[];peaceSheet();return;
+    case'term':{const i=peaceSel.indexOf(arg);if(i>=0)peaceSel.splice(i,1);else{if(arg==='rep1')peaceSel=peaceSel.filter(k=>k!=='rep2');if(arg==='rep2')peaceSel=peaceSel.filter(k=>k!=='rep1');peaceSel.push(arg)}peaceSheet();return}
+    case'sendTerms':case'white':case'acceptTheirs':{if(!S.war)return;const sc=S.war.score;let res;queue.length=0;
+      if(a==='sendTerms'){const used=peaceSel.reduce((x,k)=>x+termCost(k),0);if(used>sc)return;res=finishWar('Peace on your terms',peaceSel.slice(),[])}
+      else if(a==='white'){if(sc<-20){toast('They refuse a white peace while winning');return}res=finishWar('A white peace',[],[])}
+      else res=finishWar('Peace on their terms',[],theirTerms(-sc));
+      peaceSel=[];render();openSheet(`<div class="event"><div class="pic">🕊️</div><h3>${res.t}</h3><p>${res.d}</p></div><button class="btn primary wide" data-act="${queue.length?'nextEvent':'closeSheet'}">${queue.length?'Continue':'Return to the map'}</button>`);return}
+    case'strat':if(S.war)S.war.strat=arg;break;
+    case'mobilize':{S.mob=!S.mob;if(S.mob)S.troops+=Math.round(S.pop*ARMY[S.army].r*.6);else S.troops=Math.min(S.troops,troopTarget());toast(S.mob?'Reserves are called up':'Reserves are sent home');break}
+    case'bonds':{if(!S.war||S.mods.filter(m=>m.l==='War bonds').length>=3)return;S.coins+=2000;addMod('inc',-110,24,'War bonds');toast('War bonds raise 🪙2,000');break}
+    case'genSheet':genSheet();return;
+    case'appoint':{if(arg==='heir'){if(!(S.aging&&S.heir.age>=16))return;S.general={name:S.heir.name,trait:pick(Object.keys(GTRAITS)),heir:true}}else{const g=genCands[+arg];if(!g||S.coins<200)return;S.coins-=200;S.general={name:g.name,trait:g.trait}}genCands=[];closeSheet();toast(`${S.general.heir?'The heir':'General '+S.general.name} takes command`);break}
+    case'dismissGen':S.general=null;genCands=[];closeSheet();toast('The general is dismissed');break;
+    case'ship':{if(!has('shipyard')||S.coins<400)return;S.coins-=400;S.navy++;toast('🚢 A new warship is launched');break}
+    case'rebuild':{const i=+arg,cost=rebuildCost(i);if(!S.dev[i]||S.coins<cost)return;S.coins-=cost;delete S.dev[i];closeSheet();toast(`${S.prov[i].name} is rebuilt`);break}
+    case'marry':{const n=arg,h=S.heir;if(h.age<16||h.spouse||S.coins<500||atWarWith(n))return;S.coins-=500;h.spouse=n;relA(n,20);tenA(n,-20);
+      const opts=borderOf(n,'me').filter(i=>!S.prov[i].heart);let msg=`${h.name} marries into the ${NATIONS[n].n} royal family.`;
+      if(opts.length){const i=pick(opts);if(Math.random()<.3){transfer(i,'me','inherited');msg+=` ${S.prov[i].name} comes as the dowry!`}else{S.claims[i]=true;msg+=` You gain a claim on ${S.prov[i].name}.`}}
+      toast(msg);checkGoals();break}
+    case'enact':{if(S.enact||!LAWS[arg]||!LAWS[arg].o[n])return;const mo=trait('reformer')?4:6;S.enact={cat:arg,opt:n,left:mo};
+      IGIDS.forEach(g=>{const v=(IGS[g].likes[arg]||{})[n]||0,cv=(IGS[g].likes[arg]||{})[S.laws[arg]]||0;if(v<cv)igM(g,-5,mo,`Opposes ${LAWS[arg].o[n].n.toLowerCase()}`)});
+      toast(`Debate begins on ${LAWS[arg].o[n].n.toLowerCase()}. It passes in ${mo} months.`);break}
+    case'cancelLaw':{if(!S.enact)return;const o=LAWS[S.enact.cat].o[S.enact.opt].n.toLowerCase();S.mods=S.mods.filter(m=>m.l!==`Opposes ${o}`);S.enact=null;addMod('leg',-2,3,'Withdrawn law');toast('The law is withdrawn');break}
+    case'favor':{if(S.favorCd[arg]||S.coins<400)return;S.coins-=400;S.favorCd[arg]=6;igM(arg,15,12,'Royal favor');toast(`The ${IGS[arg].n.toLowerCase()} are pleased by the crown\u2019s favor`);break}
+    case'research':{if(hasTech(arg))return;const t=techOf(arg);if(t.req&&!hasTech(t.req))return;if(S.tech.cur!==arg){S.tech.cur=arg;S.tech.prog=0}toast(`Scholars begin work on ${t.n.toLowerCase()}`);break}
+    case'setTrade':{S.trade[arg]=n||null;toast(n?`${RES.find(r=>r.k===arg).n} agreement signed with ${NATIONS[n].n}`:'Agreement ended');checkGoals();break}
+    case'envoy':{if(S.envoy[arg]||S.coins<300)return;S.coins-=300;S.envoy[arg]=1;const tg=hasTech('telegraph');relA(arg,tg?12:8);tenA(arg,tg?-12:-8);toast(`Envoy sent to ${NATIONS[arg].n}. Relations improve and tension eases.`);break}
+    case'demand':{if(S.demandCd[arg])return;S.demandCd[arg]=6;tenA(arg,25);const ok=S.rel[arg]>=40&&Math.random()<S.rel[arg]/100;let msg;
+      if(ok){const pay=300+Math.round(S.rel[arg]*5);S.coins+=pay;addMod('leg',3,6,`Tribute from ${NATIONS[arg].n}`);relA(arg,-4);msg=`${NATIONS[arg].n} pays 🪙${fmt(pay)} in tribute. Your court is impressed.`}
+      else{relA(arg,-10);msg=`${NATIONS[arg].n} refuses, and relations suffer.`}
+      if(S.tension[arg]>=100)msg+=' '+embargoNow(arg);toast(msg);break}
+    case'aging':{S.aging=!S.aging;const b=$('#sheet [data-act=aging]');if(b)b.setAttribute('aria-pressed',S.aging);toast(`Aging and succession ${S.aging?'on':'off'}`);render();return}
+    case'abdicate':{if(S.heir.age<16)return;if(!resetArmed){resetArmed=true;$('#abdBtn').textContent='Tap again';return}resetArmed=false;const old=succeed('abdicated');queue.length=0;queue.push(successionSheet(old,'abdicated'));render();showNext();return}
+    case'endMonth':{const r=endMonth(false);render();afterMonths([r]);return}
+    case'advance':{const rs=[];for(let k=0;k<12;k++){const r=endMonth(false);rs.push(r);if(queue.length||r.stop.length||S.war)break}render();afterMonths(rs);return}
+    case'news':newsSheet();return;
+    case'why':whySheet(arg);return;
+    case'mapmode':if(!MODES[arg])return;mapMode=UI.mapMode=arg;saveUI();renderModes();MAP.dirty=true;drawSoon();return;
+    case'report':{S.showReport=!S.showReport;const b=$('#sheet [data-act=report]');if(b)b.setAttribute('aria-pressed',!!S.showReport);save();return}
+    case'nextEvent':showNext();return;
+    case'choose':{const Ev=curEvent;if(!Ev)return;const ch=Ev.ch[+arg];if(ch.c)S.coins-=ch.c;const res=ch.f();curEvent=null;logNews(Ev.e,`${Ev.t}: ${ch.l}`,res);
+      openSheet(`<div class="event"><div class="pic" aria-hidden="true">${Ev.e}</div><h3>${ch.l}</h3><p>${res}</p></div><button class="btn primary wide" data-act="${queue.length?'nextEvent':'closeSheet'}">${queue.length?'Continue':'Return to the map'}</button>`);break}
+    case'settings':settings();return;
+    case'closeSheet':closeSheet();break;
+    case'openCon':openCon();return;
+    case'closeCon':$('#conWrap').classList.remove('open');break;
+    case'runCon':{const i=$('#conIn');runCmd(i.value);i.value='';i.focus();return}
+    case'cmd':runCmd(arg);return;
+    case'lastCmd':{if(!CHIST.length)return;const i=$('#conIn');chIdx=chIdx<=0?CHIST.length-1:chIdx-1;i.value=CHIST[chIdx];i.focus();return}
+    case'sug':{const i=$('#conIn');i.value=arg+' ';suggest();i.focus();return}
+    case'start':case'rename':{const v=esc(($('#nm')||{}).value||'').trim();if(v)S.name=v;closeSheet();if(a==='rename')toast('Nation renamed');break}
+    case'copyCode':{const t=$('#code');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Save code copied'),()=>{try{document.execCommand('copy');toast('Save code copied')}catch(e){toast('Select the code and copy it')}});return}
+    case'loadCode':{try{const d=JSON.parse(decodeURIComponent(escape(atob($('#code').value.trim()))));if(!d||!(d.v===1||d.v===2)||!Array.isArray(d.map))throw 0;adopt(d);closeSheet();toast('Nation loaded')}catch(e){toast('That code didn\u2019t work. Check it was copied in full.')}break}
+    case'reset':{if(!resetArmed){resetArmed=true;$('#resetBtn').textContent='Tap again to start over';return}S=newState();tab='isle';queue.length=0;curEvent=null;closeSheet();render();welcome();return}
+  }
+  render()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;act(b.dataset.act,b.dataset.arg,b.dataset.n)});
+const blocking=()=>!!$('#sheet .choice')||!!$('#sheet [data-act=start]')||!!$('#sheet [data-act=nextEvent]');
+$('#sheetWrap').addEventListener('click',e=>{if(e.target.id==='sheetWrap'&&!blocking())closeSheet()});
+$('#conWrap').addEventListener('click',e=>{if(e.target.id==='conWrap')$('#conWrap').classList.remove('open')});
+$('#conIn').addEventListener('keydown',e=>{const el=e.target;
+  if(e.key==='Enter'){runCmd(el.value);el.value='';return}
+  if(e.key==='ArrowUp'&&CHIST.length){e.preventDefault();chIdx=chIdx<0?CHIST.length-1:Math.max(0,chIdx-1);el.value=CHIST[chIdx];return}
+  if(e.key==='ArrowDown'&&chIdx>=0){e.preventDefault();chIdx++;if(chIdx>=CHIST.length){chIdx=-1;el.value=''}else el.value=CHIST[chIdx];return}
+  if(e.key==='Tab'){const f=$('#conSug button');if(f){e.preventDefault();el.value=f.dataset.arg+' ';suggest()}}});
+$('#conIn').addEventListener('input',suggest);
+document.addEventListener('keydown',e=>{if(e.key==='`'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();openCon()}
+  if(e.key==='Escape'){$('#conWrap').classList.remove('open');if($('#sheetWrap').classList.contains('open')&&!blocking())closeSheet()}});
+const net=()=>{$('#net').hidden=navigator.onLine};addEventListener('online',net);addEventListener('offline',net);
+// Offline support when hosted (https or localhost); a file opened from Drive skips this.
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+let chartT;addEventListener('resize',()=>{clearTimeout(chartT);chartT=setTimeout(()=>{if(tab==='people')drawCharts()},150)});
+mapInit();renderModes();const had=load();net();render();if(!had)welcome();
+else if(S.migrated){delete S.migrated;save();openSheet(`<div class="event"><div class="pic" aria-hidden="true">🗺️</div><h3>Your kingdom now has neighbors</h3><p>The kingdom has been redrawn on a larger map with land borders. Your buildings have been rebuilt around the capital, and you also hold two more provinces to grow into. Norvik lies to the north, Aurelia to the east and Solenne to the south, with unclaimed frontier between you.</p></div><button class="btn primary wide" data-act="closeSheet">Explore the map</button>`)}
+</script>
+</body>
+</html>

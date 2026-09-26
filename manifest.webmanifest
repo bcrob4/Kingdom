@@ -1,0 +1,16 @@
+{
+  "name": "Island Kingdom",
+  "short_name": "Kingdom",
+  "description": "Rule a small island kingdom: build, balance the treasury and keep the powerful on your side.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#15201F",
+  "theme_color": "#2B5569",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
