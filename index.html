@@ -117,13 +117,22 @@ textarea{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;min-height:70px}
 /* map: one canvas, drawn by drawMap() */
 .mappane{display:none}
 body.on-isle .mappane{display:block}
-.mapwrap{position:relative;height:58vh;height:58dvh;min-height:260px;border-radius:18px;margin-top:10px;background:var(--sea2);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.mapwrap{position:relative;height:62vh;height:62dvh;min-height:260px;border-radius:18px;margin-top:10px;background:var(--sea2);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 .mapwrap canvas.cv{display:block;width:100%;height:100%;touch-action:none;cursor:grab;border-radius:inherit}
 .mapwrap canvas.cv:active{cursor:grabbing}
 .mapctl{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:6px}
 .mapctl button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:1.15rem;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.18)}
 .minimap{position:absolute;left:8px;bottom:8px;border-radius:6px;border:2px solid var(--card);box-shadow:0 1px 5px rgba(0,0,0,.25);touch-action:none;cursor:pointer;display:none}
-.maptip{position:absolute;left:8px;top:8px;max-width:calc(100% - 70px);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.8rem;pointer-events:none;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mapover{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 66px);pointer-events:none;z-index:1}
+.mapover>*{pointer-events:auto}
+.mapbar{display:flex;gap:6px}
+.mapbar select,.pill{font:inherit;font-size:.85rem;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 12px;box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--deep);color:var(--deep-ink);border-color:transparent}
+.mapover .legend{margin:0;padding:6px 10px;gap:4px 10px;border-radius:12px;font-size:.75rem;max-width:300px;color:var(--ink);background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.mapover .legend[hidden]{display:none}
+.mapctl .wideonly{display:none}
+nav .railonly{display:none}
+.maptip{position:absolute;right:8px;bottom:8px;max-width:calc(100% - 180px);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.8rem;pointer-events:none;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:12px;font-size:.8rem;color:var(--muted)}
 .lg{display:inline-flex;align-items:center;gap:5px}.lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
 .lgbar{display:inline-block;width:90px;height:10px;border-radius:5px;vertical-align:middle}
@@ -160,21 +169,35 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
 
 /* wide screens (unfolded phone, tablet, computer): map on the left, panel on the right */
 @media (min-width:760px){
+  :root{--side:clamp(300px,34vw,440px);--rail:68px}
   body{overflow:hidden}
-  .app{max-width:none;padding:0;height:100vh;height:100dvh;display:flex;flex-direction:column}
-  header{position:static;margin:0;padding:10px 18px}
+  .app{max-width:none;padding:0;height:100vh;height:100dvh;display:flex;flex-direction:column;margin-right:var(--rail)}
+  /* one-row header: name and date, then the numbers, then the icons */
+  header{position:static;margin:0;padding:6px 14px;display:flex;align-items:center;gap:18px}
+  header .top{display:contents}
+  header .flag{order:1;flex:none;max-width:32%}
+  header .bar{order:2;flex:1;margin-top:0}
+  header #net,header .icon{order:3}
   .main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) var(--side)}
-  .mappane,body.on-isle .mappane{display:flex;flex-direction:column;min-height:0;padding:0 12px 10px;border-right:1px solid var(--line)}
-  .mapwrap{flex:1;height:auto;min-height:0}
-  .mappane .hint{margin-bottom:0}
-  #view{overflow:auto;padding:0 16px calc(140px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}
-  nav{left:auto;right:0;width:var(--side);border-left:1px solid var(--line)}
-  .endbar{left:auto;right:0;width:var(--side)}
-  .toast{left:calc(100% - var(--side)/2)}
-  .overlay{justify-content:flex-end;align-items:stretch;background:rgba(10,25,28,.2)}
+  body.nopanel .main{grid-template-columns:minmax(0,1fr) 0}
+  body.nopanel #view{display:none}
+  .mappane,body.on-isle .mappane{display:flex;flex-direction:column;min-height:0;padding:8px;border-right:1px solid var(--line)}
+  .mapwrap{flex:1;height:auto;min-height:0;margin-top:0}
+  .mapctl .wideonly{display:block}
+  #view{overflow:auto;padding:0 16px 24px;overscroll-behavior:contain}
+  /* the tab bar becomes a slim strip down the right edge, with End month at the bottom */
+  .endbar{display:none}
+  nav{top:0;bottom:0;left:auto;right:0;width:var(--rail);border-top:0;border-left:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px))}
+  nav div{flex-direction:column;height:100%;max-width:none;gap:2px}
+  nav button{flex:none;padding:7px 2px;font-size:.72rem;text-align:center;line-height:1.15}
+  nav .railonly{display:flex}
+  nav .railonly.first{margin-top:auto}
+  nav .railonly.end{background:var(--deep);color:var(--deep-ink);font-weight:700;border-radius:14px;margin:4px 6px 0}
+  .toast{left:calc(100% - var(--rail) - var(--side)/2)}
+  body.nopanel .toast{left:calc((100% - var(--rail))/2)}
+  .overlay{justify-content:flex-end;align-items:stretch;background:rgba(10,25,28,.2);right:var(--rail)}
   .sheet{width:var(--side);max-width:var(--side);max-height:none;height:100%;border-radius:0;border-left:1px solid var(--line)}
 }
-@media (min-width:1200px){:root{--side:460px}}
 </style>
 </head>
 <body>
@@ -186,19 +209,17 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
       <button class="icon" data-act="news" aria-label="News">📰</button>
       <button class="icon" data-act="settings" aria-label="Settings">⚙️</button>
     </div>
-    <div class="bar"><button class="stat" id="coins" data-act="tab" data-arg="econ" title="Treasury: open the economy"></button><button class="stat" id="pop" data-act="tab" data-arg="people" title="Population: open your people"></button><button class="stat" id="hap" data-act="why" data-arg="approval" title="What drives approval?"></button><button class="stat" id="leg" data-act="why" data-arg="legitimacy" title="What drives legitimacy?"></button></div>
+    <div class="bar"><button class="stat" id="coins" data-act="goto" data-arg="econ" title="Treasury: open the economy"></button><button class="stat" id="pop" data-act="goto" data-arg="people" title="Population: open your people"></button><button class="stat" id="hap" data-act="why" data-arg="approval" title="What drives approval?"></button><button class="stat" id="leg" data-act="why" data-arg="legitimacy" title="What drives legitimacy?"></button></div>
   </header>
   <div class="main">
     <section class="mappane" aria-label="Map">
-      <div class="seg modes" id="modes" role="group" aria-label="Map mode"></div>
-      <div class="legend" id="legend"></div>
       <div class="mapwrap" id="mapwrap">
         <canvas class="cv" id="mapcv" tabindex="0" role="img" aria-label="Map of your kingdom and its neighbors. Arrow keys move the cursor, Enter selects, plus and minus zoom."></canvas>
+        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button></div><div class="legend" id="legend"></div></div>
         <div class="maptip" id="maptip" aria-live="polite"></div>
-        <div class="mapctl"><button data-act="zoom" data-arg="in" aria-label="Zoom in">+</button><button data-act="zoom" data-arg="out" aria-label="Zoom out">−</button><button data-act="zoom" data-arg="home" aria-label="Center on the capital">⌂</button></div>
+        <div class="mapctl"><button data-act="zoom" data-arg="in" aria-label="Zoom in">+</button><button data-act="zoom" data-arg="out" aria-label="Zoom out">−</button><button data-act="zoom" data-arg="home" aria-label="Center on the capital">⌂</button><button data-act="maphelp" aria-label="How the map works">?</button><button class="wideonly" data-act="panel" id="panelBtn" aria-label="Hide the side panel" title="Hide or show the side panel">⤢</button></div>
         <canvas class="minimap" id="minimap" aria-hidden="true"></canvas>
       </div>
-      <p class="hint">Drag to move, pinch or scroll to zoom. Tap your land to build, or a neighbor’s province to buy, claim or contest it. Thick lines are national borders, thin lines are provinces.</p>
     </section>
     <main id="view"></main>
   </div>
@@ -211,6 +232,8 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
   <button data-act="tab" data-arg="econ"><span>🪙</span>Economy</button>
   <button data-act="tab" data-arg="world"><span>🌍</span>World</button>
   <button data-act="tab" data-arg="tech"><span>🔬</span>Research</button>
+  <button class="railonly first adv" data-act="advance" aria-label="Advance until something happens" title="Keep ending months until something needs you (up to a year)"><span>⏩</span>Advance</button>
+  <button class="railonly end" data-act="endMonth"><span>⏭️</span>End month</button>
 </div></nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="overlay" id="sheetWrap"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -1008,7 +1031,11 @@ function provColors(P){if(mapMode==='political'||mapMode==='land'||mapMode==='po
     if(o==='me')return null;if(o==='wild')return wild;
     if(mapMode==='relations'){const r=S.rel[o];return r>=50?mixHex(N,P.good,(r-50)/50):mixHex(N,P.bad,(50-r)/50)}
     return mixHex(N,P.bad,S.tension[o]/100)})}
-function renderModes(){$('#modes').innerHTML=Object.entries(MODES).map(([k,n])=>`<button class="btn ${mapMode===k?'on':''}" data-act="mapmode" data-arg="${k}" aria-pressed="${mapMode===k}">${n}</button>`).join('');
+// The key starts open on wide screens and closed on narrow ones, until the player chooses.
+const isWide=()=>window.matchMedia('(min-width:760px)').matches;
+const keyShown=()=>UI.legend!=null?UI.legend:isWide();
+function renderModes(){const sel=$('#modeSel');if(!sel.options.length)sel.innerHTML=Object.entries(MODES).map(([k,n])=>`<option value="${k}">${n} map</option>`).join('');sel.value=mapMode;
+  const on=keyShown();$('#legend').hidden=!on;$('#legBtn').setAttribute('aria-pressed',on);
   const sw=(cls,n,style)=>`<span class="lg"><i class="${cls}"${style?` style="${style}"`:''}></i>${n}</span>`,bar=(g,a,b)=>`<span class="lg">${a} <span class="lgbar" style="background:${g}"></span> ${b}</span>`;
   $('#legend').innerHTML=mapMode==='political'?sw('o-me','Your kingdom')+sw('o-norvik','Norvik')+sw('o-solenne','Solenne')+sw('o-aurelia','Aurelia')+sw('o-wild','Frontier')
     :mapMode==='land'?sw('','Open land',`background:color-mix(in srgb,var(--grass) 50%,var(--muted))`)+sw('','Fertile',`background:color-mix(in srgb,var(--grass) 55%,var(--coin))`)+sw('','Hills',`background:color-mix(in srgb,var(--sand) 55%,var(--muted))`)+sw('','Forest','background:var(--forest)')+sw('','River','background:var(--river);height:4px;border-radius:2px')
@@ -1074,7 +1101,7 @@ function tileLabel(i){const x=S.map[i];if(!x||x.t==='w')return'';const P=S.prov[
   const tt=terrainTxt(i),land=(tt.length?' · '+tt.join(', '):'')+(x.dp?` · ${DEPE[x.dp]} ${DEPN[x.dp]}`:'');
   return(x.o==='me'?`${x.b&&B[x.b]?B[x.b].e+' '+B[x.b].n:x.t==='f'?'🌲 Forest':'Open land'} · ${P.name}`:`${P.name} · ${ownName(x.o)}`)+land+extra}
 function showTip(t){const el=$('#maptip');el.textContent=t;el.style.display=t?'block':'none'}
-function mapResize(){const w=$('#mapwrap');MAP.vw=w.clientWidth;MAP.vh=w.clientHeight;if(!MAP.vw||!MAP.vh)return;MAP.dpr=window.devicePixelRatio||1;
+function mapResize(){const w=$('#mapwrap');if(MAP.wide!==isWide()){MAP.wide=isWide();renderModes()}MAP.vw=w.clientWidth;MAP.vh=w.clientHeight;if(!MAP.vw||!MAP.vh)return;MAP.dpr=window.devicePixelRatio||1;
   MAP.cv.width=Math.round(MAP.vw*MAP.dpr);MAP.cv.height=Math.round(MAP.vh*MAP.dpr);clampCam();drawMap()}
 function mapInit(){const cv=MAP.cv=$('#mapcv');MAP.ctx=cv.getContext('2d');MAP.mini=$('#minimap');
   if(window.ResizeObserver)new ResizeObserver(mapResize).observe($('#mapwrap'));else addEventListener('resize',mapResize);
@@ -1440,7 +1467,19 @@ function openCon(){$('#sheetWrap').classList.remove('open');$('#conWrap').classL
 /* ---------- actions ---------- */
 function act(a,arg,n){
   switch(a){
-    case'tab':tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
+    // On wide screens, tapping the tab that's already open hides the side panel; any other tab brings it back.
+    case'tab':if(isWide()){if(arg===tab&&!document.body.classList.contains('nopanel')){setPanel(false);return}setPanel(true)}
+      tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
+    case'goto':setPanel(true);tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
+    case'panel':setPanel(document.body.classList.contains('nopanel'));return;
+    case'legend':UI.legend=!keyShown();saveUI();renderModes();return;
+    case'maphelp':openSheet(`<h3>🗺️ The map</h3><div class="card">
+      <div class="row"><span class="em">👆</span><div class="grow"><b>Moving around</b><small>Drag to move. Pinch, scroll, or use + and − to zoom. ⌂ returns to your capital, and the small map in the corner jumps anywhere.</small></div></div>
+      <div class="row"><span class="em">🏗️</span><div class="grow"><b>Tapping tiles</b><small>Tap your own land to build or upgrade. Tap a neighbor’s province to buy, claim or contest it, or frontier to settle it.</small></div></div>
+      <div class="row"><span class="em">🧭</span><div class="grow"><b>Borders</b><small>Thick lines are national borders, thin lines are provinces. Sand-coloured edges mark your coastline.</small></div></div>
+      <div class="row"><span class="em">🎨</span><div class="grow"><b>Map modes</b><small>The menu at the top left recolours the map: Land shows terrain and deposits, Pollution shows how pleasant your neighborhoods are, and Relations, Tension and Claims show diplomacy. Key shows or hides the legend.</small></div></div>
+      ${isWide()?'<div class="row"><span class="em">⤢</span><div class="grow"><b>More room</b><small>⤢ hides the side panel for a full-screen map. Tap any tab to bring it back, or the open tab again to hide it.</small></div></div>':''}</div>
+      <button class="btn primary wide" data-act="closeSheet">Done</button>`);return;
     case'zoom':if(arg==='home')centerOn(capIdx(),TS);else zoomAt(MAP.vw/2,MAP.vh/2,arg==='in'?1.35:1/1.35);drawSoon();return;
     case'wsize':{if(!WSIZES[arg]||S.turn>0)return;const v=($('#nm')||{}).value;setWorld(genWorld(arg));welcome();if(v!=null)$('#nm').value=v;render();return}
     case'tile':tileSheet(+arg);return;
@@ -1532,8 +1571,12 @@ document.addEventListener('keydown',e=>{if(e.key==='`'&&e.target.tagName!=='INPU
 const net=()=>{$('#net').hidden=navigator.onLine};addEventListener('online',net);addEventListener('offline',net);
 // Offline support when hosted (https or localhost); a file opened from Drive skips this.
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-let chartT;addEventListener('resize',()=>{clearTimeout(chartT);chartT=setTimeout(()=>{if(tab==='people')drawCharts()},150)});
-mapInit();renderModes();const had=load();net();render();if(!had)welcome();
+let chartT;addEventListener('resize',()=>{clearTimeout(chartT);chartT=setTimeout(()=>{if(tab==='people')drawCharts();renderModes()},150)});
+function setPanel(show){document.body.classList.toggle('nopanel',!show);UI.nopanel=!show;saveUI();const b=$('#panelBtn');b.setAttribute('aria-label',show?'Hide the side panel':'Show the side panel');b.textContent=show?'⤢':'⤡'}
+$('#modeSel').addEventListener('change',e=>act('mapmode',e.target.value));
+// folding or unfolding the phone crosses the wide/narrow line; the key's default follows it
+if(window.matchMedia)matchMedia('(min-width:760px)').addEventListener('change',renderModes);
+mapInit();renderModes();setPanel(!UI.nopanel);const had=load();net();render();if(!had)welcome();
 else if(S.migrated){delete S.migrated;save();openSheet(`<div class="event"><div class="pic" aria-hidden="true">🗺️</div><h3>Your kingdom now has neighbors</h3><p>The kingdom has been redrawn on a larger map with land borders. Your buildings have been rebuilt around the capital, and you also hold two more provinces to grow into. Norvik lies to the north, Aurelia to the east and Solenne to the south, with unclaimed frontier between you.</p></div><button class="btn primary wide" data-act="closeSheet">Explore the map</button>`)}
 </script>
 </body>
