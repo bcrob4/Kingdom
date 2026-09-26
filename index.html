@@ -307,12 +307,31 @@ const B={
   fcap:{n:'Provincial hall',e:'🏛️',fixed:1,jobs:10,homes:30,d:'The old seat of this province\u2019s government.'},
   hotel:{n:'Grand hotel',e:'🏨',c:1500,u:20,jobs:20,tour:120,coast:1,mid:10,tech:'tourism',d:'Brings in tourism income. Coast only.'},
   harbor:{n:'Harbor',e:'⚓',c:3200,u:40,jobs:60,inc:150,trade:600,coast:1,mid:15,d:'Greatly expands trade capacity. Coast only.'},
-  lighthouse:{n:'Royal monument',e:'🗼',c:4000,u:10,hap:6,leg:5,tour:100,coast:1,tech:'monument',unique:1,d:'A symbol of the crown. Approval +6 and legitimacy +5.'}
+  lighthouse:{n:'Royal monument',e:'🗼',c:4000,u:10,hap:6,leg:5,tour:100,coast:1,tech:'monument',unique:1,d:'A symbol of the crown. Approval +6 and legitimacy +5.'},
+  // Age of Enlightenment
+  printhouse:{n:'Printing house',e:'📰',c:900,u:15,learn:60,jobs:15,mid:10,tech:'printing',d:'Books and newspapers: education for 60 and a stronger middle class.'},
+  coffeehouse:{n:'Coffee house',e:'☕',c:500,u:8,fun:50,jobs:6,mid:6,tech:'printing',d:'Recreation for 50, and lively debate that strengthens the intelligentsia.'},
+  observatory:{n:'Observatory',e:'🔭',c:1400,u:20,learn:40,rp:5,hill:1,tech:'philosophy',d:'Research +5 points a month, and education for 40. Hills only.'},
+  tradeco:{n:'Trading company',e:'🏢',c:2000,u:25,jobs:30,inc:120,trade:150,coast:1,mid:15,tech:'navigation',d:'Overseas commerce: trade capacity +150 and business revenue. Coast only.'},
+  academy:{n:'Military academy',e:'🎖️',c:1300,u:25,jobs:15,tech:'gunpowder',d:'Trains officers. Army quality +10% each, up to +30%.'},
+  // Age of Industry
+  textile:{n:'Textile mill',e:'🧵',c:2200,u:35,jobs:110,inc:120,goods:70,nat:-5,tech:'steam',d:'Mass-produced cloth. Strengthens the workers, and pollutes nearby homes.'},
+  tenement:{n:'Tenements',e:'🏚️',c:700,u:10,homes:120,nat:-3,tech:'steam',d:'Cheap, crowded housing for 120 people.'},
+  polytechnic:{n:'Polytechnic',e:'🏛️',c:2400,u:40,learn:250,rp:5,jobs:25,mid:25,tech:'steam',d:'Engineering and science: education for 250, and research +5 points a month.'},
+  gasworks:{n:'Gasworks',e:'🏮',c:1400,u:25,power:250,fun:20,jobs:25,nat:-5,tech:'gaslight',d:'Gas for lamps and stoves: energy for 250 and livelier evenings. Pollutes nearby homes.'},
+  steelworks:{n:'Steelworks',e:'⚙️',c:3000,u:45,jobs:140,inc:180,goods:60,nat:-10,tech:'coke',d:'Heavy industry. Strengthens the workers, and pollutes heavily.'},
+  // Modern Age
+  powerstation:{n:'Power station',e:'⚡',c:3200,u:40,power:1200,jobs:30,nat:-8,tech:'electric',d:'Energy for 1,200 people. Pollutes nearby homes.'},
+  hospital:{n:'Hospital',e:'⚕️',c:2600,u:60,health:600,jobs:60,mid:30,tech:'medicine',d:'Healthcare for 600 people.'},
+  cinema:{n:'Cinema',e:'🎬',c:1600,u:25,fun:350,jobs:15,inc:60,tech:'electric',d:'Recreation for 350 people.'},
+  deptstore:{n:'Department store',e:'🛍️',c:2800,u:30,jobs:120,inc:250,fun:60,mid:30,tech:'massprod',d:'Shopping on a grand scale. Strengthens the merchants.'},
+  garage:{n:'Motor garage',e:'🚗',c:1500,u:25,move:400,jobs:20,tech:'automobile',d:'Motor buses and cars: transport for 400 people.'},
+  broadcaster:{n:'Radio station',e:'📻',c:1800,u:25,jobs:20,fun:80,leg:2,unique:1,tech:'radio',d:'Royal broadcasts: legitimacy +2, and recreation for 80.'}
 };
 const RENAME={studio:'bank',tram:'rail',solar:'hydro'};
 // [heading, buildings, short label for the build menu's filter chips]
-const GROUPS=[['Housing',['cottage','townhouse','apartments'],'🏠 Housing'],['Food',['farm','dock','greenhouse'],'🌾 Food'],['Economy',['market','workshop','factory','bank','harbor'],'🪙 Economy'],['Resources',['lumber','quarry','brickworks','mine','coalmine'],'⛏️ Resources'],['Public services',['clinic','school','library','university','church'],'🏥 Services'],['Recreation and environment',['park','garden','tent','fair'],'🌳 Leisure'],['Transport',['bus','rail'],'🚌 Transport'],['Water and sanitation',['well','waterworks'],'🚰 Water'],['Energy',['wind','hydro','diesel'],'⚡ Energy'],['Military',['barracks','fort','shipyard'],'🪖 Military'],['Tourism and prestige',['hotel','lighthouse'],'🗼 Prestige']];
-const UPGR={well:'waterworks',cottage:'townhouse',townhouse:'apartments',workshop:'factory',bus:'rail',wind:'hydro',farm:'greenhouse',tent:'fair'};
+const GROUPS=[['Housing',['cottage','townhouse','tenement','apartments'],'🏠 Housing'],['Food',['farm','dock','greenhouse'],'🌾 Food'],['Economy',['market','workshop','factory','textile','steelworks','bank','tradeco','harbor','deptstore'],'🪙 Economy'],['Resources',['lumber','quarry','brickworks','mine','coalmine'],'⛏️ Resources'],['Public services',['clinic','hospital','school','library','printhouse','university','polytechnic','observatory','church'],'🏥 Services'],['Recreation and environment',['park','garden','coffeehouse','tent','cinema','fair'],'🌳 Leisure'],['Transport',['bus','garage','rail'],'🚌 Transport'],['Water and sanitation',['well','waterworks'],'🚰 Water'],['Energy',['wind','hydro','diesel','gasworks','powerstation'],'⚡ Energy'],['Military',['barracks','academy','fort','shipyard'],'🪖 Military'],['Tourism and prestige',['hotel','broadcaster','lighthouse'],'🗼 Prestige']];
+const UPGR={well:'waterworks',cottage:'townhouse',townhouse:'apartments',workshop:'factory',bus:'garage',wind:'hydro',farm:'greenhouse',tent:'fair',clinic:'hospital',school:'polytechnic',market:'deptstore',diesel:'powerstation'};
 const TIERS=[{n:'Settlement',p:0},{n:'Village',p:100},{n:'Town',p:200},{n:'City',p:600},{n:'Capital',p:1200}];
 const tierOf=p=>TIERS.filter(t=>p>=t.p).pop();
 
@@ -324,7 +343,7 @@ function terrainTxt(i){const x=S.map[i],a=[];if(x.hl)a.push('hills');if(x.fr)a.p
 function farmMult(i){const x=S.map[i];return(x.fr?1.4:1)*(nearRiver(i)?1.2:1)*(x.hl?.7:1)}
 // Why a building can't go on tile i ('' if it can). free=true skips technology and one-of-a-kind checks, for the console.
 function placeWhy(id,i,free){const d=B[id],x=S.map[i];if(!free){const w=lockReason(d);if(w)return w}
-  if(d.coast&&!isCoast(i))return'Coast only';if(d.forest&&x.t!=='f')return'Forest only';if(d.dep&&x.dp!==d.dep)return`Needs ${DEPN[d.dep]}`;
+  if(d.coast&&!isCoast(i))return'Coast only';if(d.forest&&x.t!=='f')return'Forest only';if(d.hill&&!x.hl)return'Hills only';if(d.dep&&x.dp!==d.dep)return`Needs ${DEPN[d.dep]}`;
   if(d.riv&&!nearRiver(i))return'River only';if(!free&&d.unique&&has(id))return'Built';return''}
 // Larger buildings (🪙800 and up) need building materials; whatever isn't in stock is imported.
 const matCost=d=>d&&d.c>=800?Math.round(d.c/250*(hasTech('masonry')?.8:1))*10:0;
@@ -332,7 +351,7 @@ const matPrice=()=>5*(S.laws.trade==='protect'?1.2:S.laws.trade==='free'?.9:1);
 function priceOf(c,m){const use=Math.min(Math.max(0,S.mat||0),m),imp=m-use,ic=Math.round(imp*matPrice());return{coins:c+ic,use,imp,ic,m}}
 const priceTxt=k=>!k.m?'':k.imp?`Needs 🧱${k.m}: ${k.use} from stock, ${k.imp} imported for 🪙${fmt(k.ic)}.`:`Uses 🧱${k.m} from stock.`;
 // [radius in tiles, strength]: polluters make nearby homes less pleasant, parks and gardens make them nicer.
-const POLL={factory:[2,3],diesel:[2,4],mine:[1,2],coalmine:[1,3],workshop:[1,1],quarry:[1,1],brickworks:[1,1]},AMEN={park:[2,2],garden:[2,2],lighthouse:[2,1]};
+const POLL={factory:[2,3],steelworks:[2,4],powerstation:[2,3],textile:[1,2],gasworks:[1,2],diesel:[2,4],mine:[1,2],coalmine:[1,3],workshop:[1,1],quarry:[1,1],brickworks:[1,1]},AMEN={park:[2,2],garden:[2,2],lighthouse:[2,1]};
 function appealMap(){const A=new Float32Array(S.map.length);
   S.map.forEach((x,i)=>{if(x.o!=='me'||!x.b)return;const s=POLL[x.b]?[POLL[x.b][0],-POLL[x.b][1]]:AMEN[x.b];if(!s)return;const[rad,v]=s,r0=i/W|0,c0=i%W;
     for(let r=Math.max(0,r0-rad);r<=Math.min(H-1,r0+rad);r++)for(let c=Math.max(0,c0-rad);c<=Math.min(W-1,c0+rad);c++)if(r!==r0||c!==c0)A[r*W+c]+=v});
@@ -416,30 +435,30 @@ const TECH=[
   {id:'charter',era:0,n:'Town charters',e:'📜',c:90,d:'Business revenue +10%.'},
   {id:'drill',era:0,n:'Military drill',e:'🎖️',c:110,d:'Army quality +15%.'},
   {id:'banking',era:1,n:'Banking',e:'🏦',c:110,d:'Unlocks the bank. Debt interest is halved.'},
-  {id:'printing',era:1,n:'Printing press',e:'📰',c:110,d:'Research +15%.'},
+  {id:'printing',era:1,n:'Printing press',e:'📰',c:110,d:'Research +15%. Unlocks the printing house and the coffee house.'},
   {id:'pedagogy',era:1,n:'Pedagogy',e:'🎓',c:120,req:'printing',d:'Unlocks the university. Research +20%.'},
   {id:'hygiene',era:1,n:'Public hygiene',e:'🧼',c:120,req:'herbalism',d:'Unlocks waterworks. Healthcare +10.'},
-  {id:'philosophy',era:1,n:'Natural philosophy',e:'🔭',c:120,d:'Education +5.'},
+  {id:'philosophy',era:1,n:'Natural philosophy',e:'🔭',c:120,d:'Education +5. Unlocks the observatory.'},
   {id:'glass',era:1,n:'Glasshouses',e:'🪴',c:130,req:'rotation',d:'Unlocks glasshouses.'},
-  {id:'navigation',era:1,n:'Navigation',e:'🧭',c:140,d:'Trade capacity +20%.'},
+  {id:'navigation',era:1,n:'Navigation',e:'🧭',c:140,d:'Trade capacity +20%. Unlocks the trading company.'},
   {id:'agronomy',era:1,n:'Scientific agriculture',e:'🚜',c:140,req:'rotation',d:'Food production +15%.'},
-  {id:'gunpowder',era:1,n:'Gunpowder regiments',e:'🔫',c:150,req:'drill',d:'Army quality +15%.'},
-  {id:'steam',era:2,n:'Steam power',e:'♨️',c:160,req:'workshops',d:'Unlocks the factory.'},
+  {id:'gunpowder',era:1,n:'Gunpowder regiments',e:'🔫',c:150,req:'drill',d:'Army quality +15%. Unlocks the military academy.'},
+  {id:'steam',era:2,n:'Steam power',e:'♨️',c:160,req:'workshops',d:'Unlocks the factory, textile mill, tenements and polytechnic.'},
   {id:'telegraph',era:2,n:'Telegraph',e:'📡',c:160,d:'Tension cools twice as fast, and envoys are more effective.'},
-  {id:'coke',era:2,n:'Coke smelting',e:'🔥',c:170,req:'steam',d:'Goods production +10%.'},
-  {id:'gaslight',era:2,n:'Gas lighting',e:'🏮',c:170,d:'Recreation +10.'},
+  {id:'coke',era:2,n:'Coke smelting',e:'🔥',c:170,req:'steam',d:'Goods production +10%. Unlocks the steelworks.'},
+  {id:'gaslight',era:2,n:'Gas lighting',e:'🏮',c:170,d:'Recreation +10. Unlocks the gasworks.'},
   {id:'vaccination',era:2,n:'Vaccination',e:'💉',c:180,req:'hygiene',d:'Healthcare +10.'},
   {id:'rail',era:2,n:'Railways',e:'🛤️',c:190,req:'steam',d:'Unlocks the railway.'},
   {id:'steamship',era:2,n:'Steamships',e:'🚢',c:200,req:'steam',d:'Trade capacity +25%.'},
   {id:'steel',era:2,n:'Steel frames',e:'🏗️',c:220,req:'steam',d:'Unlocks apartment blocks.'},
   {id:'artillery',era:2,n:'Artillery',e:'💣',c:230,req:'steam',d:'Army quality +25%.'},
-  {id:'electric',era:3,n:'Electrification',e:'💡',c:240,req:'steam',d:'Unlocks the hydro dam.'},
+  {id:'electric',era:3,n:'Electrification',e:'💡',c:240,req:'steam',d:'Unlocks the hydro dam, power station and cinema.'},
   {id:'telephone',era:3,n:'Telephone',e:'☎️',c:240,req:'telegraph',d:'Tension cools faster still.'},
   {id:'tourism',era:3,n:'Leisure travel',e:'🧳',c:250,req:'rail',d:'Unlocks the grand hotel and the stadium.'},
-  {id:'radio',era:3,n:'Radio',e:'📻',c:260,req:'electric',d:'Royal broadcasts: legitimacy +2.'},
-  {id:'automobile',era:3,n:'Motor cars',e:'🚗',c:270,req:'steel',d:'Transport +20.'},
-  {id:'medicine',era:3,n:'Modern medicine',e:'🏥',c:280,req:'vaccination',d:'Healthcare +15.'},
-  {id:'massprod',era:3,n:'Mass production',e:'🏭',c:300,req:'steel',d:'Goods production +25%, business revenue +10%.'},
+  {id:'radio',era:3,n:'Radio',e:'📻',c:260,req:'electric',d:'Royal broadcasts: legitimacy +2. Unlocks the radio station.'},
+  {id:'automobile',era:3,n:'Motor cars',e:'🚗',c:270,req:'steel',d:'Transport +20. Unlocks the motor garage.'},
+  {id:'medicine',era:3,n:'Modern medicine',e:'🏥',c:280,req:'vaccination',d:'Healthcare +15. Unlocks the hospital.'},
+  {id:'massprod',era:3,n:'Mass production',e:'🏭',c:300,req:'steel',d:'Goods production +25%, business revenue +10%. Unlocks the department store.'},
   {id:'monument',era:3,n:'Monumental architecture',e:'🗼',c:300,req:'steel',d:'Unlocks the royal monument.'},
   {id:'antibiotics',era:3,n:'Antibiotics',e:'🧪',c:320,req:'medicine',d:'Healthcare +10, and populations grow 10% faster.'}
 ];
@@ -807,7 +826,7 @@ const monarchName=m=>`${title(m)} ${m.name}${m.num>1?' '+roman(m.num):''}`;
 const lockReason=d=>d.tech&&!hasTech(d.tech)?`Needs ${techOf(d.tech).n.toLowerCase()}`:'';
 
 function calc(){
-  const t={homes:0,jobs:0,food:0,health:0,learn:0,fun:0,move:100,power:0,water:50,inc:0,tour:0,up:0,nat:0,hap:0,leg:0,goods:0,trade:150,mid:0,mat:0};
+  const t={homes:0,jobs:0,food:0,health:0,learn:0,fun:0,move:100,power:0,water:50,inc:0,tour:0,up:0,nat:0,hap:0,leg:0,goods:0,trade:150,mid:0,mat:0,rp:0};
   // terrain: farms depend on the land, windmills catch more wind on hills
   // provinces tally their own homes, jobs and local services; the capital starts with more room to walk and natural water.
   // A province in revolt produces nothing, and one with riots (unrest 60+) three quarters.
@@ -875,7 +894,7 @@ function calc(){
     o[k]=clamp(Math.round(v),0,100)});return o};
   const cls=clsFrom(sc);
   const debt=S.coins<0?Math.min(10,-S.coins/500):0,weary=S.war?Math.min(15,S.war.months*1.2):0;
-  const quality=1+cnt('barracks')*.08+(hasTech('gunpowder')?.15:0)+(eraB('iron')?.15:0)+msCount(['c1','c2','c3'])*.03+officeSkill('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
+  const quality=1+cnt('barracks')*.08+Math.min(.3,cnt('academy')*.1)+(hasTech('gunpowder')?.15:0)+(eraB('iron')?.15:0)+msCount(['c1','c2','c3'])*.03+officeSkill('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
   const fortN=S.map.reduce((a,x)=>a+(x.o==='me'&&x.b==='fort'?(x.hl?2:1):0),0);
   const str=Math.round(soldiers*quality*supply*morale*10)/10,forts=Math.min(1.5,1+fortN*.1);
   // approval: each province's mood from its own needs and neighbourhoods plus national effects, less a penalty until it's integrated.
@@ -890,9 +909,9 @@ function calc(){
   const L=S.laws,raw={
     landowners:25+(L.labor==='serfdom'?10:0)+cnt('farm'),
     clergy:15+(L.church==='state'?10:L.church==='secular'?-8:0)+cnt('church')*4,
-    merchants:8+(cnt('market')+cnt('harbor')*2+cnt('bank')*3)*3+(L.trade==='free'?5:0),
-    intelligentsia:5+(cnt('school')+cnt('library')+cnt('university')*2)*2+(L.press==='free'?5:0),
-    workers:6+cnt('factory')*5+cnt('workshop')*2+(L.labor==='free'?5:0)};
+    merchants:8+(cnt('market')+cnt('harbor')*2+cnt('bank')*3+cnt('tradeco')*2+cnt('deptstore')*2)*3+(L.trade==='free'?5:0),
+    intelligentsia:5+(cnt('school')+cnt('library')+cnt('university')*2+cnt('printhouse')+cnt('coffeehouse')+cnt('observatory')+cnt('polytechnic')*2)*2+(L.press==='free'?5:0),
+    workers:6+cnt('factory')*5+cnt('workshop')*2+cnt('textile')*4+cnt('steelworks')*5+(L.labor==='free'?5:0)};
   const rsum=IGIDS.reduce((a,k)=>a+Math.max(1,raw[k]),0),clout={},mood={};
   IGIDS.forEach(k=>{clout[k]=Math.max(1,raw[k])/rsum;const G=IGS[k];let m=50;
     Object.entries(G.likes).forEach(([c,o])=>{m+=o[L[c]]||0});
@@ -909,7 +928,7 @@ function calc(){
     m+=(COURT[S.court].ig[k]||0)*(k==='workers'&&(COURT[S.court].ig[k]||0)<0?(cls.lower<45?1.5:cls.lower>=65?.4:1):1);m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
   const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+officeSkill('chancellor')+(hasPal('hall')?2:0)+msLeg()+(hasTech('radio')?2:0)+3*oldWays()),0,100);
   // research
-  const rp=Math.round((5+t.learn/20)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(eraB('reason')?1.15:1)*Math.pow(.9,oldWays()));
+  const rp=Math.round((5+t.learn/20+t.rp)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(eraB('reason')?1.15:1)*Math.pow(.9,oldWays()));
   // money
   const fill=t.jobs?employed/t.jobs:0;
   // provinces pay half their taxes at first and the full amount once integrated
@@ -1484,9 +1503,43 @@ const PIECES={
   fort(g){const w=PC.stone,t=.3;g.box(.12,.14,.88,.24,0,t,w);[[.14,.18],[.86,.18]].forEach(([x,y])=>g.cyl(x,y,.09,0,.44,w));g.box(.12,.24,.22,.8,0,t,w);g.box(.78,.24,.88,.8,0,t,w);
     g.box(.12,.8,.88,.9,0,t,w);[[.14,.85],[.86,.85]].forEach(([x,y])=>g.cyl(x,y,.09,0,.44,w));g.flag(.5,.5,.02,'#C8553D')},
   hotel(g){g.box(.15,.22,.85,.86,0,.72,'#F1E3C6');g.windows(.15,.85,.86,.05,.68,4,4);g.pyr(.12,.19,.88,.89,.72,.2,PC.teal)},
+  // Age of Enlightenment
+  printhouse(g){g.cyl(.74,.36,.05,.34,.6,PC.dark);g.box(.14,.32,.86,.86,0,.34,'#B08A64');g.windows(.14,.86,.86,.04,.3,2,4);g.gable(.11,.29,.89,.89,.34,.16,PC.dark);
+    g.poly([[.34,.86,.24],[.66,.86,.24],[.66,.86,.32],[.34,.86,.32]],'#F2E6CF')},
+  coffeehouse(g){g.box(.2,.3,.8,.7,0,.26,PC.cream);g.windows(.2,.8,.7,.04,.22,1,3);g.gable(.17,.27,.83,.73,.26,.14,'#7A4E2E');
+    g.poly([[.2,.7,.2],[.8,.7,.2],[.8,.82,.14],[.2,.82,.14]],'#C8553D');[[.3,.9],[.7,.9]].forEach(([x,y])=>g.disc(x,y,.06,.08,'#F2E6CF'))},
+  observatory(g){g.box(.16,.46,.54,.86,0,.22,'#E5DCC9');g.gable(.13,.43,.57,.89,.22,.12,PC.slate);g.cyl(.66,.46,.2,0,.34,'#E5DCC9');g.dome(.66,.46,.2,.34,'#8FA3B0');
+    if(g.detail)g.line([[.66,.26,.5],[.7,.3,.5]],'#2F3A40',.03)},
+  tradeco(g){g.box(.08,.14,.66,.56,0,.38,'#C9A77C');g.windows(.08,.66,.56,.05,.34,2,4);g.gable(.05,.11,.69,.59,.38,.16,'#2E8C89');g.flag(.37,.35,.54,'#E2AE2A');
+    g.box(.06,.64,.96,.76,0,.05,PC.wood);g.box(.72,.8,.94,.92,0,.06,'#7A5234');g.poly([[.8,.86,.06],[.9,.86,.06],[.8,.86,.28]],'#F4EFE2')},
+  academy(g){g.box(.1,.28,.9,.86,0,.3,'#C2B59B');g.windows(.1,.9,.86,.04,.26,2,5);g.gable(.07,.25,.93,.89,.3,.18,'#3E5E7A');g.flag(.5,.57,.48,'#C8553D');
+    g.line([[.24,.95,.04],[.36,.95,.04]],'#3A3634',.05)},
+  // Age of Industry
+  textile(g){g.cyl(.84,.26,.06,.3,.95,PC.brick);g.smoke(.9,.26,.95);g.box(.06,.26,.94,.88,0,.3,PC.brick);g.windows(.06,.94,.88,.04,.26,2,6);
+    for(let k=0;k<4;k++)g.gable(.06,.26+k*.155,.94,.26+(k+1)*.155,.3,.1,'#6E5A50')},
+  tenement(g){g.box(.14,.2,.86,.86,0,.72,'#A58E78');g.windows(.14,.86,.86,.04,.7,4,4);g.box(.14,.2,.86,.26,.72,.76,'#8E7A66');
+    if(g.detail)g.line([[.18,.9,.4],[.8,.9,.46]],'rgba(240,240,240,.8)',.012)},
+  polytechnic(g){g.box(.44,.18,.58,.34,0,.72,'#D9CBB0');g.pyr(.42,.16,.6,.36,.72,.16,PC.slate);if(g.detail)g.disc(.51,.34,.04,.6,'#F2E6CF');
+    g.box(.08,.34,.92,.88,0,.36,'#D9CBB0');g.windows(.08,.92,.88,.05,.32,2,6);g.gable(.05,.31,.95,.91,.36,.16,PC.slate)},
+  gasworks(g){g.cyl(.3,.42,.2,0,.36,'#7C8A8F');g.cyl(.3,.42,.21,.2,.22,'#5E6A6F');g.cyl(.68,.6,.18,0,.3,'#7C8A8F');g.cyl(.68,.6,.19,.16,.18,'#5E6A6F');g.box(.1,.74,.42,.92,0,.16,PC.brick)},
+  steelworks(g){[.3,.5,.7].forEach(x=>{g.cyl(x,.24,.055,.4,1.1,'#3F3834')});g.disc(.9,.2,.08,1.2,'rgba(80,80,80,.55)',1);g.box(.08,.3,.92,.9,0,.4,'#5E554F');
+    g.windows(.08,.92,.9,.05,.34,1,5);g.gable(.05,.27,.95,.93,.4,.14,'#3F3834');g.disc(.3,.9,.07,.12,'#F29A3C',1)},
+  // Modern Age
+  powerstation(g){g.cyl(.3,.34,.2,0,.62,'#C9C6BE');g.disc(.3,.34,.14,.63,'#9E9A92',1);g.cyl(.76,.26,.05,.34,1.1,'#8C8880');
+    g.box(.1,.5,.9,.92,0,.34,'#A9A59C');g.windows(.1,.9,.92,.05,.3,1,5);if(g.detail)g.disc(.34,.34,.12,.8,'rgba(235,235,235,.6)',1)},
+  hospital(g){g.box(.06,.4,.32,.86,0,.3,PC.white);g.box(.68,.4,.94,.86,0,.3,PC.white);g.box(.26,.24,.74,.86,0,.5,PC.white);g.windows(.26,.74,.86,.05,.46,3,3);
+    const h=.501;g.poly([[.45,.36,h],[.55,.36,h],[.55,.66,h],[.45,.66,h]],'#D0383E');g.poly([[.36,.46,h],[.64,.46,h],[.64,.56,h],[.36,.56,h]],'#D0383E')},
+  cinema(g){g.box(.12,.22,.88,.84,0,.44,'#6B4E7A');g.poly([[.12,.84,.3],[.88,.84,.3],[.88,.96,.26],[.12,.96,.26]],'#E8C547');
+    g.poly([[.3,.84,.34],[.7,.84,.34],[.7,.84,.42],[.3,.84,.42]],'#F2E6CF')},
+  deptstore(g){g.box(.08,.18,.92,.88,0,.62,'#D8C3A5');g.windows(.08,.92,.88,.24,.6,3,5);g.poly([[.08,.88,.1],[.92,.88,.1],[.92,.88,.22],[.08,.88,.22]],'rgba(40,60,70,.5)');
+    g.poly([[.08,.88,.22],[.92,.88,.22],[.92,.98,.17],[.08,.98,.17]],'#2E8C89')},
+  garage(g){g.box(.1,.16,.9,.56,0,.28,PC.grey);g.poly([[.2,.56,0],[.8,.56,0],[.8,.56,.2],[.2,.56,.2]],'rgba(40,40,40,.55)');
+    [['#C8553D',.16],['#3E7CB1',.42],['#E8C547',.68]].forEach(([c,x])=>g.box(x,.66,x+.18,.86,0,.1,c))},
+  broadcaster(g){g.box(.14,.52,.56,.88,0,.24,'#D9D7CC');g.gable(.11,.49,.59,.91,.24,.12,PC.slate);g.line([[.72,.4,0],[.72,.4,1.1]],'#8C8880',.03);
+    g.line([[.62,.4,0],[.72,.4,.7],[.82,.4,0]],'#8C8880',.018);g.disc(.72,.4,.04,1.12,'#D0383E')},
   lighthouse(g){g.cyl(.5,.6,.16,0,.1,PC.stone);g.cyl(.5,.6,.12,.1,.9,PC.white);[.3,.6].forEach(h=>g.cyl(.5,.6,.121,h,h+.09,'#C8553D'));g.cyl(.5,.6,.1,.9,1,'#FFE9A8');g.cone(.5,.6,.13,1,1.16,PC.gold)}};
 // rough piece heights, for shadows
-const PH=id=>({apartments:.9,hotel:.85,factory:.6,hall:.9,church:.9,lighthouse:1.1,wind:.8,diesel:.7,waterworks:.8,mine:.6,coalmine:.5,brickworks:.6,university:.6,school:.6}[id]||.42);
+const PH=id=>({tenement:.8,polytechnic:.8,steelworks:.8,powerstation:.8,hospital:.6,deptstore:.7,broadcaster:.7,textile:.6,tradeco:.5,apartments:.9,hotel:.85,factory:.6,hall:.9,church:.9,lighthouse:1.1,wind:.8,diesel:.7,waterworks:.8,mine:.6,coalmine:.5,brickworks:.6,university:.6,school:.6}[id]||.42);
 // category colours for the simple squares drawn when zoomed far out
 const CATC={};GROUPS.forEach(([,ids],k)=>ids.forEach(id=>{CATC[id]=['#C8553D','#D6BE5C','#8A64B0','#9C7B55','#3E7CB1','#5F9E55','#8C9396','#4FA3C0','#E08A2E','#7A2E22','#E2AE2A'][k]}));CATC.hall=CATC.fcap='#BDB7AA';
 function depositPiece(g,d){if(d==='ore'){[[.66,.8,'#9A5B3A'],[.8,.74,'#8A4F32'],[.76,.86,'#A8663F']].forEach(([x,y,c])=>g.box(x-.05,y-.04,x+.05,y+.04,0,.06,c));g.disc(.74,.76,.018,.07,'#F2D27A',1)}
@@ -1819,7 +1872,7 @@ function openSheet(h){$('#sheet').innerHTML=h;$('#sheetWrap').classList.add('ope
 function closeSheet(){$('#sheetWrap').classList.remove('open');resetArmed=false;if(S.sel>=0){S.sel=-1;render()}}
 // i (optional) is the tile, so farms and windmills can show what that spot's terrain gives them
 function effStr(d,i){const p=[],x=i!=null&&S.map[i],tm=!x?1:d===B.farm?farmMult(i):d===B.wind&&x.hl?1.5:1,adj=v=>tm===1?v:`${Math.round(v*tm)} (${tm>1?'terrain bonus':'poor terrain'})`;
-  if(d.homes)p.push(`Housing +${d.homes}`);if(d.food)p.push(`Food for ${d===B.farm?adj(d.food):d.food}`);if(d.mat)p.push(`🧱${d.mat} materials/mo`);if(d.jobs)p.push(`${d.jobs} jobs`);if(d.inc)p.push(`+🪙${d.inc}/mo`);if(d.goods)p.push(`${d.goods} goods/mo`);
+  if(d.homes)p.push(`Housing +${d.homes}`);if(d.food)p.push(`Food for ${d===B.farm?adj(d.food):d.food}`);if(d.mat)p.push(`🧱${d.mat} materials/mo`);if(d.rp)p.push(`Research +${d.rp}/mo`);if(d.jobs)p.push(`${d.jobs} jobs`);if(d.inc)p.push(`+🪙${d.inc}/mo`);if(d.goods)p.push(`${d.goods} goods/mo`);
   if(d.health)p.push(`Healthcare for ${d.health}`);if(d.learn)p.push(`Education for ${d.learn}`);if(d.fun)p.push(`Recreation for ${d.fun}`);if(d.move)p.push(`Transport for ${d.move}`);
   if(d.power)p.push(`Energy for ${d===B.wind?adj(d.power):d.power}`);if(d.trade)p.push(`Trade capacity +${d.trade}`);if(d.tour)p.push('Tourism');if(d.hap)p.push(`Approval +${d.hap}`);if(d.nat)p.push(`Environment ${d.nat>0?'+':''}${d.nat}`);if(d.u)p.push(`Upkeep ${d.u}/mo`);return p.join('. ')+'.'}
 // your own province: its people, mood, unrest, integration, any revolt, and how well its local needs are met
