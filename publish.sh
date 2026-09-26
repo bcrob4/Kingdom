@@ -8,4 +8,4 @@ git add -A
 if git diff --cached --quiet; then echo "Nothing new to publish."; exit 0; fi
 git commit -q -m "${1:-Update the game}"
 git push -q origin main
-echo "Published. The site updates within a minute or two: https://bcrob4.github.io/kingdom/"
+echo "Published. The site updates within a minute or two: https://bcrob4.github.io/Kingdom/"
