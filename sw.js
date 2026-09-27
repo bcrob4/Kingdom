@@ -14,7 +14,16 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  const url = new URL(e.request.url);
+  // The 3D view's library comes from a CDN at a fixed version: keep a copy, so the 3D view also works offline once it has been opened.
+  if (e.request.method === 'GET' && url.hostname === 'cdnjs.cloudflare.com' && url.pathname.includes('/three.js/')) {
+    e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+      if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
+      return res;
+    })));
+    return;
+  }
+  if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {

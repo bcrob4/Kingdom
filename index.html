@@ -48,6 +48,8 @@ h2{font-family:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,
 .needs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
 .need{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 8px;font-size:.78rem}
 .need b{display:block;font-size:.95rem}
+button.need{font:inherit;font-size:.78rem;color:var(--ink);text-align:left;cursor:pointer;width:100%;min-width:0}
+button.need:hover{border-color:var(--muted)}
 .meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:4px}
 .meter i{display:block;height:100%;border-radius:3px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 14px}
@@ -133,6 +135,17 @@ body.on-isle .mappane{display:block}
 .pill[aria-pressed="true"]{background:var(--deep);color:var(--deep-ink);border-color:transparent}
 .mapover .legend{margin:0;padding:6px 10px;gap:4px 10px;border-radius:12px;font-size:.75rem;max-width:300px;color:var(--ink);background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .mapover .legend[hidden]{display:none}
+.mapwrap canvas.v3cv{display:none}
+body.v3 #mapcv,body.v3 .minimap,body.v3 #modeSel,body.v3 #legBtn,body.v3 .mapover .legend{display:none!important}
+body.v3 .mapwrap canvas.v3cv{display:block}
+.v3lab{position:absolute;inset:0;pointer-events:none;overflow:hidden;display:none}
+body.v3 .v3lab{display:block}
+.v3lab span{position:absolute;left:0;top:0;white-space:nowrap;font:600 12px/1.1 system-ui,sans-serif;color:#FFFFFF;text-shadow:0 0 3px rgba(20,25,30,.95),0 0 2px rgba(20,25,30,.95)}
+.v3lab span.r0,.v3lab span.r1{font-size:11px;font-weight:500}
+.v3lab span.r3{font-size:14px;font-weight:700}.v3lab span.r4{font-size:16px;font-weight:700}
+.v3lab span.mine.r3,.v3lab span.mine.r4{color:#FFE9A8}
+.v3lab span:not(.mine){color:#D6E0E4}
+.v3msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:.9rem;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:2}
 .mapctl .wideonly{display:none}
 header .icon.wideonly{display:none}
 nav .railonly{display:none}
@@ -228,7 +241,8 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
     <section class="mappane" aria-label="Map">
       <div class="mapwrap" id="mapwrap">
         <canvas class="cv" id="mapcv" tabindex="0" role="img" aria-label="Map of your kingdom and its neighbors. Arrow keys move the cursor, Enter selects, plus and minus zoom."></canvas>
-        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button></div><div class="legend" id="legend"></div></div>
+        <canvas class="cv v3cv" id="cv3d" tabindex="0" role="img" aria-label="3D view of your kingdom. Drag to move, pinch to zoom, and twist or drag with two fingers to turn and tilt. Arrow keys move, Q and E turn."></canvas><div class="v3lab" id="v3lab" aria-hidden="true"></div><div class="v3msg" id="v3msg" role="status" hidden></div>
+        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button><button class="pill" id="v3Btn" data-act="view3d" aria-pressed="false" title="Switch between the flat map and the 3D view">3D</button></div><div class="legend" id="legend"></div></div>
         <div class="maptip" id="maptip" aria-live="polite"></div>
         <div class="mapctl"><button data-act="zoom" data-arg="in" aria-label="Zoom in">+</button><button data-act="zoom" data-arg="out" aria-label="Zoom out">−</button><button data-act="zoom" data-arg="home" aria-label="Center on the capital">⌂</button><button data-act="maphelp" aria-label="How the map works">?</button><button class="wideonly" data-act="panel" id="panelBtn" aria-label="Hide the side panel" title="Hide or show the side panel">⤢</button></div>
         <canvas class="minimap" id="minimap" aria-hidden="true"></canvas>
@@ -1903,12 +1917,17 @@ let SETLC=null;const setlDirty=()=>{SETLC=null};
 function setlUpdate(notes,stop){const Sx=setls(),all=notes;
   // every nation's homes form settlements; only your own are announced
   S.map.forEach(x=>{if(x.sid!=null&&!homeTile(x))delete x.sid});
+  // a town you capture stays whole: its scattered homes keep belonging to it, and new homes beside any of them join it
+  S.map.forEach(x=>{const X=x.sid!=null&&Sx[x.sid];if(X&&x.o==='me'&&X.o&&X.o!=='me')X.loose=true});
   const done=new Uint8Array(S.map.length),groups=[];
+  const flood=(seeds,p)=>{const g=[],st=[...seeds];seeds.forEach(i=>{done[i]=1});
+    while(st.length){const t=st.pop();g.push(t);const r=t/W|0,cc=t%W;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,c2=cc+dc;if(rr<0||c2<0||rr>=H||c2>=W)continue;const j=rr*W+c2;if(done[j])continue;const y=S.map[j];if(y.o==='me'&&homeTile(y)&&y.p===p){done[j]=1;st.push(j)}}}
+    groups.push(g)};
+  Object.keys(Sx).forEach(id=>{if(!Sx[id].loose)return;const byP={};S.map.forEach((x,i)=>{if(!done[i]&&x.sid===id&&x.o==='me'&&homeTile(x))(byP[x.p]=byP[x.p]||[]).push(i)});
+    const ps=Object.keys(byP);if(!ps.length)delete Sx[id].loose;ps.forEach(p=>flood(byP[p],+p))});
   S.map.forEach((x,i)=>{if(done[i]||!homeTile(x))return;
     if(x.o!=='me'){const g=provTiles(x.p).filter(t=>homeTile(S.map[t])&&S.map[t].o===x.o);g.forEach(t=>{done[t]=1});groups.push(g);return} // a neighbor's scattered homes make one town per province
-    const g=[],st=[i];done[i]=1;
-    while(st.length){const t=st.pop();g.push(t);const r=t/W|0,cc=t%W;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,c2=cc+dc;if(rr<0||c2<0||rr>=H||c2>=W)continue;const j=rr*W+c2;if(done[j])continue;const y=S.map[j];if(homeTile(y)&&y.p===x.p){done[j]=1;st.push(j)}}}
-    groups.push(g)});
+    flood([i],x.p)});
   groups.sort((a,b)=>b.length-a.length);const claimed=new Set();
   groups.forEach(g=>{const own=S.map[g[0]].o,notes=own==='me'?all:[];const cnt={};g.forEach(t=>{const s=S.map[t].sid;if(s!=null&&Sx[s])cnt[s]=(cnt[s]||0)+1});
     const ids=Object.keys(cnt).filter(s=>!claimed.has(s)).sort((a,b)=>cnt[b]-cnt[a]);let id;
@@ -2049,6 +2068,9 @@ function tradeWhy(r,c){const p=S.trade[r],N=p&&NATIONS[p]?NATIONS[p].n:'';if(!p)
   if(isFallen(p))return`Your trade partner, ${N}, has fallen: pick another on the Economy tab.`;if(atWarWith(p))return`You are at war with ${N}, your trade partner, so nothing is imported.`;
   if(S.embargo[p])return`${N} has an embargo on you, so nothing is imported.`;if(S.rel[p]<20)return`Relations with ${N} are below 20, too poor to trade.`;
   return'Trade capacity is used up, so the rest cannot be imported: build docks, a canal or trade routes.'}
+// a need explained in a sheet, from the Map tab
+function needSheet(k){const c=calc(),n=NEEDS.find(x=>x.k===k);if(!n)return;const v=c.sc[k];
+  openSheet(`<h3>${n.e} ${n.n}: ${v}</h3>${bar(v)}<p class="hint">${needWhy(k,c)}</p>${v<100?`<p class="hint"><b>To improve:</b> ${n.tip}${needBuild(k)}</p>`:''}<div class="btns"><button class="btn" data-act="needGo">All needs on the People tab</button></div><button class="btn primary wide" data-act="closeSheet">Done</button>`)}
 // the buildings you could put up right now to help, cheapest first
 function needBuild(k){if(k==='nature')return'';const f=k==='homes'?'homes':k;
   const opts=Object.entries(B).filter(([id,d])=>d[f]>0&&!d.fixed&&id!=='hall'&&!lockReason(d)&&(k!=='homes'||isHousing(id))&&(k==='homes'||!isHousing(id))).sort((a,b)=>a[1].c-b[1].c).slice(0,4);
@@ -2398,12 +2420,12 @@ function showNext(){curEvent=queue.shift();if(!curEvent){closeSheet();return}
 /* ---------- views ---------- */
 const bar=(v,c)=>`<div class="meter"><i style="width:${clamp(v,0,100)}%;background:${c||col(v)}"></i></div>`;
 function isleHTML(){const c=calc();
-  const needs=NEEDS.map(n=>`<div class="need"><span aria-hidden="true">${n.e}</span> ${n.n}<b style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</b>${bar(c.sc[n.k])}</div>`).join('');
+  const needs=NEEDS.map(n=>`<button class="need" data-act="needInfo" data-arg="${n.k}" aria-label="${n.n} ${c.sc[n.k]}: why?"><span aria-hidden="true">${n.e}</span> ${n.n}<b style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</b>${bar(c.sc[n.k])}</button>`).join('');
   const x=(S.news||[])[0];
   const news=x?`<h2>News: ${newsTitle(x)}</h2><div class="card">${x.items.map(newsRow).join('')}</div>${S.news.length>1?'<button class="btn wide" data-act="news">Earlier news</button>':''}`
     :'<h2>News</h2><p class="hint">Nothing has happened yet. <b>End month</b> moves time forward one month, and <b>⏩</b> keeps going until something needs you, up to a year.</p>';
   const chr=(S.chron||[]).length?`<h2>📜 Chronicle</h2><div class="card">${S.chron.slice(0,3).map(chronRow).join('')}</div><button class="btn wide" data-act="chronicle">The full chronicle</button>`:'';
-  return `${chr}${news}<h2>Public needs</h2><div class="needs">${needs}</div>`}
+  return `${chr}${news}<h2>Public needs</h2><p class="hint">Tap a need to see why it stands where it does.</p><div class="needs">${needs}</div>`}
 
 /* ---------- map canvas ---------- */
 // cam.cx/cy is the tile position at the middle of the view; cam.z is the size of one tile in CSS pixels.
@@ -2638,7 +2660,7 @@ function drawPieces(ctx,X,Y,r0,r1,c0,c1,z,showDep,dpr){const stamp=(s,c,r)=>ctx.
     const parts=[],sh=bb||sb;if(hb)parts.push([hb,0,0,sh?.55:1]);if(bb)parts.push([bb,hb||sb?.3:0,hb||sb?.25:0,hb||sb?.68:1]);if(sb)parts.push([sb,.02,.56,.42]);
     if(parts.length===1&&parts[0][3]===1){const id=parts[0][0];stamp(sprite('b'+id+dev,z,dpr,(cx,g,zk)=>{pieceShadow(cx,zk,PH(id));if(dev)cx.globalAlpha=.7;PIECES[id](g)}),c,r)}
     else if(parts.length)stamp(sprite('c'+parts.map(p=>p[0]).join('|')+dev,z,dpr,(cx,g,zk)=>{pieceShadow(cx,zk,PH(bb||hb||sb));if(dev)cx.globalAlpha=.7;parts.forEach(([id,ox,oy,s])=>PIECES[id](pieceKit(cx,.1*zk+ox*zk,1.15*zk+oy*zk,zk*s)))}),c,r)}}
-function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh||!S)return;
+function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(V3.on)return;if(!ctx||!vw||!vh||!S)return;
   if(MAP.camMap!==S.map){MAP.camMap=S.map;MAP.kc=-1;centerOn(capIdx(),TS)}
   if(MAP.dirty){MAP.pal=palette();MAP.pcol=provColors(MAP.pal);if(SPR.dpr!==dpr){SPR.clear();SPR.dpr=dpr}MAP.appeal=mapMode==='pollution'?appealMap():null;MAP.glyphs.clear();MAP.pat={settle:stripes('rgba(255,255,255,.3)',1),me:stripes('rgba(60,140,80,.6)',1),them:stripes('rgba(190,60,60,.6)',-1)};buildBase();MAP.dirty=false}
   geo();const P=MAP.pal,c=MAP.cam,z=c.z,ox=vw/2-c.cx*z,oy=vh/2-c.cy*z;
@@ -2694,7 +2716,7 @@ function tileLabel(i){const x=S.map[i];if(!x||x.t==='w')return'';const P=S.prov[
   const tt=terrainTxt(i),land=(tt.length?' · '+tt.join(', '):'')+(x.dp?` · ${DEPE[x.dp]} ${DEPN[x.dp]}`:'');
   return(x.o==='me'?`${[x.b,x.hs].filter(b=>b&&B[b]).map(b=>B[b].e+' '+B[b].n).join(' and ')||(x.t==='f'?'🌲 Forest':'Open land')} · ${P.name}`:`${P.name} · ${ownName(x.o)}`)+land+extra}
 function showTip(t){const el=$('#maptip');el.textContent=t;el.style.display=t?'block':'none'}
-function mapResize(){const w=$('#mapwrap');if(MAP.wide!==isWide()){MAP.wide=isWide();renderModes()}MAP.vw=w.clientWidth;MAP.vh=w.clientHeight;if(!MAP.vw||!MAP.vh)return;MAP.dpr=window.devicePixelRatio||1;
+function mapResize(){const w=$('#mapwrap');if(V3.on)v3Resize();if(MAP.wide!==isWide()){MAP.wide=isWide();renderModes()}MAP.vw=w.clientWidth;MAP.vh=w.clientHeight;if(!MAP.vw||!MAP.vh)return;MAP.dpr=window.devicePixelRatio||1;
   MAP.cv.width=Math.round(MAP.vw*MAP.dpr);MAP.cv.height=Math.round(MAP.vh*MAP.dpr);clampCam();drawMap()}
 function mapInit(){const cv=MAP.cv=$('#mapcv');MAP.ctx=cv.getContext('2d');MAP.mini=$('#minimap');
   if(window.ResizeObserver)new ResizeObserver(mapResize).observe($('#mapwrap'));else addEventListener('resize',mapResize);
@@ -2730,7 +2752,249 @@ function mapInit(){const cv=MAP.cv=$('#mapcv');MAP.ctx=cv.getContext('2d');MAP.m
   const jump=e=>{const r=MAP.mini.getBoundingClientRect(),s=MAP.miniScale||1;MAP.cam.cx=(e.clientX-r.left)/s;MAP.cam.cy=(e.clientY-r.top)/s;clampCam();drawSoon()};
   MAP.mini.addEventListener('pointerdown',e=>{e.stopPropagation();MAP.mini.setPointerCapture(e.pointerId);jump(e)});
   MAP.mini.addEventListener('pointermove',e=>{if(MAP.mini.hasPointerCapture(e.pointerId))jump(e)});
-  if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{MAP.dirty=true;drawSoon()})}
+  if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{MAP.dirty=true;drawSoon();if(V3.on)v3Sync()})}
+/* ---------- 3D view ---------- */
+// A switchable Civilization-style view of the same map, drawn with three.js. The library is fetched from the internet the first
+// time the view is opened (the 2D map always works offline). It draws only when something changes, so it costs nothing while idle.
+const V3={on:false,busy:false,r:null,scene:null,cam:null,sun:null,tSig:'',oSig:'',mapRef:null,terrain:null,borders:null,objs:[],sel:null,sky:null,
+  tx:0,tz:0,dist:10,yaw:0,pitch:.95,raf:0,labels:new Map(),th:null,rsegs:null};
+const THREE_URL='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+function loadThree(){return new Promise((ok,no)=>{if(window.THREE)return ok();const s=document.createElement('script');s.src=THREE_URL;s.onload=()=>window.THREE?ok():no();s.onerror=no;document.head.appendChild(s)})}
+const v3Msg=t=>{const m=$('#v3msg');if(!m)return;m.textContent=t||'';m.hidden=!t};
+function v3Toggle(){if(V3.on||V3.busy){v3Stop();UI.v3=false;saveUI();return}v3Start(true)}
+function v3Start(user){if(V3.busy)return;V3.busy=true;$('#v3Btn').setAttribute('aria-pressed','true');v3Msg('Loading the 3D view…');
+  loadThree().then(()=>{V3.busy=false;try{v3Init();UI.v3=true;saveUI()}catch(e){console.error(e);v3Stop();if(user)toast('The 3D view could not start on this device')}})
+    .catch(()=>{V3.busy=false;v3Stop();if(user)toast('The 3D view needs an internet connection the first time you open it')})}
+function v3Stop(){V3.on=false;V3.busy=false;v3Msg('');document.body.classList.remove('v3');const b=$('#v3Btn');if(b)b.setAttribute('aria-pressed','false');
+  $('#v3lab').innerHTML='';V3.labels.clear();MAP.dirty=true;drawSoon()}
+
+/* the ground: heights and colors come from the tiles, blended smoothly between tile centres */
+const v3h=(x,y)=>{const s=Math.sin(x*127.1+y*311.7)*43758.5453;return s-Math.floor(s)},v3sm=t=>t*t*(3-2*t);
+const v3n=(x,y)=>{const i=Math.floor(x),j=Math.floor(y),fx=v3sm(x-i),fy=v3sm(y-j),a=v3h(i,j),b=v3h(i+1,j),c=v3h(i,j+1),d=v3h(i+1,j+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
+const v3fbm=(x,y)=>v3n(x,y)*.5+v3n(x*2.1,y*2.1)*.3+v3n(x*4.3,y*4.3)*.2;
+function v3Tiles(){const N=W*H,th=new Float32Array(N),hl=new Float32Array(N),fo=new Float32Array(N),fe=new Float32Array(N),tw=new Float32Array(N),dW=new Int16Array(N).fill(-1),q=[];
+  S.map.forEach((x,i)=>{if(x.t!=='w'){dW[i]=0;q.push(i)}});for(let k=0;k<q.length;k++){const i=q[k];NB(i).forEach(j=>{if(dW[j]<0){dW[j]=dW[i]+1;q.push(j)}})}
+  S.map.forEach((x,i)=>{if(x.t==='w'){th[i]=-.16-Math.min(4,dW[i]<0?4:dW[i])*.1;return}
+    th[i]=x.hl?.46:x.t==='f'?.12:x.fr?.09:.1;hl[i]=x.hl?1:0;fo[i]=x.t==='f'?1:0;fe[i]=x.fr?1:0;tw[i]=x.hs||(x.b&&B[x.b]&&!B[x.b].forest)?1:0});
+  // rivers: a channel from each river tile's centre to the next tile on its way to the sea
+  const segs=Array.from({length:N},()=>[]);S.map.forEach((x,i)=>{if(x.rn==null)return;const a=[i%W+.5,(i/W|0)+.5],b=[x.rn%W+.5,(x.rn/W|0)+.5],s=[a,b];segs[i].push(s);if(segs[x.rn])segs[x.rn].push(s)});
+  V3.th={th,hl,fo,fe,tw};V3.rsegs=segs}
+function v3field(arr,u,v,out){const x=u-.5,y=v-.5,i=Math.floor(x),j=Math.floor(y),fx=v3sm(x-i),fy=v3sm(y-j),g=(c,r)=>c<0||r<0||c>=W||r>=H?out:arr[r*W+c];
+  const a=g(i,j),b=g(i+1,j),c=g(i,j+1),d=g(i+1,j+1);return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy}
+function v3river(u,v){const c=Math.floor(u),r=Math.floor(v);let m=9;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)continue;
+  for(const[a,b]of V3.rsegs[rr*W+cc]){const vx=b[0]-a[0],vy=b[1]-a[1],L=vx*vx+vy*vy||1,t=clamp(((u-a[0])*vx+(v-a[1])*vy)/L,0,1),dx=a[0]+vx*t-u,dy=a[1]+vy*t-v,d=dx*dx+dy*dy;if(d<m)m=d}}return Math.sqrt(m)}
+function v3H(u,v){const T=V3.th;let h=v3field(T.th,u,v,-.6);if(h>0){const hw=v3field(T.hl,u,v,0),flat=1-v3field(T.tw,u,v,0)*.85;h+=((v3fbm(u*1.3,v*1.3)-.5)*.05+hw*(v3fbm(u*1.9+5,v*1.9)-.35)*.34)*flat}
+  const dr=v3river(u,v);if(dr<.22){const t=v3sm(Math.max(0,(dr-.05)/.17));h=Math.min(h,h*t-.1*(1-t))}return h}
+const v3G=(u,v)=>Math.max(0,v3H(u,v));
+const v3X=u=>u-W/2,v3Z=v=>v-H/2;
+
+function v3Colors(){const P=palette(),C=c=>new THREE.Color(c);
+  return{sand:C(P.sand),grass:C(P.grass),fert:C(P.fertile),forest:C(P.forest),hill:C('#949760'),rock:C('#8C877C'),town:C('#A99F80'),deep:C('#2F5663'),wet:C('#B3A57A'),
+    norvik:C(P.norvik),solenne:C(P.solenne),aurelia:C(P.aurelia),sea:C(P.sea),dark:document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches)}}
+function v3Terrain(){const T=THREE,K=v3Colors(),m=3,k=W<=36?5:W<=52?4:3,gw=W+m*2,gh=H+m*2;
+  const geo=new T.PlaneGeometry(gw,gh,gw*k,gh*k);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position,cols=new Float32Array(pos.count*3),col=new T.Color();
+  const mix=(key,t)=>{if(t>0)col.lerp(K[key],Math.min(1,t))};
+  for(let n=0;n<pos.count;n++){const u=pos.getX(n)+W/2,v=pos.getZ(n)+H/2,h=v3H(u,v);pos.setY(n,h);const c=Math.floor(u),r=Math.floor(v),x=c>=0&&r>=0&&c<W&&r<H?S.map[r*W+c]:null,nz=v3fbm(u*3,v*3);
+    if(h<-.015){col.copy(K.wet);mix('deep',-h/.4)}
+    else if(h<.075)col.copy(K.sand);
+    else{col.copy(K.grass);mix('fert',v3field(V3.th.fe,u,v,0)*.8);mix('forest',v3field(V3.th.fo,u,v,0)*.85);mix('hill',v3field(V3.th.hl,u,v,0)*.9);mix('rock',(h-.6)/.3);
+      mix('town',v3field(V3.th.tw,u,v,0)*.3);if(x&&NATIONS[x.o])mix(x.o,.22)}
+    col.multiplyScalar(.92+nz*.16);cols.set([col.r,col.g,col.b],n*3)}
+  geo.setAttribute('color',new T.BufferAttribute(cols,3));geo.computeVertexNormals();
+  const mesh=new T.Mesh(geo,new T.MeshLambertMaterial({vertexColors:true}));mesh.receiveShadow=true;return mesh}
+
+/* borders: ribbons laid on the ground along tile edges, gold for your kingdom and each nation's own color for theirs */
+const V3B={me:'#E2AE2A',norvik:'#6F8FB4',solenne:'#EFE3BD',aurelia:'#C8744A'};
+function v3Borders(){const T=THREE,pos=[],cols=[],col=new T.Color();
+  const rib=(ax,ay,bx,by,nx,ny,w,c)=>{col.set(c);const n=5;for(let s=0;s<n;s++){const t0=s/n,t1=(s+1)/n,p=[[ax+(bx-ax)*t0,ay+(by-ay)*t0],[ax+(bx-ax)*t1,ay+(by-ay)*t1]];
+    const q=[p[0],p[1],[p[1][0]+nx*w,p[1][1]+ny*w],[p[0][0]+nx*w,p[0][1]+ny*w]].map(([u,v])=>[v3X(u),v3G(u,v)+.018,v3Z(v)]);
+    [q[0],q[1],q[2],q[0],q[2],q[3]].forEach(pt=>{pos.push(...pt);cols.push(col.r,col.g,col.b)})}};
+  S.map.forEach((x,i)=>{if(x.t==='w')return;const o=x.o,c=i%W,r=i/W|0,own=V3B[o];
+    [[0,-1,c,r,c+1,r],[1,0,c+1,r,c+1,r+1],[0,1,c+1,r+1,c,r+1],[-1,0,c,r+1,c,r]].forEach(([dx,dy,ax,ay,bx,by])=>{const cc=c+dx,rr=r+dy,y=cc<0||rr<0||cc>=W||rr>=H?null:S.map[rr*W+cc];
+      const nx=-dx,ny=-dy,inset=.03;
+      if(own&&(!y||y.t==='w'||y.o!==o))rib(ax+nx*inset,ay+ny*inset,bx+nx*inset,by+ny*inset,nx,ny,o==='me'?.085:.065,own);
+      else if(o==='me'&&y&&y.o==='me'&&y.p!==x.p&&(dx>0||dy>0))rib(ax-nx*.012,ay-ny*.012,bx-nx*.012,by-ny*.012,nx,ny,.024,'#56644E')})});
+  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('color',new T.Float32BufferAttribute(cols,3));
+  return new T.Mesh(geo,new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}))}
+
+/* buildings, homes and trees: each is a few simple shapes, drawn as instances so thousands cost little */
+const V3C={wall:'#EFE3C8',stone:'#C9C2B2',brick:'#B0634A',timber:'#8A6A48',roof:'#B5533C',slate:'#56646E',dark:'#4A4744',grey:'#8C8984',white:'#F1F0EA',glass:'#A8CFDD',
+  gold:'#D9A635',water:'#3F84A8',crop1:'#C9B25A',crop2:'#9FB25A',red:'#C8453B',barn:'#A8432F',copper:'#6F9A8E'};
+function v3Protos(){const T=THREE,unit=g=>{g.computeBoundingBox();const b=g.boundingBox,s=new T.Vector3();b.getSize(s);g.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);g.scale(1/(s.x||1),1/(s.y||1),1/(s.z||1));return g};
+  const gable=new T.CylinderGeometry(1,1,1,3);gable.rotateZ(Math.PI/2);gable.rotateX(-Math.PI/2);
+  return{box:unit(new T.BoxGeometry(1,1,1)),gable:unit(gable),pyr:unit(new T.ConeGeometry(1,1,4).rotateY(Math.PI/4)),cyl:unit(new T.CylinderGeometry(1,1,1,10)),
+    cone:unit(new T.ConeGeometry(1,1,8)),pine:unit(new T.ConeGeometry(1,1,6)),ball:unit(new T.IcosahedronGeometry(1,1)),dome:unit(new T.SphereGeometry(1,12,6,0,Math.PI*2,0,Math.PI/2))}}
+// each recipe returns parts: [shape, x, z, y, width, height, depth, color, turn, tilt] in tile units, x and z from −0.5 to 0.5
+function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0)=>P.push([s,x,z,y,w,h,d,c,ry,rz]);
+  const house=(x,z,w,h,d,wall,roof,ry=0)=>{add('box',x,z,0,w,h,d,wall,ry);add('gable',x,z,h,w*1.08,h*.7,d*1.12,roof,ry)};
+  const tower=(x,z,r,h,c,cap)=>{add('cyl',x,z,0,r,h,r,c);add('cone',x,z,h,r*1.3,r*1.7,r*1.3,cap)};
+  const chim=(x,z,h,c=C.dark)=>add('cyl',x,z,0,.05,h,.05,c);
+  const pier=(x,len)=>add('box',x,.25+len/2,.01,.09,.035,len,C.timber);
+  const boat=(x,z)=>{add('box',x,z,0,.07,.045,.2,'#7A5234');add('box',x,z+.01,.045,.01,.13,.09,C.white)};
+  const R={
+    hall:()=>{add('box',0,0,0,.48,.24,.4,C.stone);add('pyr',0,0,.24,.54,.2,.46,C.slate);[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>tower(a*.26,b*.22,.1,.38,C.stone,C.red))},
+    fcap:()=>{house(0,.04,.4,.18,.28,C.stone,C.slate);tower(.2,-.16,.08,.34,C.stone,C.slate)},
+    cottage:()=>{const rs=[C.roof,'#9C4A36','#7E6A55'];for(let k=0;k<3;k++)house(-.22+k*.22+(rnd()-.5)*.08,(rnd()-.5)*.44,.15,.1,.13,C.wall,rs[k],rnd()<.5?0:Math.PI/2)},
+    townhouse:()=>{const ws=[C.wall,'#C9D6DD','#E3C9BE','#D8D0A8'];for(let k=0;k<4;k++)house(-.24+k*.16,0,.15,.2,.22,ws[k],C.slate,Math.PI/2*0)},
+    tenement:()=>{add('box',-.17,-.05,0,.28,.3,.24,C.brick);add('box',-.17,-.05,.3,.29,.02,.25,C.dark);add('box',.17,.08,0,.26,.26,.24,'#9E5A44');add('box',.17,.08,.26,.27,.02,.25,C.dark)},
+    apartments:()=>{add('box',-.15,-.1,0,.22,.56,.22,'#D8D2C4');add('box',-.15,-.1,.56,.23,.02,.23,C.dark);add('box',.17,.12,0,.2,.42,.2,'#BFC5C8');add('box',.17,.12,.42,.21,.02,.21,C.dark)},
+    farm:()=>{for(let k=0;k<4;k++)for(let s=0;s<4;s++)add('box',-.33+s*.22,-.37+k*.15,0,.21,.035,.11,k%2?C.crop1:C.crop2);house(-.2,.3,.2,.12,.14,C.barn,C.slate);add('cyl',.18,.3,0,.12,.1,.12,'#D8C06A');add('cone',.18,.3,.1,.13,.08,.13,'#C8AE58')},
+    greenhouse:()=>{for(let k=0;k<3;k++){add('box',-.26+k*.26,0,0,.2,.1,.7,C.glass);add('gable',-.26+k*.26,0,.1,.2,.07,.72,'#C4E0EA',Math.PI/2)}},
+    vineyard:()=>{for(let k=0;k<5;k++)for(let s=0;s<3;s++)add('box',-.26+s*.26,-.36+k*.15,0,.24,.07,.06,'#4F6E34');house(.3,.34,.14,.1,.12,C.wall,C.roof)},
+    granary:()=>{tower(-.12,0,.15,.3,'#CBBF9E',C.roof);tower(.15,.06,.13,.26,'#CBBF9E',C.roof)},
+    dock:()=>{pier(0,.5);house(0,-.15,.22,.12,.16,C.timber,C.slate);boat(.18,.5)},
+    ferry:()=>{pier(-.05,.45);house(-.05,-.12,.16,.1,.14,C.wall,C.roof);boat(.16,.45)},
+    harbor:()=>{house(-.1,-.18,.42,.16,.2,C.brick,C.slate);pier(-.22,.55);pier(.2,.55);add('box',.3,.05,0,.04,.34,.04,C.gold);add('box',.3,.18,.32,.03,.03,.34,C.gold);boat(0,.55)},
+    shipyard:()=>{add('box',0,.22,0,.32,.02,.62,C.grey);add('box',0,.2,.02,.14,.1,.36,C.timber);house(-.28,-.26,.2,.16,.2,C.timber,C.slate);add('box',.25,0,0,.04,.36,.04,C.gold);add('box',.12,0,.34,.3,.03,.03,C.gold)},
+    lighthouse:()=>{add('box',0,0,0,.3,.06,.3,C.stone);add('cyl',0,0,.06,.1,.46,.1,C.stone);add('ball',0,0,.52,.13,.13,.13,C.gold)},
+    market:()=>{const rs=[C.red,'#E0B43C','#3F7FB5','#4E9A5B'];[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b],k)=>{add('box',a*.16,b*.16,0,.15,.08,.12,C.timber);add('gable',a*.16,b*.16,.08,.18,.06,.15,rs[k])})},
+    workshop:()=>{house(0,0,.32,.14,.22,C.timber,C.slate);chim(.1,.06,.28)},
+    factory:()=>{add('box',0,0,0,.54,.2,.38,C.brick);for(let k=0;k<3;k++)add('gable',0,-.13+k*.13,.2,.54,.08,.13,C.slate);chim(-.2,.22,.52);chim(.18,.22,.44)},
+    textile:()=>{house(0,0,.6,.18,.26,C.brick,C.slate);chim(.24,.18,.5)},
+    steelworks:()=>{add('box',.05,0,0,.46,.22,.3,'#5C5A58');add('cyl',-.28,.2,0,.16,.4,.16,C.dark);chim(.1,.22,.56);chim(.25,.22,.5);chim(-.05,.22,.48)},
+    powerstation:()=>{add('box',0,-.08,0,.46,.26,.3,'#8F8B85');[-.14,.14].forEach(x=>{add('cyl',x,.22,0,.08,.7,.08,C.grey);add('cyl',x,.22,.62,.085,.06,.085,C.red)})},
+    gasworks:()=>{add('cyl',-.17,0,0,.32,.2,.32,'#6E7D83');add('cyl',.18,.1,0,.28,.16,.28,'#7C8B90');add('box',.2,-.25,0,.2,.1,.14,C.brick)},
+    diesel:()=>{house(0,0,.32,.16,.24,C.brick,C.slate);chim(.16,.1,.56)},
+    bank:()=>{add('box',0,-.03,0,.42,.2,.28,C.white);for(let k=0;k<4;k++)add('cyl',-.15+k*.1,.14,0,.035,.18,.035,C.white);add('gable',0,0,.2,.46,.08,.34,C.white)},
+    clinic:()=>{house(0,0,.32,.16,.24,C.white,C.roof);add('box',0,.121,.06,.08,.024,.004,C.red);add('box',0,.121,.035,.024,.075,.004,C.red)},
+    hospital:()=>{add('box',0,0,0,.56,.26,.36,C.white);add('box',0,0,.26,.57,.015,.37,'#DAD9D2');add('box',0,0,.275,.18,.006,.05,C.red);add('box',0,0,.275,.05,.006,.18,C.red)},
+    school:()=>{house(0,.02,.38,.16,.24,C.brick,C.slate);add('box',.2,-.16,0,.08,.3,.08,C.white);add('pyr',.2,-.16,.3,.1,.1,.1,C.slate)},
+    library:()=>{add('box',0,0,0,.38,.18,.28,C.stone);add('dome',0,0,.18,.2,.13,.2,C.copper)},
+    university:()=>{add('box',-.22,.04,0,.14,.2,.48,C.stone);add('box',.22,.04,0,.14,.2,.48,C.stone);add('box',0,-.2,0,.3,.2,.14,C.stone);add('gable',-.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);add('gable',.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);tower(0,-.2,.07,.42,C.stone,C.slate)},
+    polytechnic:()=>{add('box',0,0,0,.5,.24,.3,'#B7BCC0');add('box',0,0,.09,.505,.06,.305,C.glass)},
+    church:()=>{house(0,.07,.36,.16,.18,C.wall,C.slate,Math.PI/2);add('box',0,-.2,0,.1,.34,.1,C.wall);add('pyr',0,-.2,.34,.12,.24,.12,C.slate)},
+    park:()=>{add('box',0,0,0,.8,.012,.06,'#CFC3A0');add('box',0,0,0,.06,.012,.8,'#CFC3A0');add('cyl',.16,.14,0,.3,.02,.22,C.water);[[-.2,-.2],[.22,-.18],[-.2,.2]].forEach(([x,z])=>{add('cyl',x,z,0,.03,.08,.03,C.timber);add('ball',x,z,.07,.2,.18,.2,'#4F8A3E')})},
+    garden:()=>{[['#D2577A',-.2,-.2],['#E0B43C',.2,-.2],['#8C6BC4',-.2,.2],['#E07A3C',.2,.2]].forEach(([c,x,z])=>add('box',x,z,0,.22,.04,.22,c));add('dome',0,0,0,.26,.2,.26,C.glass)},
+    tavern:()=>{house(0,0,.28,.14,.2,C.timber,C.roof);add('box',.16,.1,.08,.01,.06,.08,C.gold)},
+    coffeehouse:()=>{house(0,0,.28,.15,.2,C.wall,'#6B8E5A')},
+    tent:()=>{add('box',0,0,0,.44,.18,.3,C.wall);add('gable',0,0,.18,.48,.12,.34,C.red)},
+    fair:()=>{add('cyl',0,0,0,.88,.1,.7,C.grey);add('cyl',0,0,0,.68,.106,.5,'#6FAE5A')},
+    cinema:()=>{add('box',0,0,0,.38,.2,.28,'#C9B79C');add('box',0,.15,.12,.3,.05,.02,C.red)},
+    deptstore:()=>{add('box',0,0,0,.44,.36,.34,'#D8CDB8');[.08,.18,.28].forEach(y=>add('box',0,0,y,.445,.035,.345,C.glass))},
+    hotel:()=>{add('box',0,0,0,.42,.3,.26,C.wall);add('pyr',0,0,.3,.46,.14,.3,C.roof)},
+    bus:()=>{house(0,-.1,.5,.12,.28,'#8C7C6A',C.slate);[-.12,.12].forEach(x=>add('box',x,.26,0,.1,.07,.18,'#B84A3A'))},
+    inn:()=>{house(-.08,-.02,.3,.14,.2,C.timber,C.roof);house(.24,.16,.14,.08,.2,C.timber,C.slate)},
+    canal:()=>{add('box',0,0,-.02,1,.04,.24,C.water);add('box',-.2,0,0,.03,.07,.26,C.timber);add('box',.2,0,0,.03,.07,.26,C.timber)},
+    rail:()=>{add('box',0,.18,0,1,.02,.1,C.dark);house(0,-.15,.34,.14,.18,C.brick,C.slate);[-.18,-.04,.1].forEach((x,k)=>add('box',x,.18,.02,.12,.07,.07,k?'#3E5A48':C.dark))},
+    garage:()=>{add('box',0,-.08,0,.42,.14,.28,'#9AA3A8');['#C8453B','#3F7FB5','#E0B43C'].forEach((c,k)=>add('box',-.14+k*.14,.24,0,.08,.05,.13,c))},
+    well:()=>{add('cyl',0,0,0,.16,.06,.16,C.stone);add('pyr',0,0,.16,.2,.08,.2,C.roof);[-.07,.07].forEach(x=>add('box',x,0,.05,.015,.11,.015,C.timber))},
+    waterworks:()=>{house(-.14,.12,.26,.14,.2,C.brick,C.slate);add('cyl',.16,-.12,0,.05,.28,.05,C.grey);add('cyl',.16,-.12,.28,.24,.12,.24,'#8FA9B5')},
+    wind:()=>{add('cyl',0,0,0,.14,.3,.14,C.wall);add('cone',0,0,.3,.16,.1,.16,C.slate);for(let k=0;k<4;k++)add('box',0,.1,.3,.05,.28,.015,C.white,0,k*Math.PI/2+.5)},
+    mill:()=>{house(-.05,0,.28,.16,.22,C.stone,C.slate);add('cyl',.14,0,.1,.2,.04,.2,C.timber,0,Math.PI/2)},
+    charcoal:()=>{[[-.18,-.1],[.15,-.15],[0,.18]].forEach(([x,z])=>add('dome',x,z,0,.2,.14,.2,'#4A4540'));add('box',.25,.25,0,.14,.06,.08,C.timber)},
+    hydro:()=>{add('box',0,0,0,.92,.2,.12,C.grey);add('box',0,-.25,0,.9,.15,.36,C.water)},
+    barracks:()=>{house(0,-.16,.6,.1,.14,'#9C8F78',C.slate);house(0,.16,.6,.1,.14,'#9C8F78',C.slate);add('cyl',.34,0,0,.015,.34,.015,C.dark);add('box',.34,.04,.28,.005,.06,.09,C.red)},
+    fort:()=>{[[0,-.3,.64,.05],[0,.3,.64,.05],[-.3,0,.05,.64],[.3,0,.05,.64]].forEach(([x,z,w,d])=>add('box',x,z,0,w,.12,d,C.stone));[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>add('cyl',a*.3,b*.3,0,.14,.18,.14,C.stone));add('box',0,0,0,.18,.22,.18,C.stone)},
+    academy:()=>{add('box',0,0,0,.4,.2,.28,C.stone);tower(-.2,-.14,.08,.34,C.stone,C.slate);tower(.2,-.14,.08,.34,C.stone,C.slate)},
+    lumber:()=>{[0,1,2].forEach(k=>add('cyl',.1,-.1+k*.05,.03+(k===1?.04:0),.06,.3,.06,C.timber,0,Math.PI/2));house(-.2,.18,.18,.1,.14,C.timber,C.slate)},
+    quarry:()=>{add('box',0,0,-.03,.62,.05,.62,'#A9A49B');add('box',0,0,-.06,.4,.05,.4,'#8F8A82');add('box',.3,.3,0,.04,.3,.04,C.gold)},
+    brickworks:()=>{add('box',-.06,0,0,.36,.14,.26,C.brick);add('dome',.24,.16,0,.18,.12,.18,C.brick);chim(.24,-.16,.46)},
+    mine:()=>{add('box',-.12,.05,0,.3,.12,.2,'#6F6A64');add('box',.16,-.12,0,.06,.36,.06,C.dark);add('cyl',.16,-.12,.34,.12,.02,.12,C.dark,0,Math.PI/2);add('cone',.22,.22,0,.2,.1,.2,'#8A6E55')},
+    coalmine:()=>{add('box',-.12,.05,0,.3,.12,.2,'#5E5A55');add('box',.16,-.12,0,.06,.36,.06,C.dark);add('cone',.2,.22,0,.22,.12,.22,'#2A2826');add('cone',-.24,-.24,0,.14,.08,.14,'#2A2826')},
+    watch:()=>{add('box',0,0,0,.13,.3,.13,C.stone);add('pyr',0,0,.3,.16,.12,.16,C.slate)},
+    firestation:()=>{add('box',0,.04,0,.34,.18,.26,'#B84A3A');add('box',.16,-.14,0,.1,.36,.1,'#B84A3A');add('pyr',.16,-.14,.36,.12,.08,.12,C.slate)},
+    printhouse:()=>{house(0,0,.32,.16,.24,C.brick,C.slate);chim(-.1,.08,.3)},
+    observatory:()=>{add('box',0,0,0,.3,.14,.3,C.white);add('dome',0,0,.14,.24,.16,.24,C.white)},
+    tradeco:()=>{house(0,.04,.44,.2,.26,C.brick,C.slate);add('cyl',.26,-.2,0,.015,.4,.015,C.dark);add('box',.26,-.16,.33,.005,.06,.09,C.gold)},
+    atelier:()=>{house(0,0,.3,.16,.22,'#E8D8C0','#7E5A8C')},
+    broadcaster:()=>{add('box',-.15,.15,0,.24,.12,.18,C.white);add('cone',.12,-.1,0,.1,.8,.1,C.red)},
+    };
+  (R[id]||(()=>house(0,0,.34,.16,.26,C.wall,C.roof)))();return P}
+const V3FACE=['dock','ferry','harbor','shipyard'];
+function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
+  // lay one recipe on tile i at a sub-position and scale, turned by ry
+  const lay=(i,rec,ox,oz,sc,ry)=>{const cx=i%W+.5,cz=(i/W|0)+.5,co=Math.cos(ry),si=Math.sin(ry);
+    // a building stands on one base height, with foundations reaching down into any slope; flat things like crop rows follow the ground
+    const g0=v3G(cx+ox,cz+oz);
+    rec.forEach(([sh,x,z,y,w,h,d,c,pry,rz])=>{const lx=x*sc,lz=z*sc,u=cx+ox+lx*co+lz*si,v=cz+oz-lx*si+lz*co;
+      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,1]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz])})};
+  S.map.forEach((x,i)=>{if(x.t==='w')return;let seed=i*9301+49297;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+    let ry=Math.floor(rnd()*4)*Math.PI/2;
+    if(x.b&&V3FACE.includes(x.b)){const w=NB(i).find(j=>S.map[j].t==='w');if(w!=null){const dx=w%W-i%W,dz=(w/W|0)-(i/W|0);ry=Math.atan2(dx,dz)}}
+    const both=x.b&&x.hs;
+    if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.13:0,both?-.13:0,both?.72:1,ry);
+    if(x.hs)lay(i,v3Recipe(x.hs,rnd),both?.24:0,both?.24:0,both?.52:1,both?0:ry);
+    if(x.sm)lay(i,v3Recipe(x.sm,rnd),.3,-.3,.42,0);
+    // trees: forests are thick with them, open country has a few; pines in the north and on hills
+    const n=x.t==='f'?(x.b||x.hs?3:9):(!x.b&&!x.hs&&rnd()<.14?1+Math.floor(rnd()*2):0);
+    for(let k=0;k<n;k++){const u=i%W+.1+rnd()*.8,v=(i/W|0)+.1+rnd()*.8;if((x.b||x.hs)&&Math.abs(u-i%W-.5)<.32&&Math.abs(v-(i/W|0)-.5)<.32)continue;if(v3river(u,v)<.25)continue;
+      trees.push([u,v,.75+rnd()*.55,(i/W|0)<H*.38||x.hl||rnd()<.3,rnd()])}});
+  const by={};parts.forEach(pt=>{(by[pt[0]]=by[pt[0]]||[]).push(pt)});
+  const meshes=[],protos=V3.protos,col=new T.Color();
+  const inst=(geo,list,fill)=>{const mesh=new T.InstancedMesh(geo,new T.MeshLambertMaterial({color:0xffffff}),list.length);list.forEach((it,k)=>{fill(it,k,mesh)});
+    mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;meshes.push(mesh)};
+  Object.entries(by).forEach(([sh,list])=>inst(protos[sh],list,([,u,v,y,w,h,d,c,ry,rz],k,mesh)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(u),y-.012,v3Z(v));s.set(w,h,d);
+    m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.set(c))}));
+  const pines=trees.filter(t=>t[3]),leafy=trees.filter(t=>!t[3]),trunks=trees;
+  if(trunks.length)inst(protos.cyl,trunks,([u,v,sc],k,mesh)=>{q.identity();p.set(v3X(u),v3G(u,v)-.01,v3Z(v));s.set(.025*sc,.08*sc,.025*sc);m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.set('#6B4F33'))});
+  if(pines.length)inst(protos.pine,pines,([u,v,sc,,r],k,mesh)=>{e.set(0,r*6,0);q.setFromEuler(e);p.set(v3X(u),v3G(u,v)+.05*sc,v3Z(v));s.set(.15*sc,.26*sc,.15*sc);m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.setHSL(.3+r*.05,.35+r*.15,.24+r*.07))});
+  if(leafy.length)inst(protos.ball,leafy,([u,v,sc,,r],k,mesh)=>{e.set(0,r*6,0);q.setFromEuler(e);p.set(v3X(u),v3G(u,v)+.06*sc,v3Z(v));s.set(.19*sc,.17*sc,.19*sc);m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.setHSL(.24+r*.07,.4+r*.15,.3+r*.08))});
+  return meshes}
+
+/* setup, syncing with the game, and drawing */
+function v3Init(){const T=THREE,cv=$('#cv3d');
+  if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;
+    V3.scene=new T.Scene();V3.cam=new T.PerspectiveCamera(38,1,.05,400);V3.protos=v3Protos();
+    V3.hemi=new T.HemisphereLight(0xe6f2ff,0x5d6b4c,.62);V3.scene.add(V3.hemi);
+    V3.sun=new T.DirectionalLight(0xfff0d6,.95);V3.sun.castShadow=true;V3.sun.shadow.mapSize.set(2048,2048);V3.sun.shadow.bias=-.0006;V3.sun.shadow.normalBias=.02;V3.scene.add(V3.sun,V3.sun.target);
+    V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x2f7196,transparent:true,opacity:.82,shininess:70,specular:0x445566}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
+    V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x2c4d57}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
+    v3Controls(cv)}
+  V3.on=true;v3Msg('');document.body.classList.add('v3');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
+  V3.tSig='';V3.oSig='';v3Resize();v3Sync()}
+function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map;
+  const th=palette().grass+(document.documentElement.dataset.theme||''),tS=th+'|'+S.map.map(x=>x.t+(x.o||'')+(x.hs||x.b?1:0)+(x.p)).join(''),oS=S.map.map(x=>(x.b||'')+','+(x.hs||'')+','+(x.sm||'')).join(';');
+  if(newMap||tS!==V3.tSig){V3.mapRef=S.map;V3.tSig=tS;v3Tiles();[V3.terrain,V3.borders].forEach(m=>{if(m){V3.scene.remove(m);m.geometry.dispose();m.material.dispose()}});
+    V3.terrain=v3Terrain();V3.borders=v3Borders();V3.scene.add(V3.terrain,V3.borders);const K=v3Colors();
+    const big=Math.max(W,H);V3.water.scale.set(W+80,H+80,1);V3.floor.scale.set(W+300,H+300,1);V3.water.material.color.copy(K.sea).multiplyScalar(.85);
+    V3.sky=new T.Color(K.dark?'#1B2A31':'#C3DBE6');V3.scene.background=V3.sky;V3.scene.fog=new T.Fog(V3.sky,20,60);V3.hemi.intensity=K.dark?.45:.62;V3.sun.intensity=K.dark?.7:.95;
+    V3.sun.position.set(-big*.35,big*.7,big*.3);V3.sun.target.position.set(0,0,0);Object.assign(V3.sun.shadow.camera,{left:-big*.8,right:big*.8,top:big*.8,bottom:-big*.8,near:1,far:big*3});V3.sun.shadow.camera.updateProjectionMatrix();
+    V3.oSig=''}
+  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m))}
+  // the selected tile gets a gold outline
+  if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
+  if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
+    V3.sel=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xE2AE2A}));V3.scene.add(V3.sel)}
+  v3Draw()}
+function v3Resize(){if(!V3.r)return;const w=$('#mapwrap'),vw=w.clientWidth,vh=w.clientHeight;if(!vw||!vh)return;V3.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));V3.r.setSize(vw,vh,false);V3.cam.aspect=vw/vh;V3.cam.updateProjectionMatrix();v3Draw()}
+function v3Draw(){if(!V3.on||V3.raf)return;V3.raf=requestAnimationFrame(()=>{V3.raf=0;v3Render()})}
+function v3Clamp(){V3.dist=clamp(V3.dist,2.2,Math.max(W,H)*1.1);V3.pitch=clamp(V3.pitch,.38,1.45);V3.tx=clamp(V3.tx,-W/2,W/2);V3.tz=clamp(V3.tz,-H/2,H/2)}
+function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();const c=V3.cam,cp=Math.cos(V3.pitch);
+  c.position.set(V3.tx+Math.sin(V3.yaw)*cp*V3.dist,.1+Math.sin(V3.pitch)*V3.dist,V3.tz+Math.cos(V3.yaw)*cp*V3.dist);c.lookAt(V3.tx,.1,V3.tz);
+  if(V3.scene.fog){V3.scene.fog.near=V3.dist*1.6;V3.scene.fog.far=V3.dist*4.2}V3.r.render(V3.scene,c);v3Labels()}
+// settlement names float above their towns; small places only when you are close
+function v3Labels(){const box=$('#v3lab'),vw=box.clientWidth,vh=box.clientHeight,st=setlStats(),Sx=setls(),seen=new Set(),v=new THREE.Vector3();
+  Object.values(st).forEach(s=>{const X=Sx[s.id];if(!X)return;const need=[9,6.5,14,99,99,99][s.r];if(V3.dist>need&&s.r<2)return;
+    const u=s.cx+.5,w=s.cy+.5;v.set(v3X(u),v3G(u,w)+.45,v3Z(w)).project(V3.cam);if(v.z>1||v.x<-1.1||v.x>1.1||v.y<-1.1||v.y>1.1)return;
+    let el=V3.labels.get(s.id);if(!el){el=document.createElement('span');V3.labels.set(s.id,el);box.appendChild(el)}
+    el.textContent=X.name;el.className='r'+Math.min(4,s.r)+(s.o==='me'?' mine':'');el.style.transform=`translate(${Math.round((v.x+1)/2*vw)}px,${Math.round((1-v.y)/2*vh)}px) translate(-50%,-100%)`;seen.add(s.id)});
+  V3.labels.forEach((el,id)=>{if(!seen.has(id)){el.remove();V3.labels.delete(id)}})}
+// the tile under a point on the screen: walk along the ray until it meets the ground
+function v3Pick(sx,sy){const T=THREE,w=$('#mapwrap'),ndc=new T.Vector2(sx/w.clientWidth*2-1,-(sy/w.clientHeight)*2+1),rc=new T.Raycaster();rc.setFromCamera(ndc,V3.cam);
+  const o=rc.ray.origin,d=rc.ray.direction;let prev=0;for(let t=.1;t<V3.dist*6;t+=.06){const x=o.x+d.x*t,y=o.y+d.y*t,z=o.z+d.z*t,u=x+W/2,v=z+H/2;
+    if(y<=v3G(u,v)){let a=prev,b=t;for(let k=0;k<8;k++){const m=(a+b)/2;(o.y+d.y*m<=v3G(o.x+d.x*m+W/2,o.z+d.z*m+H/2))?b=m:a=m}
+      const uu=o.x+d.x*b+W/2,vv=o.z+d.z*b+H/2,c=Math.floor(uu),r=Math.floor(vv);return c<0||r<0||c>=W||r>=H?-1:r*W+c}prev=t}return -1}
+function v3Controls(cv){const ptr=new Map();let g=null;const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  const snap=()=>{const p=[...ptr.values()];if(!p.length){g=null;return}const moved=g?g.moved:false;
+    if(p.length===1)g={n:1,x:p[0].x,y:p[0].y,tx:V3.tx,tz:V3.tz,yaw:V3.yaw,pitch:V3.pitch,rot:g&&g.rot,moved:moved||ptr.size>1};
+    else{const[a,b]=p;g={n:2,d:Math.hypot(a.x-b.x,a.y-b.y)||1,ang:Math.atan2(b.y-a.y,b.x-a.x),my:(a.y+b.y)/2,mx:(a.x+b.x)/2,dist:V3.dist,yaw:V3.yaw,pitch:V3.pitch,tx:V3.tx,tz:V3.tz,moved:true}}};
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(err){}ptr.set(e.pointerId,pos(e));snap();if(g&&g.n===1)g.rot=e.button===2||e.shiftKey||e.ctrlKey});
+  cv.addEventListener('pointermove',e=>{if(!ptr.has(e.pointerId)||!g)return;const q=pos(e);ptr.set(e.pointerId,q);const p=[...ptr.values()],vh=$('#mapwrap').clientHeight||1;
+    if(g.n===1){const dx=q.x-g.x,dy=q.y-g.y;if(!g.moved&&Math.hypot(dx,dy)>8)g.moved=true;if(!g.moved)return;
+      if(g.rot){V3.yaw=g.yaw-dx*.006;V3.pitch=g.pitch+dy*.005}
+      else{const k=2*V3.dist*Math.tan(19*Math.PI/180)/vh,cy=Math.cos(V3.yaw),sy=Math.sin(V3.yaw),mz=dy/Math.max(.35,Math.sin(V3.pitch));V3.tx=g.tx-(dx*cy+mz*sy)*k;V3.tz=g.tz-(-dx*sy+mz*cy)*k}}
+    else if(p.length>1){const[a,b]=p,d=Math.hypot(a.x-b.x,a.y-b.y)||1,ang=Math.atan2(b.y-a.y,b.x-a.x),my=(a.y+b.y)/2;V3.dist=g.dist*g.d/d;V3.yaw=g.yaw-(ang-g.ang);V3.pitch=g.pitch+(my-g.my)*.006}
+    v3Draw()});
+  const fire=()=>{clearTimeout(MAP.tapT);const i=MAP.tap;MAP.tap=-1;if(i>=0){MAP.kc=i;act('tile',i)}};
+  const end=e=>{if(!ptr.has(e.pointerId))return;const q=ptr.get(e.pointerId),tap=e.type==='pointerup'&&g&&g.n===1&&!g.moved&&!g.rot;ptr.delete(e.pointerId);snap();
+    if(tap){const i=v3Pick(q.x,q.y);if(i>=0&&S.map[i].t!=='w'){MAP.tap=i;clearTimeout(MAP.tapT);MAP.tapT=setTimeout(fire,400)}}};
+  cv.addEventListener('click',()=>{if(MAP.tap>=0)fire()});cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  cv.addEventListener('wheel',e=>{e.preventDefault();V3.dist*=Math.exp(e.deltaY*(e.deltaMode?.05:.0015));v3Draw()},{passive:false});
+  cv.addEventListener('keydown',e=>{const k=e.key,s=V3.dist*.08,cy=Math.cos(V3.yaw),sy=Math.sin(V3.yaw),mv={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];
+    if(mv){e.preventDefault();V3.tx+=(mv[0]*cy+mv[1]*sy)*s;V3.tz+=(-mv[0]*sy+mv[1]*cy)*s}else if(k==='+'||k==='=')V3.dist/=1.25;else if(k==='-'||k==='_')V3.dist*=1.25;
+    else if(k==='q'||k==='Q')V3.yaw+=.2;else if(k==='e'||k==='E')V3.yaw-=.2;else return;v3Draw()})}
+function v3Zoom(arg){if(arg==='home'){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4);V3.yaw=0;V3.pitch=.95}else V3.dist*=arg==='in'?1/1.35:1.35;v3Draw()}
 /* ---------- history charts ---------- */
 // S.hist holds [population, approval, legitimacy] for each finished month, newest last.
 function histDate(i,n){const t=S.year*12+S.month-1-(n-1-i);return`${MONTHS[((t%12)+12)%12].slice(0,3)}, year ${Math.floor(t/12)}`}
@@ -2977,7 +3241,7 @@ function render(){
   document.body.classList.toggle('on-isle',tab==='isle');
   $('#view').innerHTML={isle:isleHTML,people:peopleHTML,court:courtHTML,econ:econHTML,world:worldHTML,tech:techHTML}[tab]();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.arg===tab));
-  MAP.dirty=true;drawSoon();if(tab==='people')drawCharts();
+  MAP.dirty=true;drawSoon();if(V3.on)v3Sync();if(tab==='people')drawCharts();
   const ar=$('#army');if(ar){ar.addEventListener('input',e=>{$('#armyVal').textContent=ARMY[+e.target.value].n});ar.addEventListener('change',e=>{S.army=+e.target.value;render()})}
   const ct=$('#court');if(ct){ct.addEventListener('input',e=>{const i=+e.target.value;$('#courtVal').textContent=COURT[i].n;$('#courtHint').textContent=courtHint(i)});ct.addEventListener('change',e=>{S.court=+e.target.value;render()})}
     document.querySelectorAll('input[data-tax]').forEach(el=>{el.addEventListener('input',()=>{const k=el.dataset.tax,T=taxc();if(k==='all')TAXK.forEach(x=>T[x]=+el.value);else{T[k]=+el.value;taxFit(k)}
@@ -3221,6 +3485,7 @@ function act(a,arg,n){
     case'goto':setPanel(true);tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
     case'fullpanel':setFull(!UI.full);return;
     case'panel':setPanel(document.body.classList.contains('nopanel'));return;
+    case'view3d':v3Toggle();return;
     case'legend':UI.legend=!keyShown();saveUI();renderModes();return;
     case'icons':{UI.icons=!UI.icons;saveUI();const b=$('#sheet [data-act=icons]');if(b)b.setAttribute('aria-pressed',!!UI.icons);MAP.dirty=true;drawSoon();return}
     case'maphelp':openSheet(`<h3>🗺️ The map</h3><div class="card">
@@ -3228,9 +3493,10 @@ function act(a,arg,n){
       <div class="row"><span class="em">🏗️</span><div class="grow"><b>Tapping tiles</b><small>Tap your own land to build or upgrade. Tap a neighbor’s province to buy, claim or contest it, or frontier to settle it.</small></div></div>
       <div class="row"><span class="em">🧭</span><div class="grow"><b>Borders</b><small>Thick lines are national borders, thin lines are provinces. Sand-coloured edges mark your coastline.</small></div></div>
       <div class="row"><span class="em">🎨</span><div class="grow"><b>Map modes</b><small>The menu at the top left recolours the map: Land shows terrain and deposits, Pollution shows how pleasant your neighborhoods are, and Relations, Tension and Claims show diplomacy. Key shows or hides the legend.</small></div></div>
+      <div class="row"><span class="em">🏔️</span><div class="grow"><b>3D view</b><small>The 3D button switches to a 3D view of the same map. Drag to move, pinch to zoom, and twist two fingers to turn (drag two fingers up or down to tilt). On a computer, drag with the right mouse button to turn and tilt, and scroll to zoom. Tap a tile as usual. It needs an internet connection the first time you open it.</small></div></div>
       ${isWide()?'<div class="row"><span class="em">⤢</span><div class="grow"><b>More room</b><small>⤢ hides the side panel for a full-screen map. Tap any tab to bring it back, or the open tab again to hide it.</small></div></div>':''}</div>
       <button class="btn primary wide" data-act="closeSheet">Done</button>`);return;
-    case'zoom':if(arg==='home')centerOn(capIdx(),TS);else zoomAt(MAP.vw/2,MAP.vh/2,arg==='in'?1.35:1/1.35);drawSoon();return;
+    case'zoom':if(V3.on){v3Zoom(arg);return}if(arg==='home')centerOn(capIdx(),TS);else zoomAt(MAP.vw/2,MAP.vh/2,arg==='in'?1.35:1/1.35);drawSoon();return;
     case'pact':{const t=n;if(!NATIONS[arg]||isFallen(arg)||atWarWith(arg)||pact(arg)||!['ally','nonagg'].includes(t))return;const cost=t==='ally'?300:150,need=t==='ally'?(pers(arg,'aggressive')?75:65):45;if(S.coins<cost||S.rel[arg]<need)return;
       S.coins-=cost;S.pacts=S.pacts||{};S.pacts[arg]={t,until:S.turn+(t==='ally'?240:120)};relA(arg,3);tenA(arg,-10);chron(NATIONS[arg].e,t==='ally'?`An alliance with ${NATIONS[arg].n}`:`A non-aggression pact with ${NATIONS[arg].n}`,t==='ally'?'Signed for twenty years.':'Signed for ten years.');
       toast(t==='ally'?`${NATIONS[arg].n} is now your ally`:`A non-aggression pact with ${NATIONS[arg].n}`);render();return}
@@ -3410,6 +3676,8 @@ function act(a,arg,n){
     case'advance':{const rs=[];for(let k=0;k<12;k++){const r=endMonth(false);rs.push(r);const cr=crisisNow();if(cr&&!r.stop.length)r.stop.push(`${cr}. ⏩ goes one month at a time until it is dealt with`);if(queue.length||r.stop.length||S.war)break}render();afterMonths(rs);return}
     case'news':newsSheet();return;
     case'legacy':legacySheet();return;
+    case'needInfo':needSheet(arg);return;
+    case'needGo':{closeSheet();setPanel(true);tab='people';render();const h=[...document.querySelectorAll('#view h2')].find(e=>e.textContent==='Needs');if(h)h.scrollIntoView({block:'start'});return}
     case'why':whySheet(arg);return;
     case'mapmode':if(!MODES[arg])return;mapMode=UI.mapMode=arg;saveUI();renderModes();MAP.dirty=true;drawSoon();return;
     case'report':{S.showReport=!S.showReport;const b=$('#sheet [data-act=report]');if(b)b.setAttribute('aria-pressed',!!S.showReport);save();return}
@@ -3450,7 +3718,7 @@ function setPanel(show){document.body.classList.toggle('nopanel',!show);UI.nopan
 $('#modeSel').addEventListener('change',e=>act('mapmode',e.target.value));
 // folding or unfolding the phone crosses the wide/narrow line; the key's default follows it
 if(window.matchMedia)matchMedia('(min-width:760px)').addEventListener('change',renderModes);
-mapInit();renderModes();setPanel(!UI.nopanel);setFull(!!UI.full);const had=load();net();render();if(!had)welcome();
+mapInit();renderModes();setPanel(!UI.nopanel);setFull(!!UI.full);const had=load();net();render();if(!had)welcome();if(UI.v3)v3Start(false);
 else if(S.migrated){delete S.migrated;save();openSheet(`<div class="event"><div class="pic" aria-hidden="true">🗺️</div><h3>Your kingdom now has neighbors</h3><p>The kingdom has been redrawn on a larger map with land borders. Your buildings have been rebuilt around the capital, and you also hold two more provinces to grow into. Norvik lies to the north, Aurelia to the east and Solenne to the south, with unclaimed frontier between you.</p></div><button class="btn primary wide" data-act="closeSheet">Explore the map</button>`)}
 </script>
 </body>
