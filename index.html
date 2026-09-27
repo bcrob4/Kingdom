@@ -134,6 +134,7 @@ body.on-isle .mappane{display:block}
 .mapover .legend{margin:0;padding:6px 10px;gap:4px 10px;border-radius:12px;font-size:.75rem;max-width:300px;color:var(--ink);background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .mapover .legend[hidden]{display:none}
 .mapctl .wideonly{display:none}
+header .icon.wideonly{display:none}
 nav .railonly{display:none}
 .maptip{position:absolute;right:8px;bottom:8px;max-width:calc(100% - 180px);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.8rem;pointer-events:none;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:12px;font-size:.8rem;color:var(--muted)}
@@ -187,6 +188,13 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
   .mappane,body.on-isle .mappane{display:flex;flex-direction:column;min-height:0;padding:8px;border-right:1px solid var(--line)}
   .mapwrap{flex:1;height:auto;min-height:0;margin-top:0}
   .mapctl .wideonly{display:block}
+  header .icon.wideonly{display:inline-flex;align-items:center;justify-content:center}
+  body.fullpanel:not(.on-isle) .main{grid-template-columns:minmax(0,1fr)}
+  body.fullpanel:not(.on-isle) .mappane{display:none}
+  body.fullpanel:not(.on-isle) #view{display:block;padding-inline:max(16px,calc((100% - 860px)/2))}
+  body.fullpanel.on-isle .main{grid-template-columns:minmax(0,1fr)}
+  body.fullpanel.on-isle #view{display:none}
+  body.fullpanel .toast{left:calc((100% - var(--rail))/2)}
   #view{overflow:auto;padding:0 16px 24px;overscroll-behavior:contain}
   /* the tab bar becomes a slim strip down the right edge, with End month at the bottom */
   .endbar{display:none}
@@ -209,6 +217,7 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
     <div class="top">
       <div class="flag"><h1 id="name"></h1><div class="sub" id="when"></div></div>
       <span id="net" class="tag" hidden>Offline</span>
+      <button class="icon wideonly" data-act="fullpanel" id="fpBtn" aria-label="Full-screen tabs" title="Full-screen tabs" aria-pressed="false"></button>
       <button class="icon" data-act="legacy" aria-label="Legacy and milestones">🏆</button>
       <button class="icon" data-act="news" aria-label="News">📰</button>
       <button class="icon" data-act="settings" aria-label="Settings">⚙️</button>
@@ -441,7 +450,7 @@ const courtCost=i=>Math.round(COURT[i==null?S.court:i].c*(1+S.pop/300)*(trait('f
 const ARMY=[{n:'Token guard',r:.005},{n:'Garrison',r:.015},{n:'Standing army',r:.03},{n:'Large army',r:.05},{n:'War footing',r:.08}];
 // On bigger worlds each nation starts with more provinces; nscale keeps their starting strength close to the classic three-province map.
 const nscaleOf=prov=>{const o={};NIDS.forEach(n=>{o[n]=Math.min(1,3/Math.max(1,prov.filter(P=>P.o===n).length))});return o};
-function theirStr(n){if(S.enemyStr&&S.enemyStr[n]!=null)return S.enemyStr[n];const pop=NBASE[n]*(1+S.turn/300)+provsOf(n).reduce((a,i)=>a+S.prov[i].pop,0)*((S.nscale||{})[n]||1);let s=pop*.03*(1+S.turn/500);if(S.tension[n]>=60||atWarWith(n))s*=1.3;if(S.nsit[n]==='troubled')s*=.8;return Math.round(s)}
+function theirStr(n){if(S.enemyStr&&S.enemyStr[n]!=null)return S.enemyStr[n];const pop=NBASE[n]*(1+S.turn/300)+provsOf(n).reduce((a,i)=>a+S.prov[i].pop-Math.min(S.prov[i].pop,S.prov[i].ng||0)*.6,0)*((S.nscale||{})[n]||1);let s=pop*.03*(1+S.turn/500);if(S.tension[n]>=60||atWarWith(n))s*=1.3;if(S.nsit[n]==='troubled')s*=.8;return Math.round(s)}
 const NAVYBASE={norvik:4,aurelia:3,solenne:2};
 const theirNavy=n=>Math.round(NAVYBASE[n]*(1+S.turn/400));
 const GTRAITS={aggressive:{n:'Aggressive',d:'Attacks hit 15% harder, but losses are 30% higher.'},cautious:{n:'Cautious',d:'Losses are 40% lower, but strength is 5% lower.'},quartermaster:{n:'Quartermaster',d:'Supplies never drop below 75%.'},brilliant:{n:'Brilliant',d:'Army strength +12%.'},inspiring:{n:'Inspiring',d:'War support falls half as fast.'}};
@@ -1226,7 +1235,7 @@ function calc(){
   const coalImp=Math.max(0,cnt('diesel')-cnt('coalmine'))*20;
   const pop=S.pop,soldiers=Math.min(S.troops,Math.round(pop*.2)),workers=Math.max(0,Math.round(pop*soc().adults)-soldiers);
   // a province with spare capacity shares 60% of it with its neighbours: people use a clinic or take a job next door
-  const eff={};own.forEach(i=>{eff[i]={};LOC.forEach(k=>eff[i][k]=pv[i][k]);pv[i].workers=Math.max(0,Math.round(pv[i].pop*soc().adults-soldiers*pv[i].pop/Math.max(1,pop)))});
+  const eff={};own.forEach(i=>{eff[i]=pv[i].eff={};LOC.forEach(k=>eff[i][k]=pv[i][k]);pv[i].workers=Math.max(0,Math.round(pv[i].pop*soc().adults-soldiers*pv[i].pop/Math.max(1,pop)))});
   // the private economy: part of the workforce finds its own work in shops, crafts and trades, without any crown building
   own.forEach(i=>{const pj=Math.round(pv[i].workers*(PJ[era()]+(gp('skyline')?.05:0)));pv[i].jobs+=pj;eff[i].jobs+=pj;t.jobs+=pj});
   LOC.forEach(k=>{if(k==='homes')return;own.forEach(j=>{const need=k==='jobs'?pv[j].workers:pv[j].pop,spare=Math.max(0,pv[j][k]-need),ns=adjProvs(j).filter(q=>pv[q]);
@@ -1331,7 +1340,7 @@ function calc(){
   const army=Math.round(((soldiers*4+(S.war?soldiers*8:0))*(law('army').armyCost||1)+S.navy*20+(S.general?30:0))*FUNDM[fund('def')]);
   const costs=[['Health services',t.upH],['Schools and learning',t.upE],['Infrastructure and upkeep',t.upI],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest],['Foreign protection',S.ov&&S.ov.prot?PROT_COST:0],['Appanages',appanages().length*APP_COST]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
   const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
-  return{skill,taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
+  return{skill,needBonus:bonus,taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
 
 /* ---------- events ---------- */
 const summer=()=>S.month>=5&&S.month<=7,winter=()=>S.month===11||S.month<=1;
@@ -2008,6 +2017,47 @@ function refugeeEvent(n){const np=nPop(n),size=Math.max(10,Math.round(np*.04)),w
     {l:'Take only the skilled',f(){const got=settleIn(n,Math.round(size*.3),85);takeFrom(n,got);relA(n,-2);igM('merchants',3,12,'Skilled newcomers');return`${fmt(got)} craftsmen, clerks and physicians are admitted. The rest are turned away.`}},
     {l:'Turn them away',f(){relA(n,-8);igM('intelligentsia',-5,12,'Refugees turned away');igM('workers',3,12,'Borders kept closed');return'The border stays shut, and the refugees go elsewhere.'}}]}}
 const migLine=n=>{const v=(S.mig||{})[n]||0;return v>0?`${fmt(v)} people moved here from ${NATIONS[n].n} last month.`:v<0?`${fmt(-v)} of your people moved to ${NATIONS[n].n} last month.`:'No one moved between you last month.'};
+/* ---------- neighbors grow ---------- */
+// Foreign provinces grow toward what their land can hold. That rises with the age, and with how densely your own kingdom is settled, so they keep pace.
+// P.ng tracks their natural growth; only part of it adds to their armies, since their strength already rises with time.
+const NCAP=[10,16,28,45];
+const landOf=i=>provTiles(i).filter(t=>S.map[t].t!=='w').length;
+function nCap(i){const own=provsOf('me'),myLand=own.reduce((a,j)=>a+landOf(j),0)||1;return landOf(i)*Math.max(NCAP[Math.min(3,era())],S.pop/myLand*.6)}
+function nGrowMonth(){const r0=[.012,.018,.03,.025][Math.min(3,era())]/12;
+  liveNations().forEach(n=>{const f=nwarOf(n)||atWarWith(n)?0:{stable:1,indebted:.8,troubled:.5}[S.nsit[n]||'stable'];if(!f)return;
+    provsOf(n).forEach(i=>{const P=S.prov[i];if(!P.pop)return;const cap=nCap(i);if(P.pop>=cap)return;
+      const g=sRound(P.pop*r0*f*(1-P.pop/cap));if(g>0){P.pop+=g;P.ng=(P.ng||0)+g}})})}
+
+/* ---------- why a need stands where it does ---------- */
+// what you have against what your people need, which provinces fall short, and what you could build
+const NLOC={health:'Infirmaries and hospitals care for',learn:'Schools and libraries teach',fun:'Leisure places entertain',move:'Transport serves',water:'Wells and waterworks supply'};
+function needWhy(k,c){const t=c.t,p=fmt(c.pop);let s='';
+  const res=r=>{const T=c.tr[r],short=c.sup[r]<c.dem[r]-.5;return`You produce ${fmt(c.prod[r])} and need ${fmt(c.dem[r])}${T&&T.dir==='import'?`, and import ${fmt(T.amt)}`:T&&T.dir==='export'?`, and export ${fmt(T.amt)}`:''}.${short?' '+tradeWhy(r,c):''}`};
+  if(k==='homes')s=`Homes for ${fmt(t.homes)} and ${p} people, so homes are ${Math.round(c.occ*100)}% full. Above 80% full, rents rise and this falls. Private builders add homes where there is work and calm.`;
+  else if(k==='jobs')s=`${fmt(t.jobs)} jobs, counting private trades, for ${fmt(c.workers)} people of working age.`;
+  else if(k==='food')s=res('food');else if(k==='goods')s=res('goods');else if(k==='power')s=res('energy');
+  else if(k==='nature')s=`Starts at 55. Forests and parks raise it; smoky industry and run-down neighborhoods lower it.`;
+  else if(NLOC[k])s=`${NLOC[k]} ${fmt(t[k])} of your ${p} people${k==='move'?'. In the capital, the first 100 can walk, and in other provinces the first 40':k==='water'?'. The capital’s springs supply 50, and other provinces 20':''}.${c.needBonus&&c.needBonus[k]?` Technology, decrees and funding add ${c.needBonus[k]>0?'+':''}${Math.round(c.needBonus[k])}.`:''}`;
+  if(k==='health'&&c.sc.water<100)s+=' Poor water lowers health.';
+  if(k==='health'&&c.polluted>.05)s+=' Pollution lowers health.';
+  // local needs are counted province by province: name the ones that fall short
+  if(['homes','jobs','health','learn','fun','move','water'].includes(k)){const low=provsOf('me').filter(i=>c.pv[i]&&c.pv[i].pop>0&&c.pv[i].sc[k]<60).sort((a,b)=>c.pv[a].sc[k]-c.pv[b].sc[k]).slice(0,3);
+    if(low.length)s+=` Each province needs its own, though spare capacity helps neighboring provinces a little. Shortest: ${low.map(i=>{const q=c.pv[i],need=k==='jobs'?q.workers:k==='homes'?q.pop:q.pop,have=k==='homes'?q.homes:q.eff?q.eff[k]:q[k];return`${S.prov[i].name} ${q.sc[k]} (${fmt(have)} for ${fmt(need)})`}).join(', ')}.`}
+  const m=modSum(k);if(m)s+=` Temporary effects: ${m>0?'+':''}${Math.round(m)}.`;return s}
+// why a shortfall is not being imported
+function tradeWhy(r,c){const p=S.trade[r],N=p&&NATIONS[p]?NATIONS[p].n:'';if(!p)return'No trade partner is chosen for it, so nothing is imported: pick one on the Economy tab.';
+  if(isFallen(p))return`Your trade partner, ${N}, has fallen: pick another on the Economy tab.`;if(atWarWith(p))return`You are at war with ${N}, your trade partner, so nothing is imported.`;
+  if(S.embargo[p])return`${N} has an embargo on you, so nothing is imported.`;if(S.rel[p]<20)return`Relations with ${N} are below 20, too poor to trade.`;
+  return'Trade capacity is used up, so the rest cannot be imported: build docks, a canal or trade routes.'}
+// the buildings you could put up right now to help, cheapest first
+function needBuild(k){if(k==='nature')return'';const f=k==='homes'?'homes':k;
+  const opts=Object.entries(B).filter(([id,d])=>d[f]>0&&!d.fixed&&id!=='hall'&&!lockReason(d)&&(k!=='homes'||isHousing(id))&&(k==='homes'||!isHousing(id))).sort((a,b)=>a[1].c-b[1].c).slice(0,4);
+  return opts.length?` You can build: ${opts.map(([,d])=>`${d.e} ${d.n} (${fmt(d[f])} for 🪙${fmt(d.c)})`).join(', ')}.`:''}
+// full-screen tabs on wide screens: the tabs fill the screen, and the Map tab shows only the map
+const FPI={on:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M8 3.5v13"/></svg>',
+  off:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5"/></svg>'};
+function setFull(on){document.body.classList.toggle('fullpanel',on);UI.full=on;saveUI();if(on&&document.body.classList.contains('nopanel'))setPanel(true);
+  const b=$('#fpBtn');if(b){b.innerHTML=on?FPI.on:FPI.off;const l=on?'Show the map beside the tabs':'Full-screen tabs';b.setAttribute('aria-label',l);b.title=l;b.setAttribute('aria-pressed',on?'true':'false')}MAP.dirty=true;drawSoon()}
 /* ---------- goals ---------- */
 const GOALS=[
   {id:'pop100',d:'Reach 100 subjects',r:500,f:()=>S.pop>=100},
@@ -2259,7 +2309,7 @@ function endMonth(silent){
   const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
   let du=unrestBase(c).reduce((a,r)=>a+r[1],0);if(du>0)du*=unrestMult();if(du>0&&hasPal('guard'))du=Math.max(0,du-.5);
   S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
-  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);foodMonth(c,notes,stop);builderMonth(c,notes);socMonth(c,notes,stop);migMonth(c,notes,stop);setlUpdate(notes,stop);S.best=Math.max(S.best,S.pop);
+  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);foodMonth(c,notes,stop);builderMonth(c,notes);socMonth(c,notes,stop);migMonth(c,notes,stop);nGrowMonth();setlUpdate(notes,stop);S.best=Math.max(S.best,S.pop);
   researchMonth(c.rp,notes,stop);eraCheck(stop);
   if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
   pressureMonth(notes,stop);
@@ -2728,7 +2778,7 @@ function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.s
   const quotes=[low[0],low[1],hi].map((n,i)=>{const nm=NAMES[(S.turn*3+i*4)%NAMES.length];const good=c.sc[n.k]>=70;return `<div class="row"><span class="em">${n.e}</span><div class="grow"><span class="quote">\u201c${good?n.hi:n.lo}\u201d</span><small>${nm}</small></div></div>`}).join('');
   const classes=Object.entries(CLASSES).map(([k,C])=>{const v=c.cls[k],p=Math.round(S.pop*c.share[k]);const worst=Object.keys(C.w).sort((a,b)=>c.sc[a]-c.sc[b])[0],wn=NEEDS.find(n=>n.k===worst);
     return `<div class="row"><span class="em">${C.e}</span><div class="grow"><b>${C.n}</b> <span class="tag">${fmt(p)} people</span><small>${C.d} Biggest worry: ${wn.n.toLowerCase()}.</small>${bar(v)}</div><span class="num" style="color:${col(v)}">${v}</span></div>`}).join('');
-  const needs=NEEDS.map(n=>`<div class="row"><span class="em">${n.e}</span><div class="grow"><b>${n.n}</b>${bar(c.sc[n.k])}${c.sc[n.k]<70?`<small>${n.tip}</small>`:''}</div><span class="num" style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</span></div>`).join('');
+  const needs=NEEDS.map(n=>`<div class="row"><span class="em">${n.e}</span><div class="grow"><b>${n.n}</b>${bar(c.sc[n.k])}<small>${needWhy(n.k,c)}${c.sc[n.k]<70?` <b>To improve:</b> ${n.tip}${needBuild(n.k)}`:''}</small></div><span class="num" style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</span></div>`).join('');
   const lbl={hap:'Approval',inc:'Monthly budget',tour:'Tourism',foodprod:'Food production',leg:'Legitimacy'};
   const mods=S.mods.map(m=>{const nm=m.k.startsWith('ig:')?IGS[m.k.slice(3)].n+' mood':lbl[m.k]||(NEEDS.find(n=>n.k===m.k)||{n:m.k}).n;return `<div class="row"><div class="grow"><b>${m.l}</b><small>${nm} ${m.v>0?'+':''}${m.v}${m.k==='inc'?' a month':m.k==='tour'||m.k==='foodprod'?'%':''} for ${m.m} more month${m.m>1?'s':''}</small></div></div>`}).join('');
   return `<div class="mood"><div class="grow"><div class="big" style="color:${col(S.hap)}">${S.hap}%</div><div class="sub">approval, trending toward ${c.target}%</div></div><button class="btn" data-act="why" data-arg="approval">Why?</button></div>
@@ -3166,9 +3216,10 @@ function openCon(){$('#sheetWrap').classList.remove('open');$('#conWrap').classL
 function act(a,arg,n){
   switch(a){
     // On wide screens, tapping the tab that's already open hides the side panel; any other tab brings it back.
-    case'tab':if(isWide()){if(arg===tab&&!document.body.classList.contains('nopanel')){setPanel(false);return}setPanel(true)}
+    case'tab':if(isWide()&&!UI.full){if(arg===tab&&!document.body.classList.contains('nopanel')){setPanel(false);return}setPanel(true)}
       tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
     case'goto':setPanel(true);tab=arg;window.scrollTo(0,0);$('#view').scrollTop=0;break;
+    case'fullpanel':setFull(!UI.full);return;
     case'panel':setPanel(document.body.classList.contains('nopanel'));return;
     case'legend':UI.legend=!keyShown();saveUI();renderModes();return;
     case'icons':{UI.icons=!UI.icons;saveUI();const b=$('#sheet [data-act=icons]');if(b)b.setAttribute('aria-pressed',!!UI.icons);MAP.dirty=true;drawSoon();return}
@@ -3399,7 +3450,7 @@ function setPanel(show){document.body.classList.toggle('nopanel',!show);UI.nopan
 $('#modeSel').addEventListener('change',e=>act('mapmode',e.target.value));
 // folding or unfolding the phone crosses the wide/narrow line; the key's default follows it
 if(window.matchMedia)matchMedia('(min-width:760px)').addEventListener('change',renderModes);
-mapInit();renderModes();setPanel(!UI.nopanel);const had=load();net();render();if(!had)welcome();
+mapInit();renderModes();setPanel(!UI.nopanel);setFull(!!UI.full);const had=load();net();render();if(!had)welcome();
 else if(S.migrated){delete S.migrated;save();openSheet(`<div class="event"><div class="pic" aria-hidden="true">🗺️</div><h3>Your kingdom now has neighbors</h3><p>The kingdom has been redrawn on a larger map with land borders. Your buildings have been rebuilt around the capital, and you also hold two more provinces to grow into. Norvik lies to the north, Aurelia to the east and Solenne to the south, with unclaimed frontier between you.</p></div><button class="btn primary wide" data-act="closeSheet">Explore the map</button>`)}
 </script>
 </body>
