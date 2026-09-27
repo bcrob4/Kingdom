@@ -3115,10 +3115,12 @@ function v3LifeBuild(){const T=THREE,L=V3.L;if(!L)return;if(V3.life)V3.life.mesh
   lf.blade=mesh(P.box,lf.mills.length*4);for(let k=0;k<lf.mills.length*4;k++)lf.blade.setColorAt(k,C.set('#E4DED0'));
   lf.wheel=mesh(P.cyl,lf.wheels.length);lf.wheels.forEach((w,k)=>lf.wheel.setColorAt(k,C.set('#6B4F33')));
   lf.puff=mesh(P.ball,lf.smoke.length*6);Object.assign(lf.puff.material,{transparent:true,opacity:.28,depthWrite:false});for(let k=0;k<lf.smoke.length*6;k++)lf.puff.setColorAt(k,C.set('#E6E3DC'));
+  lf.lp=v3LPBuild(lf);
   lf.meshes.forEach(m=>{if(m.instanceColor)m.instanceColor.needsUpdate=true;m.visible=UI.life!==false&&V3.dist<LIFE_DIST});
   v3LifeTick(performance.now()/1000,0)}
 function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.Matrix4(),q=new T.Quaternion(),q2=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3(),ax=new T.Vector3(0,1,0);
   const set=(mesh,k,x,y,z,ry,sx,sy,sz,rz=0)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(x),y,v3Z(z));s.set(sx,sy,sz);m4.compose(p,q,s);mesh.setMatrixAt(k,m4)};
+  const lp=lf.lp;if(lp)lp.begin();
   // something moving along a road: at the end of each road it turns onto another
   const move=o=>{const E=lf.E;o.t+=o.dir*o.sp*dt;if(o.t>1||o.t<0){const ed=E[o.e],node=o.t>1?ed.j:ed.i,opts=lf.adj.get(node)||[o.e];let ne=opts[Math.random()*opts.length|0];
       if(opts.length>1&&ne===o.e)ne=opts[(opts.indexOf(ne)+1)%opts.length];const n2=E[ne];o.e=ne;if(n2.i===node){o.t=0;o.dir=1}else{o.t=1;o.dir=-1}}
@@ -3132,18 +3134,23 @@ function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.
   const home=o=>{const ed=lf.E[o.e];if(lf.near&&lf.near.length&&Math.hypot((ed.a[0]+ed.b[0])/2-tu,(ed.a[1]+ed.b[1])/2-tv)>R+.6){o.e=lf.near[Math.random()*lf.near.length|0];o.t=Math.random()}};
   lf.walkers.forEach((o,k)=>{let u,v,h,ry;if(k>=active){set(lf.body,k,0,-1,0,0,0,0,0);set(lf.head,k,0,-1,0,0,0,0,0);return}if(wander){if(!lf.nearH.length){set(lf.body,k,0,-1,0,0,0,0,0);set(lf.head,k,0,-1,0,0,0,0,0);return}
       const i=lf.nearH[k%lf.nearH.length],a=t*o.sp*4*o.dir+o.ph,rr=.2+.14*Math.abs(Math.sin(o.ph*3));u=i%W+.5+Math.cos(a)*rr;v=(i/W|0)+.5+Math.sin(a)*rr;h=v3G(u,v);ry=Math.atan2(-Math.sin(a)*o.dir,Math.cos(a)*o.dir)}
-    else{home(o);[u,v,h,ry]=move(o)}const b=Math.abs(Math.sin(t*9+o.ph))*.004*fs;set(lf.body,k,u,h+b,v,ry,.016*fs,.034*fs,.016*fs);set(lf.head,k,u,h+.034*fs+b,v,ry,.016*fs,.016*fs,.016*fs)});
+    else{home(o);[u,v,h,ry]=move(o)}if(lp){lp.put(lp.pt[k],'walk',u,h,v,ry,LPSIZE.person*fs,t*7.7*(o.sp/.11)+o.ph*3);return}
+    const b=Math.abs(Math.sin(t*9+o.ph))*.004*fs;set(lf.body,k,u,h+b,v,ry,.016*fs,.034*fs,.016*fs);set(lf.head,k,u,h+.034*fs+b,v,ry,.016*fs,.016*fs,.016*fs)});
   if(lf.E.length&&!wander){
-    lf.carts.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),fx=Math.sin(ry)*.032,fz=Math.cos(ry)*.032;set(lf.cart,k,u,h,v,ry,.03,.022,.045);
+    lf.carts.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),fx=Math.sin(ry)*.032,fz=Math.cos(ry)*.032;
+      if(lp){if(era()<3){lp.put('horse','walk',u+fx*1.2,h,v+fz*1.2,ry,LPSIZE.horse,t*6.8+k*2);lp.put('wagon','still',u-fx*.5,h,v-fz*.5,ry,LPSIZE.wagon,0)}else{const c=k%2?'car':'taxi';lp.put(c,'still',u,h,v,ry,.1/(LP.items[c].len||3.5),0)}return}set(lf.cart,k,u,h,v,ry,.03,.022,.045);
       if(era()>=3)set(lf.horse,k,u,h,v,ry,0,0,0);else set(lf.horse,k,u+fx,h+.004,v+fz,ry,.012,.022,.032)})}
-  const n0=lf.walkers.length;lf.farm.forEach((f,k)=>{const h=v3G(f.u,f.v),bend=.75+Math.abs(Math.sin(t*2+f.ph))*.25;set(lf.body,n0+k,f.u,h,f.v,f.ry,.016,.034*bend,.016);set(lf.head,n0+k,f.u,h+.034*bend,f.v,f.ry,.016,.016,.016)});
-  lf.sheep.forEach((o,k)=>{const a=t*o.w+o.ph,u=o.cu+Math.cos(a)*o.r,v=o.cv+Math.sin(a*1.3)*o.r,h=v3G(u,v),ry=Math.atan2(-Math.sin(a),1.3*Math.cos(a*1.3)),sz=o.cow?1.35:1,fx=Math.sin(ry)*.022*sz,fz=Math.cos(ry)*.022*sz;
-    set(lf.sheepB,k,u,h+.004,v,ry,.028*sz,.022*sz,.04*sz);set(lf.sheepH,k,u+fx,h+.012*sz,v+fz,ry,.013*sz,.013*sz,.015*sz)});
+  const n0=lf.walkers.length;lf.farm.forEach((f,k)=>{const h=v3G(f.u,f.v);if(lp){lp.put('farmer','work',f.u,h,f.v,f.ry,LPSIZE.person,t*4.8+f.ph*3);return}const bend=.75+Math.abs(Math.sin(t*2+f.ph))*.25;set(lf.body,n0+k,f.u,h,f.v,f.ry,.016,.034*bend,.016);set(lf.head,n0+k,f.u,h+.034*bend,f.v,f.ry,.016,.016,.016)});
+  lf.sheep.forEach((o,k)=>{const a=t*o.w+o.ph,u=o.cu+Math.cos(a)*o.r,v=o.cv+Math.sin(a*1.3)*o.r,h=v3G(u,v),ry=Math.atan2(-Math.sin(a),1.3*Math.cos(a*1.3)),_lp=lp&&lp.put(o.cow?'cow':'sheep','eat',u,h,v,ry,o.cow?LPSIZE.cow:LPSIZE.sheep,t+o.ph*3),sz=o.cow?1.35:1,fx=Math.sin(ry)*.022*sz,fz=Math.cos(ry)*.022*sz;
+    if(_lp)return;set(lf.sheepB,k,u,h+.004,v,ry,.028*sz,.022*sz,.04*sz);set(lf.sheepH,k,u+fx,h+.012*sz,v+fz,ry,.013*sz,.013*sz,.015*sz)});
   lf.ships.forEach((o,k)=>{const a=t*.12+o.ph,u=o.u+Math.cos(a)*o.r,v=o.v+Math.sin(a)*o.r*.7,ry=Math.atan2(-Math.sin(a),Math.cos(a)*.7),sc=o.big?1.4:1,roll=Math.sin(t*1.7+o.ph)*.06;
+    if(lp){const nm=o.big?'ship':'shipsmall',it=LP.items[nm],long=Math.max(it.len,it.wid),s2=(o.big?.3:.14)/(long||2);lp.put(nm,'still',u,-s2*.12,v,ry+(it.wid>it.len?Math.PI/2:0),s2,0,roll);return}
     set(lf.hull,k,u,-.01,v,ry,.05*sc,.025*sc,.14*sc,roll);set(lf.sail,k,u,.012,v,ry,.006*sc,.09*sc,.08*sc,roll)});
+  if(lp)lp.wild.forEach(w=>lp.put(w.kind,'eat',w.u,v3G(w.u,w.v),w.v,w.ry,LPSIZE[w.kind],t+w.ph*3));
   lf.mills.forEach(([u,v,y,ry,sc],k)=>{for(let b=0;b<4;b++)set(lf.blade,k*4+b,u,y,v,ry,.045*sc,.28*sc,.012*sc,t*1.2+b*Math.PI/2)});
   lf.wheels.forEach(([u,v,y,ry,sc],k)=>{q.setFromEuler(e.set(0,ry,Math.PI/2));q2.setFromAxisAngle(ax,t*1.5);q.multiply(q2);p.set(v3X(u),y,v3Z(v));s.set(.2*sc,.04*sc,.2*sc);m4.compose(p,q,s);lf.wheel.setMatrixAt(k,m4)});
   lf.smoke.forEach(([u,v,y],k)=>{for(let j=0;j<6;j++){const a=(t*.2+j/6+k*.37)%1,sz=(.01+a*.028)*(1-a*a*.6);set(lf.puff,k*6+j,u+a*.07+Math.sin(a*9+k)*.006,y+a*.2,v+a*.015,0,sz,sz*.85,sz)}});
+  if(lp)lp.end();
   lf.meshes.forEach(m=>{m.instanceMatrix.needsUpdate=true})}
 function v3Loop(now){V3.loop=0;if(!v3LifeOn())return;V3.loop=requestAnimationFrame(v3Loop);if(now-(V3.last||0)<33)return;
   const dt=V3.last?Math.min(.1,(now-V3.last)/1000):0;V3.last=now;v3LifeTick(now/1000,dt);v3Render()}
@@ -3200,7 +3207,48 @@ function v3LOD(force){if(!V3.kitCh||!V3.kitCh.size)return;const T=THREE,q=v3Q(),
     if(force||ms.near!==near){ms.near=near;changed=true;ms.forEach(m=>{m.visible=near});(V3.codeCh&&V3.codeCh.get(c)||[]).forEach(m=>{m.visible=!near})}});
   if(changed)V3.r.shadowMap.needsUpdate=true}
 function v3SetQ(v){if(v==='fps'){UI.v3fps=!UI.v3fps;saveUI();const f=$('#v3fps');if(f)f.hidden=!UI.v3fps;$('#v3Q').value=v3Q();return}
-  UI.v3q=v;saveUI();if(v!=='low'&&!KIT.state)v3KitLoad();else v3KitBuild();v3Draw()}
+  UI.v3q=v;saveUI();if(v!=='low'&&!KIT.state)v3KitLoad();else v3KitBuild();if(v!=='low'&&!LP.state)v3LPLoad();else if(V3.L)v3LifeBuild();v3Draw()}
+/* ---------- animated people, animals, carts and ships ---------- */
+// Quaternius models (CC0) recorded as flip-book poses: each pose is its own set of instances, and every figure picks the pose
+// for its moment in the walk. Loaded from the site's kit folder with the houses; without it, the simple figures stay.
+const LP={state:0,items:{},mat:null,tmat:{}};
+// size of each model in the world (tile units), and a turn so it faces the way it moves
+const LPSIZE={person:.052,horse:.068,cow:.056,sheep:.034,deer:.046,stag:.062,donkey:.046,wagon:.04};
+const LPTYPES=()=>era()<2?['mansleeves','womandress','mansleeves','womandress','mansleeves','womandress','farmer','hooded']:era()<3?['mansleeves','womandress','worker','businessman','womancasual','mansleeves']:['mansuit','womancasual','casual','businessman','womancasual','mansuit'];
+function v3LPLoad(){if(LP.state)return;LP.state=1;const T=THREE,tl=new T.TextureLoader();
+  fetch(KIT.url+'lifepack.json').then(r=>{if(!r.ok)throw 0;return r.json()}).then(man=>fetch(KIT.url+'lifepack.bin').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(buf=>{
+    LP.mat=new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide});
+    Object.entries(man.items).forEach(([name,it])=>{const idx=it.i32?new Uint32Array(buf,it.index,it.ic):new Uint16Array(buf,it.index,it.ic),c8=new Uint8Array(buf,it.color,it.vc*4).slice();
+      // the models keep linear colours; lighten them to display colours
+      for(let i=0;i<c8.length;i++)if(i%4<3)c8[i]=Math.round(255*Math.pow(c8[i]/255,1/2.2));const col=new T.BufferAttribute(c8,4,true);
+      const uv=it.uv!=null?new T.BufferAttribute(new Uint16Array(buf,it.uv,it.vc*2),2,true):null,index=new T.BufferAttribute(idx,1);
+      if(it.tex&&!LP.tmat[it.tex]){const t=tl.load(KIT.url+it.tex,()=>v3Draw());t.flipY=false;LP.tmat[it.tex]=new T.MeshLambertMaterial({vertexColors:true,map:t,side:T.DoubleSide})}
+      const clips={};Object.entries(it.clips).forEach(([k,fs])=>{clips[k]=fs.map(f=>{const q=new Int16Array(buf,f.pos,it.vc*3),p=new Float32Array(it.vc*3),s=it.E/32767;for(let i=0;i<p.length;i++)p[i]=q[i]*s;
+        const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(p,3));g.setAttribute('color',col);if(uv)g.setAttribute('uv',uv);g.setIndex(index);g.computeVertexNormals();g.computeBoundingSphere();return g})});
+      LP.items[name]={clips,len:it.len,wid:it.wid||0,mat:it.tex?LP.tmat[it.tex]:LP.mat}});
+    LP.state=2;if(V3.on&&V3.L)v3LifeBuild();v3Draw()})).catch(()=>{LP.state=-1})}
+// the model layer for one build of the living world
+function v3LPBuild(lf){if(LP.state!==2||v3Q()==='low')return null;const T=THREE,types=LPTYPES(),lp={meshes:{},pt:[]};
+  let seed=777;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const need={};const want=(name,clip,n)=>{if(!LP.items[name]||!LP.items[name].clips[clip])return;need[name+'|'+clip]=(need[name+'|'+clip]||0)+n};
+  lf.walkers.forEach((o,k)=>{const ty=types[Math.floor(rnd()*types.length)];lp.pt[k]=ty;want(ty,'walk',1)});
+  lf.farm.forEach(()=>want('farmer','work',1));
+  lf.sheep.forEach(s=>s.cow?want('cow','eat',1):want('sheep','eat',1));
+  if(era()<3){want('horse','walk',lf.carts.length);want('wagon','still',lf.carts.length)}else{want('car','still',lf.carts.length);want('taxi','still',lf.carts.length)}
+  lf.ships.forEach(s=>want(s.big?'ship':'shipsmall','still',1));
+  // deer and stags graze at the edges of forests
+  lp.wild=[];S.map.forEach((x,i)=>{if(x.t==='f'&&!x.b&&lp.wild.length<(W<=36?40:30)&&rnd()<.06)lp.wild.push({u:i%W+.2+rnd()*.6,v:(i/W|0)+.2+rnd()*.6,ry:rnd()*6,ph:rnd()*6,kind:rnd()<.35?'stag':'deer'})});
+  lp.wild.forEach(w=>want(w.kind,'eat',1));
+  Object.entries(need).forEach(([key,n])=>{const [name,clip]=key.split('|'),it=LP.items[name];lp.meshes[key]=it.clips[clip].map(g=>{const m=new T.InstancedMesh(g,it.mat,Math.max(1,n));m.count=0;m.frustumCulled=false;m.castShadow=false;m.receiveShadow=true;m._n=0;V3.scene.add(m);lf.meshes.push(m);return m})});
+  const m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
+  lp.begin=()=>Object.values(lp.meshes).forEach(fs=>fs.forEach(m=>{m._n=0}));
+  // place one figure: name, clip, position, heading, size, and where it is in its cycle (in poses)
+  lp.put=(name,clip,x,y,z,ry,sc,phase,rz=0)=>{const fs=lp.meshes[name+'|'+clip];if(!fs)return false;const m=fs[((Math.floor(phase)%fs.length)+fs.length)%fs.length];if(m._n>=m.instanceMatrix.count)return true;
+    e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(x),y,v3Z(z));s.set(sc,sc,sc);m4.compose(p,q,s);m.setMatrixAt(m._n++,m4);return true};
+  lp.end=()=>Object.values(lp.meshes).forEach(fs=>fs.forEach(m=>{m.count=m._n;m.instanceMatrix.needsUpdate=true}));
+  // the simple figures this layer replaces stay hidden
+  [lf.body,lf.head,lf.cart,lf.horse,lf.sheepB,lf.sheepH,lf.hull,lf.sail].forEach(m=>{if(m){m.userData.off=true;m.visible=false}});
+  return lp}
 /* setup, syncing with the game, and drawing */
 function v3Init(){const T=THREE,cv=$('#cv3d');
   if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;V3.r.shadowMap.autoUpdate=false;document.addEventListener('visibilitychange',()=>{if(!document.hidden)v3Draw()});
@@ -3211,7 +3259,7 @@ function v3Init(){const T=THREE,cv=$('#cv3d');
     V3.wave=v3WaveTex();V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x3b6878,transparent:true,opacity:.8,shininess:40,specular:0x55656b,normalMap:V3.wave,normalScale:new T.Vector2(.3,.3)}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
     V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x27454e}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
     v3Controls(cv)}
-  V3.on=true;v3Msg('');document.body.classList.add('v3');const qs=$('#v3Q');if(qs){qs.value=v3Q();if(!qs.dataset.on){qs.dataset.on=1;qs.addEventListener('change',e=>v3SetQ(e.target.value))}}$('#v3fps').hidden=!UI.v3fps;if(v3Q()!=='low')v3KitLoad();$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
+  V3.on=true;v3Msg('');document.body.classList.add('v3');const qs=$('#v3Q');if(qs){qs.value=v3Q();if(!qs.dataset.on){qs.dataset.on=1;qs.addEventListener('change',e=>v3SetQ(e.target.value))}}$('#v3fps').hidden=!UI.v3fps;if(v3Q()!=='low'){v3KitLoad();v3LPLoad()}$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
   V3.tSig='';V3.oSig='';v3Resize();v3Sync()}
 function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map;
   const th=palette().grass+(document.documentElement.dataset.theme||''),tS=th+'|'+S.map.map(x=>x.t+(x.o||'')+(x.hs||x.b?1:0)+(x.p)).join(''),oS=S.map.map(x=>(x.b||'')+','+(x.hs||'')+','+(x.sm||'')).join(';');
@@ -3230,7 +3278,7 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
 function v3Resize(){if(!V3.r)return;const w=$('#mapwrap'),vw=w.clientWidth,vh=w.clientHeight;if(!vw||!vh)return;V3.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));V3.r.setSize(vw,vh,false);V3.cam.aspect=vw/vh;V3.cam.updateProjectionMatrix();v3Draw()}
 function v3Draw(){if(!V3.on)return;if(v3LifeOn()){if(!V3.loop){V3.last=0;V3.loop=requestAnimationFrame(v3Loop)}return}if(V3.raf)return;V3.raf=requestAnimationFrame(()=>{V3.raf=0;v3Render()})}
 function v3Clamp(){V3.dist=clamp(V3.dist,2.2,Math.max(W,H)*1.1);V3.pitch=clamp(V3.pitch,.38,1.45);V3.tx=clamp(V3.tx,-W/2,W/2);V3.tz=clamp(V3.tz,-H/2,H/2)}
-function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();if(UI.v3fps){const n=performance.now();V3.fc=(V3.fc||0)+1;if(!V3.ft)V3.ft=n;if(n-V3.ft>1000){$('#v3fps').textContent=Math.round(V3.fc*1000/(n-V3.ft))+' fps';V3.fc=0;V3.ft=n}}if(V3.life){const vis=UI.life!==false&&V3.dist<LIFE_DIST;V3.life.meshes.forEach(m=>{m.visible=vis})}const c=V3.cam,cp=Math.cos(V3.pitch);
+function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();if(UI.v3fps){const n=performance.now();V3.fc=(V3.fc||0)+1;if(!V3.ft)V3.ft=n;if(n-V3.ft>1000){$('#v3fps').textContent=Math.round(V3.fc*1000/(n-V3.ft))+' fps';V3.fc=0;V3.ft=n}}if(V3.life){const vis=UI.life!==false&&V3.dist<LIFE_DIST;V3.life.meshes.forEach(m=>{m.visible=vis&&!m.userData.off})}const c=V3.cam,cp=Math.cos(V3.pitch);
   c.position.set(V3.tx+Math.sin(V3.yaw)*cp*V3.dist,.1+Math.sin(V3.pitch)*V3.dist,V3.tz+Math.cos(V3.yaw)*cp*V3.dist);c.lookAt(V3.tx,.1,V3.tz);v3LOD();
   if(V3.scene.fog){V3.scene.fog.near=V3.dist*1.3;V3.scene.fog.far=V3.dist*3.6}V3.r.render(V3.scene,c);v3Labels()}
 // settlement names float above their towns; small places only when you are close
