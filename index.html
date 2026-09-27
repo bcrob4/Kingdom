@@ -277,6 +277,10 @@ const B={
   apartments:{n:'Apartment blocks',e:'🏢',c:2400,u:35,homes:200,nat:-2,tech:'steel',d:'Housing for 200 people.'},
   farm:{n:'Farm',e:'🌾',c:400,u:10,food:50,jobs:10,d:'Produces food for 50 people.'},
   granary:{n:'Granary',e:'🌾',c:500,u:5,jobs:3,d:'Stores half of any food surplus, up to 300, and releases it in a shortage or famine.'},
+  vineyard:{n:'Vineyard',e:'🍇',c:700,u:8,jobs:8,inc:25,hill:1,d:'Grows grapes for wine, a luxury the middle and upper classes prize. Hills only.'},
+  atelier:{n:'Luxury workshop',e:'💎',c:1800,u:25,jobs:20,inc:60,mid:12,tech:'steam',d:'Makes fine goods: clocks, jewelry and silverware, a luxury for the wealthy.'},
+  watch:{n:'Watch house',e:'🔔',c:400,u:8,jobs:4,d:'Watchmen patrol the streets, making fires rarer in this province.'},
+  firestation:{n:'Fire station',e:'🚒',c:1400,u:20,jobs:10,tech:'steam',d:'Fire engines protect this province, and help its neighbors, against fire.'},
   dock:{n:'Fishing dock',e:'🎣',c:500,u:10,food:45,jobs:8,coast:1,trade:30,d:'Produces food for 45 people. Coast only.'},
   greenhouse:{n:'Glasshouses',e:'🪴',c:1500,u:25,food:140,jobs:15,tech:'glass',d:'Year-round food for 140 people.'},
   market:{n:'Market',e:'🏪',c:600,u:10,jobs:25,inc:60,fun:40,mid:10,d:'Local commerce. Strengthens the merchants.'},
@@ -339,7 +343,7 @@ const B={
 };
 const RENAME={studio:'bank',tram:'rail',solar:'hydro'};
 // [heading, buildings, short label for the build menu's filter chips]
-const GROUPS=[['Housing',['cottage','townhouse','tenement','apartments'],'🏠 Housing'],['Food',['farm','dock','greenhouse','granary'],'🌾 Food'],['Economy',['market','workshop','factory','textile','steelworks','bank','tradeco','harbor','deptstore'],'🪙 Economy'],['Resources',['lumber','quarry','brickworks','mine','coalmine'],'⛏️ Resources'],['Public services',['clinic','hospital','school','library','printhouse','university','polytechnic','observatory','church'],'🏥 Services'],['Recreation and environment',['park','garden','tavern','coffeehouse','tent','cinema','fair'],'🌳 Leisure'],['Transport',['inn','ferry','canal','bus','rail','garage'],'🚌 Transport'],['Water and sanitation',['well','waterworks'],'🚰 Water'],['Energy',['wind','mill','charcoal','diesel','gasworks','hydro','powerstation'],'⚡ Energy'],['Military',['barracks','academy','fort','shipyard'],'🪖 Military'],['Tourism and prestige',['hotel','broadcaster','lighthouse'],'🗼 Prestige']];
+const GROUPS=[['Housing',['cottage','townhouse','tenement','apartments'],'🏠 Housing'],['Food',['farm','dock','greenhouse','granary'],'🌾 Food'],['Economy',['market','workshop','vineyard','atelier','factory','textile','steelworks','bank','tradeco','harbor','deptstore'],'🪙 Economy'],['Resources',['lumber','quarry','brickworks','mine','coalmine'],'⛏️ Resources'],['Public services',['clinic','hospital','watch','firestation','school','library','printhouse','university','polytechnic','observatory','church'],'🏥 Services'],['Recreation and environment',['park','garden','tavern','coffeehouse','tent','cinema','fair'],'🌳 Leisure'],['Transport',['inn','ferry','canal','bus','rail','garage'],'🚌 Transport'],['Water and sanitation',['well','waterworks'],'🚰 Water'],['Energy',['wind','mill','charcoal','diesel','gasworks','hydro','powerstation'],'⚡ Energy'],['Military',['barracks','academy','fort','shipyard'],'🪖 Military'],['Tourism and prestige',['hotel','broadcaster','lighthouse'],'🗼 Prestige']];
 const UPGR={inn:'bus',tavern:'coffeehouse',well:'waterworks',cottage:'townhouse',townhouse:'apartments',workshop:'factory',bus:'garage',wind:'hydro',farm:'greenhouse',tent:'fair',clinic:'hospital',school:'polytechnic',market:'deptstore',diesel:'powerstation'};
 const TIERS=[{n:'Settlement',p:0},{n:'Village',p:100},{n:'Town',p:300},{n:'City',p:1000},{n:'Great city',p:3000},{n:'Metropolis',p:10000},{n:'Great nation',p:30000},{n:'World power',p:100000}];
 const tierOf=p=>TIERS.filter(t=>p>=t.p).pop();
@@ -408,9 +412,10 @@ const LAWS={
     rights:{n:'Workers2019 rights',era:3,d:'Unions, safety and fair wages. Lower class +10, business revenue 10% lower. The population grows faster.',cls:{lower:10},grow:1.3,biz:.9}}},
   tax:{n:'Taxation',e:'🧾',o:{percapita:{n:'Per-capita tax',d:'Everyone pays the same amount. Hard on the poor, easy on the rich. Tax income +10%.',inc:1.1},proportional:{n:'Proportional tax',d:'Everyone pays the same share of income.'},progressive:{n:'Progressive tax',d:'The wealthy pay a higher share. Tax income -5%.',inc:.95}}},
   church:{n:'Religion',e:'⛪',o:{state:{n:'State religion',d:'The church is part of the state. Legitimacy +5.',leg:5},tolerance:{n:'Freedom of conscience',d:'Other faiths are tolerated.'},secular:{n:'Secularism',d:'Church and state are separate. Education +10.',learn:10}}},
+  minorities:{n:'Treatment of minorities',e:'🗣️',o:{tolerance:{n:'Tolerance',d:'Other cultures and faiths are left in peace. They adopt your ways slowly, but stay content.'},assimilation:{n:'Assimilation',d:'Your language and faith are taught and favored. Minorities adopt your ways steadily, with some resentment.'},suppression:{n:'Suppression',d:'Other languages and faiths are forbidden. Minorities adopt your ways fast, but they are angry, and their homelands are furious.'}}},
   trade:{n:'Trade policy',e:'⚖️',o:{protect:{n:'Protectionism',d:'Tariffs shield local business. Business revenue +15%, imports cost 20% more.'},mercantile:{n:'Mercantilism',d:'A balanced approach to trade.'},free:{n:'Free trade',d:'Exports earn 15% more and imports cost 10% less.'}}},
   welfare:{n:'Welfare',e:'🤲',o:{none:{n:'No welfare',d:'Families fend for themselves.'},relief:{n:'Poor relief',d:'Basic support for the poor. Lower class +8. Costs 1 per three lower-class citizens a month.',cls:{lower:8}},public:{n:'Public welfare',d:'Broad support. Lower class +12, middle class +6, healthcare +5. Costs 7 per ten citizens a month. The landowners grumble a little, and object strongly only if it runs the treasury into deficit or the wealthy pay for it through a progressive tax.',cls:{lower:12,middle:6},health:5},
-    insurance:{n:'National insurance',era:3,d:'Pensions, sickness and unemployment cover. Lower class +14, middle class +8, healthcare +10. Costs 1 per citizen a month. The landowners object only if it runs a deficit or the wealthy pay through a progressive tax.',cls:{lower:14,middle:8},health:10}}},
+    insurance:{n:'National insurance',era:3,d:'Pensions, sickness and unemployment cover. Lower class +14, middle class +8, healthcare +10. Costs about 1 per citizen a month, and more as the population ages. The landowners object only if it runs a deficit or the wealthy pay through a progressive tax.',cls:{lower:14,middle:8},health:10}}},
   press:{n:'Press',e:'📰',o:{censor:{n:'Censorship',d:'The crown controls the press. Legitimacy +3, and unrest builds more slowly.',leg:3},limited:{n:'Licensed press',d:'Newspapers need a royal license.'},free:{n:'Free press',d:'Anyone may publish. Approval +3, legitimacy -3.',leg:-3,hap:3}}},
   // new categories open with the eras (LAW_ERA); options with era open later still
   government:{n:'Government',e:'🏛️',o:{absolute:{n:'Absolute monarchy',d:'The crown rules alone.'},council:{n:'Royal council',d:'Great nobles advise the crown. Legitimacy +2, and laws pass a month sooner.',leg:2,months:-1},
@@ -442,19 +447,19 @@ const GNAMES=['Harrow','Vance','Albrecht','Montclair','Reyes','Oakley','Dunmore'
 const STRAT={attack:{n:'Attack',d:'Strength +15%, but losses are 50% higher.'},hold:{n:'Hold the line',d:'Losses 40% lower, but the front moves slowly.'},raid:{n:'Raid supplies',d:'Weakens the enemy a little more each month, up to 15%. The front moves more slowly, and raids can go wrong.'}};
 const gen=k=>S.general&&S.general.trait===k;
 const troopTarget=()=>Math.round(S.pop*ARMY[S.army].r*(S.mob?1.6:1)*(law('army').troops||1));
-const DEFAULT_LAWS={labor:'tenant',tax:'percapita',church:'state',trade:'mercantile',welfare:'none',press:'censor',government:'absolute',education:'church',army:'levies',suffrage:'landed'};
+const DEFAULT_LAWS={labor:'tenant',minorities:'assimilation',tax:'percapita',church:'state',trade:'mercantile',welfare:'none',press:'censor',government:'absolute',education:'church',army:'levies',suffrage:'landed'};
 // the era in which each newer law category opens
 const LAW_ERA={government:1,education:1,army:1,suffrage:3};
 
 /* ---------- interest groups ---------- */
 const IGS={
-  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{labor:{serfdom:20,tenant:5,free:-15,factory:-5,rights:-10},tax:{percapita:10,proportional:0,progressive:-15},trade:{protect:10,mercantile:0,free:-5},
+  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{minorities:{tolerance:-3,assimilation:3,suppression:3},labor:{serfdom:20,tenant:5,free:-15,factory:-5,rights:-10},tax:{percapita:10,proportional:0,progressive:-15},trade:{protect:10,mercantile:0,free:-5},
     government:{absolute:5,council:10,parliament:0,constitutional:-10},army:{levies:10,professional:0,conscription:5},suffrage:{landed:15,property:0,universal:-20}}},
-  clergy:{n:'Clergy',e:'⛪',d:'The established church and its faithful.',likes:{church:{state:20,tolerance:0,secular:-25},press:{censor:8,limited:0,free:-5},welfare:{none:-5,relief:10,public:0,insurance:0},
+  clergy:{n:'Clergy',e:'⛪',d:'The established church and its faithful.',likes:{minorities:{tolerance:-5,assimilation:5,suppression:8},church:{state:20,tolerance:0,secular:-25},press:{censor:8,limited:0,free:-5},welfare:{none:-5,relief:10,public:0,insurance:0},
     government:{absolute:10,council:5,parliament:-5,constitutional:-5},education:{church:15,state:-10,universal:-10}}},
   merchants:{n:'Merchants',e:'💼',cls:'middle',d:'Traders, bankers and business owners.',likes:{labor:{serfdom:-15,tenant:0,free:15,factory:-5,rights:-15},trade:{protect:-5,mercantile:5,free:15},tax:{percapita:5,proportional:5,progressive:-10},
     government:{absolute:-3,council:0,parliament:15,constitutional:10},army:{levies:0,professional:5,conscription:-10},suffrage:{landed:-3,property:15,universal:-5}}},
-  intelligentsia:{n:'Intelligentsia',e:'🎓',cls:'middle',d:'Writers, scholars and professionals.',likes:{church:{state:-10,tolerance:5,secular:15},press:{censor:-20,limited:0,free:15},welfare:{none:-5,relief:0,public:10,insurance:15},
+  intelligentsia:{n:'Intelligentsia',e:'🎓',cls:'middle',d:'Writers, scholars and professionals.',likes:{minorities:{tolerance:10,assimilation:0,suppression:-15},church:{state:-10,tolerance:5,secular:15},press:{censor:-20,limited:0,free:15},welfare:{none:-5,relief:0,public:10,insurance:15},
     government:{absolute:-5,council:0,parliament:10,constitutional:20},education:{church:-3,state:10,universal:15},suffrage:{landed:-3,property:5,universal:15}}},
   workers:{n:'Workers',e:'🔨',cls:'lower',d:'Factory hands, dockers and laborers.',likes:{labor:{serfdom:-25,tenant:0,free:10,factory:15,rights:25},tax:{percapita:-15,proportional:0,progressive:10},welfare:{none:-10,relief:5,public:15,insurance:20},
     government:{absolute:0,council:-3,parliament:0,constitutional:15},education:{church:0,state:5,universal:10},army:{levies:-2,professional:0,conscription:-15},suffrage:{landed:-5,property:-3,universal:20}}}
@@ -473,6 +478,7 @@ const EXPECT=[
   {k:'press',era:1,cat:'press',g:'intelligentsia',want:['free'],half:['limited']},
   {k:'conscience',era:1,cat:'church',g:'intelligentsia',want:['tolerance','secular']},
   {k:'assembly',era:1,cat:'government',g:'merchants',want:['parliament','constitutional'],half:['council']},
+  {k:'minor',era:2,cat:'minorities',g:'intelligentsia',want:['tolerance'],half:['assimilation']},
   {k:'labor',era:2,cat:'labor',g:'workers',want:['factory','rights'],half:['free'],sub:'welfare'},
   {k:'schools',era:2,cat:'education',g:'intelligentsia',want:['state','universal']},
   {k:'vote',era:3,cat:'suffrage',g:'workers',want:['universal'],half:['property']},
@@ -1185,20 +1191,21 @@ const monarchName=m=>`${title(m)} ${m.name}${m.num>1?' '+roman(m.num):''}`;
 const lockReason=d=>d.tech&&!hasTech(d.tech)?`Needs ${techOf(d.tech).n.toLowerCase()}`:'';
 
 function calc(){
-  const t={homes:0,jobs:0,food:0,health:0,learn:0,fun:0,move:100,power:0,water:50,inc:0,tour:0,up:0,nat:0,hap:0,leg:0,goods:0,trade:150,mid:0,mat:0,rp:0};
+  const t={homes:0,jobs:0,food:0,health:0,learn:0,fun:0,move:100,power:0,water:50,inc:0,tour:0,up:0,upH:0,upE:0,upI:0,nat:0,hap:0,leg:0,goods:0,trade:150,mid:0,mat:0,rp:0};
   // terrain: farms depend on the land, windmills catch more wind on hills
   // provinces tally their own homes, jobs and local services; the capital starts with more room to walk and natural water.
   // A province in revolt produces nothing, and one with riots (unrest 60+) three quarters.
   const own=provsOf('me'),pv={},LOC=['homes','jobs','health','learn','fun','move','water'];
   own.forEach(i=>{const P=S.prov[i];pv[i]={pop:P.pop||0,homes:0,jobs:0,health:0,learn:0,fun:0,move:i===0?100:40,water:i===0?50:20,hw:0,ha:0,hp:0,f:P.revolt?0:(P.unrest||0)>=60?.75:1}});
-  S.map.forEach((c,i)=>{if(c.o!=='me')return;[c.b,c.hs].forEach(bid=>{if(!bid)return;const d=B[bid];if(!d)return;const p=pv[c.p],f=(S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1)*(p?p.f:1);
+  S.map.forEach((c,i)=>{if(c.o!=='me')return;[c.b,c.hs].forEach(bid=>{if(!bid)return;const d=B[bid];if(!d)return;const p=pv[c.p],f=(S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1)*(p?p.f:1)*(fund('infra')===0?.9:1);
     const tm=bid==='farm'?farmMult(i):bid==='wind'&&c.hl?1.5:1;
-    for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]*DENS():d[k]*f*(k==='food'||k==='power'?tm:1);t.up+=bid===c.hs&&c.hp?0:(d.u||0);
+    for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]*DENS():d[k]*f*(k==='food'||k==='power'?tm:1);{const uu=bid===c.hs&&c.hp?0:(d.u||0);t.up+=uu;if(d.health)t.upH+=uu;else if(d.learn)t.upE+=uu}
     if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]*DENS():d[k]*f})})});
   // smallholdings: open land feeds some people without any farm, and fishing and sugar colonies send food home
   S.map.forEach((c,i)=>{t.food+=smallFood(i)});t.food+=colFood();
-  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;if(msHas('p8'))t.trade*=1.1;if(gp('canals'))t.trade*=1.25;if(gp('railnet'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
-  t.up*=ECON.up[era()];if(trait('frugal'))t.up*=.9;if(lg('stew',3))t.up*=.92;t.up*=1-altS('treasurer')*.02;
+  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;if(msHas('p8'))t.trade*=1.1;if(gp('canals'))t.trade*=1.25;if(heritage('mariners'))t.trade*=1.2;if(gp('railnet'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
+  const upRaw=t.up||1;t.up*=ECON.up[era()];if(trait('frugal'))t.up*=.9;if(lg('stew',3))t.up*=.92;t.up*=1-altS('treasurer')*.02;
+  { const f=t.up/upRaw,h=t.upH*f,e=t.upE*f;const xtra=(k,r)=>Math.max(0,FUNDM[fund(k)]-1)*S.pop*r;t.upH=h*FUNDM[fund('health')]+xtra('health',.08);t.upE=e*FUNDM[fund('edu')]+xtra('edu',.06);t.upI=(t.up-h-e)*FUNDM[fund('infra')]+xtra('infra',.06);t.up=t.upH+t.upE+t.upI}
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
   const forests=S.map.reduce((a,c)=>a+(c.o==='me'&&c.t==='f'?(!c.b?1:c.b==='lumber'?.5:0):0),0),D=k=>!!S.dec[k];
   // neighborhoods: how pleasant the average home is, weighted by how many people it houses
@@ -1207,9 +1214,9 @@ function calc(){
   const hoodAvg=hw?ha/hw:0,polluted=hw?hp/hw:0,hood=clamp(Math.round(hoodAvg*1.5),-5,5);
   const matCap=500+100*(cnt('lumber')+cnt('quarry')+cnt('brickworks')),matSale=Math.max(0,Math.round(((S.mat||0)+t.mat-matCap)*2));
   const coalImp=Math.max(0,cnt('diesel')-cnt('coalmine'))*20;
-  const pop=S.pop,soldiers=Math.min(S.troops,Math.round(pop*.2)),workers=Math.max(0,Math.round(pop*.6)-soldiers);
+  const pop=S.pop,soldiers=Math.min(S.troops,Math.round(pop*.2)),workers=Math.max(0,Math.round(pop*soc().adults)-soldiers);
   // a province with spare capacity shares 60% of it with its neighbours: people use a clinic or take a job next door
-  const eff={};own.forEach(i=>{eff[i]={};LOC.forEach(k=>eff[i][k]=pv[i][k]);pv[i].workers=Math.max(0,Math.round(pv[i].pop*.6-soldiers*pv[i].pop/Math.max(1,pop)))});
+  const eff={};own.forEach(i=>{eff[i]={};LOC.forEach(k=>eff[i][k]=pv[i][k]);pv[i].workers=Math.max(0,Math.round(pv[i].pop*soc().adults-soldiers*pv[i].pop/Math.max(1,pop)))});
   // the private economy: part of the workforce finds its own work in shops, crafts and trades, without any crown building
   own.forEach(i=>{const pj=Math.round(pv[i].workers*(PJ[era()]+(gp('skyline')?.05:0)));pv[i].jobs+=pj;eff[i].jobs+=pj;t.jobs+=pj});
   LOC.forEach(k=>{if(k==='homes')return;own.forEach(j=>{const need=k==='jobs'?pv[j].workers:pv[j].pop,spare=Math.max(0,pv[j][k]-need),ns=adjProvs(j).filter(q=>pv[q]);
@@ -1217,8 +1224,8 @@ function calc(){
   own.forEach(i=>{pv[i].emp=Math.min(pv[i].workers,eff[i].jobs)});
   const empSum=own.reduce((a,i)=>a+pv[i].emp,0),empScale=empSum?Math.min(1,Math.min(workers,t.jobs)/empSum):0;own.forEach(i=>{pv[i].emp*=empScale});
   const employed=Math.round(empSum*empScale);
-  const share={upper:.05+(S.laws.labor==='serfdom'?.02:0)};share.middle=clamp(.08+t.mid/pop*.5,.08,.45);share.lower=1-share.upper-share.middle;
-  const foodMult=[1,1.3,2,3][era()]*(1+(hasTech('rotation')?.15:0)+(hasTech('watermill')?.05:0)+(hasTech('agronomy')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100+(gp('canals')?.1:0)),goodsMult=1+(gp('railnet')?.15:0)+(hasTech('workshops')?.25:0)+(hasTech('coke')?.1:0)+(hasTech('massprod')?.25:0)+(eraB('workshop')?.2:0);
+  const S0=soc();if(S0.mid==null){S0.mid=clamp(.08+t.mid/Math.max(1,pop)*.5,.08,.45);S0.up=.05+(S.laws.labor==='serfdom'?.02:0)}const share={upper:S0.up,middle:S0.mid};share.lower=1-share.upper-share.middle;
+  const foodMult=[1,1.3,2,3][era()]*(1+(hasTech('rotation')?.15:0)+(hasTech('watermill')?.05:0)+(hasTech('agronomy')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100+(gp('canals')?.1:0)+(heritage('farmers')?.15:0)),goodsMult=1+(gp('railnet')?.15:0)+(hasTech('workshops')?.25:0)+(hasTech('coke')?.1:0)+(hasTech('massprod')?.25:0)+(eraB('workshop')?.2:0);
   const prod={food:t.food*foodMult+(S.granRel||0),energy:t.power,goods:t.goods*goodsMult};
   const rat=D('ration')?.8:1;const dem={food:Math.round(pop*rat),energy:Math.round(pop*rat),goods:Math.round(pop*share.middle+pop*share.upper*3)};
   let cap=t.trade;const tr={};let expV=0,impV=0;
@@ -1244,27 +1251,28 @@ function calc(){
   NEEDS.forEach(n=>{sc[n.k]=clamp(Math.round(sc[n.k]+modSum(n.k)),0,100)});
   sc.health=clamp(Math.round(sc.health-(100-sc.water)*.25),0,100);
   // each province's local needs; the kingdom's figure for them is the average weighted by population
-  const bonus={health:(D('lunches')?5:0)+(hasTech('hygiene')?10:0)+(gp('nhs')?15:0)+(hasTech('medicine')?15:0)+(hasTech('herbalism')?5:0)+(hasTech('vaccination')?10:0)+(hasTech('antibiotics')?10:0)+(eraB('progress')?10:0)+(law('welfare').health||0),
-    learn:(D('lunches')?10:0)+(law('church').learn||0)+(law('education').learn||0)+(hasTech('philosophy')?5:0)+(eraB('progress')?10:0),fun:(D('fourday')?15:0)+(hasTech('gaslight')?10:0),move:(D('freebus')?20:0)+(hasTech('automobile')?20:0)+(gp('railnet')?15:0),water:0};
+  const bonus={health:(D('lunches')?5:0)+FUND.health.v[fund('health')]+(hasTech('hygiene')?10:0)+(gp('nhs')?15:0)+(hasTech('medicine')?15:0)+(hasTech('herbalism')?5:0)+(hasTech('vaccination')?10:0)+(hasTech('antibiotics')?10:0)+(eraB('progress')?10:0)+(law('welfare').health||0),
+    learn:(D('lunches')?10:0)+FUND.edu.v[fund('edu')]+(law('church').learn||0)+(law('education').learn||0)+(hasTech('philosophy')?5:0)+(eraB('progress')?10:0),fun:(D('fourday')?15:0)+(hasTech('gaslight')?10:0),move:(D('freebus')?20:0)+FUND.infra.v[fund('infra')]+(hasTech('automobile')?20:0)+(gp('railnet')?15:0),water:0};
   own.forEach(i=>{const p=pv[i],e=eff[i],pp=Math.max(1,p.pop),o=p.pop/Math.max(1,p.homes),s={};
     s.homes=o<=.8?100:o<=1?100-(o-.8)/.2*45:Math.max(0,55-(o-1)*110);s.jobs=p.workers?Math.min(100,e.jobs/p.workers*100):100;
     ['health','learn','fun','move','water'].forEach(k=>{s[k]=Math.min(100,e[k]/pp*100+bonus[k])});s.health-=p.hw?p.hp/p.hw*12:0;if(o>1)s.health-=(o-1)*40;
     LOC.forEach(k=>{s[k]=clamp(Math.round(s[k]+modSum(k)),0,100)});s.health=clamp(Math.round(s.health-(100-s.water)*.25),0,100);
     p.sc=s;p.hood=clamp(Math.round((p.hw?p.ha/p.hw:0)*1.5),-5,5)});
   if(pop>0&&own.length)LOC.forEach(k=>{sc[k]=Math.round(own.reduce((a,i)=>a+pv[i].sc[k]*pv[i].pop,0)/pop)});
+  taxFit();const LX=luxCount();
   const clsFrom=s=>{const o={};Object.entries(CLASSES).forEach(([k,C])=>{const ws=Object.entries(C.w),tot=ws.reduce((a,[,w])=>a+w,0);
-    const v=ws.reduce((a,[n,w])=>a+s[n]*w,0)/tot+(10-S.tax)*C.tax[S.laws.tax]-(colIdx-1)*C.col+(C.base||0)+((law('labor').cls||{})[k]||0)+((law('welfare').cls||{})[k]||0)-6;
+    const v=ws.reduce((a,[n,w])=>a+s[n]*w,0)/tot+(10-taxc()[k])*C.tax[S.laws.tax]+(k==='upper'?Math.min(12,LX*2):k==='middle'?Math.min(9,LX*1.5):0)-(colIdx-1)*C.col+(C.base||0)+((law('labor').cls||{})[k]||0)+((law('welfare').cls||{})[k]||0)-6;
     o[k]=clamp(Math.round(v),0,100)});return o};
   const cls=clsFrom(sc);
   const debt=S.coins<0?Math.min(10,-S.coins/500):0,weary=S.war?Math.min(15,S.war.months*1.2):0;
-  const quality=1+cnt('barracks')*.08+(law('army').q||0)+Math.min(.3,cnt('academy')*.1)+(hasTech('gunpowder')?.15:0)+(eraB('iron')?.15:0)+msCount(['c1','c2','c3'])*.03+(lg('war',1)?.05:0)+(lg('war',2)&&S.general&&S.general.kid!=null?.1:0)+(hlHas('sword')?.03:0)+(legendOn('heroic')?.03:0)+offT('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
+  const quality=FUND.def.q[fund('def')]*(1+(heritage('warriors')?.15:0)+cnt('barracks')*.08+(law('army').q||0)+Math.min(.3,cnt('academy')*.1)+(hasTech('gunpowder')?.15:0)+(eraB('iron')?.15:0)+msCount(['c1','c2','c3'])*.03+(lg('war',1)?.05:0)+(lg('war',2)&&S.general&&S.general.kid!=null?.1:0)+(hlHas('sword')?.03:0)+(legendOn('heroic')?.03:0)+offT('marshal')*.03+(hasTech('drill')?.15:0)+(hasTech('artillery')?.25:0)),supply=clamp(Math.min(sc.food,sc.power)/100,gen('quartermaster')?.75:.4,1),morale=.6+(S.war?(S.hap+S.war.support)/2:S.hap)/250;
   const fortN=S.map.reduce((a,x)=>a+(x.o==='me'&&x.b==='fort'?(x.hl?2:1):0),0);
   const str=Math.round(soldiers*quality*supply*morale*10)/10,forts=Math.min(1.5,1+fortN*.1);
   // approval: each province's mood from its own needs and neighbourhoods plus national effects, less a penalty until it's integrated.
   // The kingdom's target is the average of the provinces, weighted by population.
   const common=t.hap+(hasPal('gardens')?1:0)+msHap()+(gp('cathedral')?1:0)+(eraB('plenty')?3:0)+(law('government').hap||0)+(sufOn()?(law('suffrage').hap||0):0)+(law('army').hap||0)+(D('festival')?4:0)+(law('press').hap||0)+modSum('hap')-debt-weary-(D('ration')?4:0)-(S.mob?3:0);
   own.forEach(i=>{const p=pv[i],c2=clsFrom(Object.assign({},sc,p.sc));p.integPen=(100-(S.prov[i].integ??100))*.1;
-    p.target=clamp(Math.round(c2.lower*share.lower+c2.middle*share.middle+c2.upper*share.upper+common+p.hood-p.integPen+govMood(S.prov[i])+provMod(S.prov[i])+(S.prov[i].app!=null?3:0)-(p.pop>p.homes?Math.min(25,(p.pop/Math.max(1,p.homes)-1)*40):0)),0,100)});
+    p.target=clamp(Math.round(c2.lower*share.lower+c2.middle*share.middle+c2.upper*share.upper+common+p.hood-p.integPen+govMood(S.prov[i])+provMod(S.prov[i])+(S.prov[i].app!=null?3:0)-(p.pop>p.homes?Math.min(25,(p.pop/Math.max(1,p.homes)-1)*40):0)-minPen(S.prov[i])),0,100)});
   const integPen=pop?own.reduce((a,i)=>a+pv[i].integPen*pv[i].pop,0)/pop:0;
   const target=pop&&own.length?clamp(Math.round(own.reduce((a,i)=>a+pv[i].target*pv[i].pop,0)/pop),0,100)
     :clamp(Math.round(cls.lower*share.lower+cls.middle*share.middle+cls.upper*share.upper+common+hood),0,100);
@@ -1284,7 +1292,7 @@ function calc(){
     if(G.cls)m+=(cls[G.cls]-50)*.4;
     // public welfare only really bothers the landowners when they end up paying: through a deficit, or a progressive tax
     if(k==='landowners'&&['public','insurance'].includes(L.welfare))m-=welfareGrudge();
-    if(k==='landowners')m+=(eraB('old2')?5:0)+(hlHas('tapestry')?4:0)+(hasPal('hall')?3:0)-2*Math.max(0,hh().estates-2)+(rentIdx-1)*8-(D('rentcap')?12:0)+(S.army-1)*3;
+    if(k==='landowners')m+=(eraB('old2')?5:0)+(hlHas('tapestry')?4:0)+(fund('def')===4?5:0)+(hasPal('hall')?3:0)-2*Math.max(0,hh().estates-2)+(rentIdx-1)*8-(D('rentcap')?12:0)+(S.army-1)*3;
     // merchants accept a big army the kingdom can afford, and resent one paid for by running into debt; mobilizing takes their workers
     if(k==='merchants')m-=Math.max(0,S.army-2)*(inDeficit()?5:1.5)+(S.mob?8:0);
     if(k==='clergy')m+=(eraB('old3')?5:0)+offT('chaplain')*2+(hasPal('chapel')?5:0)+cnt('church')*2+(trait('pious')?10:0)+(hlHas('relic')?5:0)+(legendOn('holy')?5:0)+(gp('cathedral')?10:0);
@@ -1296,24 +1304,24 @@ function calc(){
     m+=(COURT[S.court].ig[k]||0)*(k==='workers'&&(COURT[S.court].ig[k]||0)<0?(cls.lower<45?1.5:cls.lower>=65?.4:1):1);m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
   const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(lg('blood',3)?4:0)+(hlHas('crown')?2:0)+(legendOn()?3:0)+(S.empire?3:0)+(gp('cathedral')?3:0)+(gp('fair')?4:0)+standTier().leg+(unity()>=80?2:unity()<20?-3:0)+Math.min(3,cadets().filter(c=>c.loy>=60).length)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+offT('chancellor')+(hasPal('hall')?2:0)+msLeg()+(hasTech('radio')?2:0)+3*oldWays()+(law('government').leg||0)+(sufOn()?(law('suffrage').leg||0):0)+Math.min(3,rejected().length)),0,100);
   // research
-  const rp=Math.round((12+t.learn/20+t.rp)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(lg('learn',1)?1.05:1)*(lg('learn',3)?1.1:1)*(hlHas('chronicle')?1.03:1)*(S.ov&&S.ov.adv>S.turn?1.15:1)*(gp('academy')?1.15:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(law('education').rp||1)*(eraB('reason')?1.15:1)*(1+msCount(['a1','a2'])*.03+(msHas('a6')?.05:0)+(msHas('p11')?.05:0))*Math.pow(.9,oldWays()));
+  const rp=Math.round((12+t.learn/20+t.rp)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(lg('learn',1)?1.05:1)*(lg('learn',3)?1.1:1)*(hlHas('chronicle')?1.03:1)*(S.ov&&S.ov.adv>S.turn?1.15:1)*(gp('academy')?1.15:1)*FUND.edu.rp[fund('edu')]*(.9+soc().lit/400)*(heritage('scholars')?1.15:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(law('education').rp||1)*(eraB('reason')?1.15:1)*(1+msCount(['a1','a2'])*.03+(msHas('a6')?.05:0)+(msHas('p11')?.05:0))*Math.pow(.9,oldWays()));
   // money
   const fill=t.jobs?employed/t.jobs:0;
   // provinces pay half their taxes at first and the full amount once integrated
   const taxEmp=own.reduce((a,i)=>a+pv[i].emp*(.5+.5*(S.prov[i].integ??100)/100),0);
-  const tax=taxEmp*(1+offT('treasurer')*.02+msTax()+(lg('stew',1)?.03:0))*S.tax/100*ECON.tax*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1);
-  const biz=t.inc*fill*(L.trade==='protect'?1.15:1)*(hasTech('charter')?1.1:1)*(law('labor').biz||1)*(hasTech('massprod')?1.1:1)*(eraB('commerce')?1.1:1)*(eraB('workshop')?1.1:1);
+  const tmul=(1+offT('treasurer')*.02+msTax()+(lg('stew',1)?.03:0))*ECON.tax/100*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1)*(heritage('merchants')?1.08:1),Tc=taxc(),tW=TAXK.reduce((a,k)=>a+share[k]*TAXW[k],0)||1,taxBy={};TAXK.forEach(k=>{taxBy[k]=taxEmp*tmul*share[k]*TAXW[k]*Tc[k]/tW});const tax=TAXK.reduce((a,k)=>a+taxBy[k],0);
+  const biz=t.inc*fill*(heritage('merchants')?1.15:1)*(L.trade==='protect'?1.15:1)*(hasTech('charter')?1.1:1)*(law('labor').biz||1)*(hasTech('massprod')?1.1:1)*(eraB('commerce')?1.1:1)*(eraB('workshop')?1.1:1);
   const tour=t.tour*(.4+(sc.fun+sc.nature)/250)*(D('ads')?1.4:1)*(gp('crystal')?1.5:1)*(gp('fair')?2:1)*(1+modSum('tour')/100);
   const extra=modSum('inc');
   const decCost=(D('freebus')?pop:0)+(D('lunches')?pop:0)+(D('festival')?150:0)+(D('green')?120:0)+(D('ads')?100:0);
-  const welfare=Math.round(L.welfare==='relief'?pop*share.lower*.35:L.welfare==='public'?pop*.7:L.welfare==='insurance'?pop:0);
-  const schools=Math.round(pop*(law('education').cost||0)),stipends=IGIDS.reduce((a,g)=>a+STIP[stipend(g)],0),cooptCost=IGIDS.filter(coopted).length*COOPT_MONTHLY;
+  const welfare=Math.round(L.welfare==='relief'?pop*share.lower*.35:L.welfare==='public'?pop*.7:L.welfare==='insurance'?pop*(.4+soc().old*3):0);
+  const schools=Math.round(pop*(law('education').cost||0)*FUNDM[fund('edu')]),stipends=IGIDS.reduce((a,g)=>a+STIP[stipend(g)],0),cooptCost=IGIDS.filter(coopted).length*COOPT_MONTHLY;
   const interest=S.coins<0?Math.ceil(Math.min(-S.coins*.015*(hasTech('banking')?.5:1)*(1-offT('treasurer')*.1),Math.max(50,(tax+biz)*.4))):0;const hc=hhCosts();
   const income=[['Taxes',tax],['Business revenue',biz],['Tourism',tour],['Exports',expV],['Surplus materials sold',matSale],['Royal estates',hc.estates],['Overseas trade',ovTradeInc()],['Colonies',colInc()]];if(extra>0)income.push(['Agreements and grants',extra]);
-  const army=Math.round((soldiers*4+(S.war?soldiers*8:0))*(law('army').armyCost||1))+S.navy*20+(S.general?30:0);
-  const costs=[['Building upkeep',t.up],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest],['Foreign protection',S.ov&&S.ov.prot?PROT_COST:0],['Appanages',appanages().length*APP_COST]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
+  const army=Math.round(((soldiers*4+(S.war?soldiers*8:0))*(law('army').armyCost||1)+S.navy*20+(S.general?30:0))*FUNDM[fund('def')]);
+  const costs=[['Health services',t.upH],['Schools and learning',t.upE],['Infrastructure and upkeep',t.upI],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest],['Foreign protection',S.ov&&S.ov.prot?PROT_COST:0],['Appanages',appanages().length*APP_COST]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
   const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
-  return{t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
+  return{taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
 
 /* ---------- events ---------- */
 const summer=()=>S.month>=5&&S.month<=7,winter=()=>S.month===11||S.month<=1;
@@ -1432,7 +1440,7 @@ function crisisEvent(n){const Nn=NATIONS[n];
     {l:'Stand firm',f(){tenA(n,25);relA(n,-10);addMod('leg',5,12,`Stood up to ${Nn.n}`);if(S.tension[n]>=100)return embargoNow(n);return`${Nn.n} backs down for now, but tension rises.`}}]}}
 function transfer(i,to,how){if(i===0)return;const P=S.prov[i],from=P.o,tiles=provTiles(i);delete P.revolt;delete P.pm;if(P.app!=null){const cb=cadetById(P.app);if(cb)cb.loy=Math.max(0,cb.loy-20);delete P.app}if(how!=='settled'&&how!=='revolt'&&(to==='me'||from==='me'))chron(to==='me'?'🗺️':'🏳️',`${P.name} ${to==='me'?'joins the kingdom':`passes to ${NATIONS[to]?NATIONS[to].n:'the wilds'}`}`,{war:'Won in war.',treaty:'By treaty.',inherited:'Inherited through a royal marriage.',demand:'By demand.',bought:'Purchased.'}[how]||'');
   // a province's people stay with it; new provinces start out only partly integrated, and conquered ones restless
-  if(to==='me'){tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];S.gained++;if(['war','demand','treaty'].includes(how)){S.conq=(S.conq||0)+1;addRen(10)}
+  if(to==='me'){newPeople(P,from);tiles.forEach(t=>{S.map[t].o='me'});if(from!=='wild'&&how!=='bought'&&how!=='inherited')S.fclaims[i]=from;delete S.claims[i];S.gained++;if(['war','demand','treaty'].includes(how)){S.conq=(S.conq||0)+1;addRen(10)}
     P.integ=P.core==='me'?80:{settled:70,inherited:60,bought:40}[how]||15;P.unrest=['war','demand','treaty'].includes(how)?25:5;delete P.hap}
   else{tiles.forEach(t=>{S.map[t].o=to});if(from==='me'&&how!=='sold')S.claims[i]=true;delete S.fclaims[i];const gk=govKid(P);if(gk){gk.role=null;delete gk.gov}delete P.gov}
   delete P.revolt;P.o=to;P.settle=null;syncPop()}
@@ -1487,7 +1495,7 @@ function termLabel(k){if(k==='rep1')return'🪙1,000 in reparations';if(k==='rep
 function ourTermOptions(){const W_=S.war,o=[];S.prov.forEach((P,i)=>{if(W_.foes.includes(P.o)&&(W_.occ[i]==='me'||i===W_.goal))o.push('p'+i)});o.push('rep1','rep2');if(provsOf('me').some(i=>W_.foes.includes(S.fclaims[i])))o.push('renounce');o.push('humiliate');return o}
 function theirTerms(pts){const W_=S.war,o=[];const cand=[...provsOf('me').filter(i=>i!==0&&W_.occ[i]==='them'),...(S.prov[W_.goal].o==='me'&&W_.goal!==0&&W_.occ[W_.goal]!=='them'?[W_.goal]:[])];
   cand.forEach(i=>{const k='p'+i;if(!o.includes(k)&&termCost(k)<=pts){o.push(k);pts-=termCost(k)}});if(pts>=25){o.push('rep2');pts-=25}else if(pts>=10){o.push('rep1');pts-=10}return o}
-function finishWar(title,gain,lose,extra){const W_=S.war,n=W_.main,msgs=[];
+function finishWar(title,gain,lose,extra){const W_=S.war,n=W_.main,msgs=[];S.boom=S.turn+24;
   gain.forEach(k=>{if(k[0]==='p'){const i=+k.slice(1),from=S.prov[i].o;transfer(i,'me','war');msgs.push(`${S.prov[i].name} is now yours.`)}
     if(k==='rep1'||k==='rep2'){const v=k==='rep1'?1000:2500;S.coins+=v;msgs.push(`They pay 🪙${fmt(v)}.`)}
     if(k==='renounce'){provsOf('me').forEach(i=>{if(W_.foes.includes(S.fclaims[i]))delete S.fclaims[i]});msgs.push('They renounce their claims.')}
@@ -1636,7 +1644,7 @@ const ovRelA=(p,v)=>{const O=ov();O.rel[p]=clamp(O.rel[p]+v,0,100)};
 const harbors=()=>cnt('harbor');
 const ovRoutes=()=>S.ov?Object.keys(S.ov.routes).filter(p=>S.ov.routes[p]):[];
 const routeLive=p=>{const r=S.ov&&S.ov.routes[p];return!!r&&!(r.off>0)&&!(S.ov.block>0)};
-const routeInc=p=>Math.round(OVP[p].trade*(1+(era()>=2?.5:0)+(era()>=3?.5:0))*(.6+ov().rel[p]/125));
+const routeInc=p=>Math.round(OVP[p].trade*(heritage('mariners')?1.2:1)*(1+(era()>=2?.5:0)+(era()>=3?.5:0))*(.6+ov().rel[p]/125));
 const ovTradeInc=()=>ovRoutes().filter(routeLive).reduce((a,p)=>a+routeInc(p),0);
 const myColonies=()=>(S.ov?S.ov.isl:[]).filter(I=>I.o==='me');
 const colInc=()=>Math.round(myColonies().reduce((a,I)=>a+ISLRES[I.res].inc,0)*(era()>=2?1.3:1)*(msHas('g6')?1.2:1));
@@ -1743,6 +1751,119 @@ function gpHTML(){const G=gpS(),cur=G.cur&&GP[G.cur.id];
     return`<div class="row"><span class="em" ${!open&&!done?'style="opacity:.45"':''}>${done?P.e:open?P.e:'🔒'}</span><div class="grow"><b>${P.n}</b><small>${P.d} ${done?`Completed in year ${done.y}, under ${done.who}.`:building?`Under construction: ${G.cur.left} month${G.cur.left===1?'':'s'} to go.`:open?`Takes ${P.m/12} year${P.m>12?'s':''}.`:`Opens in the ${ERAS[P.era].n}.`}</small>${building?bar(100-G.cur.left/P.m*100,'var(--good)'):''}</div>
       ${done?'<span class="tag" style="color:var(--good)">Built</span>':building?`<button class="btn" data-act="gpCancel" id="gpCancel">Cancel</button>`:open?`<button class="btn" data-act="gpStart" data-arg="${id}" ${G.cur||S.coins<P.c?'disabled':''}>🪙${fmt(P.c)}</button>`:''}</div>`}).join('');
   return`<h2>🏗️ Grand projects</h2><p class="hint">Great national works with lasting rewards. Each is paid for up front and built once. Only one can be under construction at a time${cur?`: ${cur.n.toLowerCase()} is being built`:''}. Cancelling refunds half the cost.</p><div class="card">${rows}</div>`}
+
+/* ---------- the budget: taxes by class, spending priorities, spending groups and history ---------- */
+// each class pays its own rate; the wealthier a class, the more each point of its tax raises
+const TAXW={lower:1,middle:2.5,upper:6},TAXK=['lower','middle','upper'];
+const CLN={lower:'Lower class',middle:'Middle class',upper:'Upper class'};
+function taxc(){if(!S.taxc)S.taxc={lower:S.tax,middle:S.tax,upper:S.tax};return S.taxc}
+// the tax law shapes the rates: per-capita tax means one rate for everyone; progressive tax means the wealthy never pay a lower rate than the poor
+function taxFit(changed){const T=taxc(),L=S.laws.tax;
+  if(L==='percapita'){const v=T[changed||'lower'];TAXK.forEach(k=>T[k]=v)}
+  else if(L==='progressive'){if(changed==='upper'){T.middle=Math.min(T.middle,T.upper);T.lower=Math.min(T.lower,T.middle)}else if(changed==='middle'){T.lower=Math.min(T.lower,T.middle);T.upper=Math.max(T.upper,T.middle)}else{T.middle=Math.max(T.middle,T.lower);T.upper=Math.max(T.upper,T.middle)}}
+  S.tax=Math.round((T.lower+T.middle+T.upper)/3)}
+// spending priorities: each area's funding level scales its cost and its results
+const FUNDL=['Minimal','Low','Standard','High','Lavish'],FUNDM=[.4,.7,1,1.4,1.9];
+const FUND={
+  health:{n:'Health',e:'🏥',v:[-20,-10,0,8,15],eff:['Healthcare −20.','Healthcare −10.','The usual care.','Healthcare +8.','Healthcare +15.']},
+  edu:{n:'Education',e:'📚',v:[-20,-10,0,8,15],rp:[.8,.9,1,1.1,1.2],eff:['Education −20, research −20%.','Education −10, research −10%.','The usual schooling.','Education +8, research +10%.','Education +15, research +20%.']},
+  infra:{n:'Infrastructure',e:'🛤️',v:[-15,-5,0,8,12],eff:['Transport −15, and buildings produce 10% less as they fall into disrepair.','Transport −5.','The usual upkeep.','Transport +8.','Transport +12, and the population grows 5% faster.']},
+  def:{n:'Defense',e:'🛡️',q:[.7,.85,1,1.1,1.2],eff:['Army quality −30%.','Army quality −15%.','The usual training and supplies.','Army quality +10%.','Army quality +20%, and the landowners +5.']}};
+const fund=k=>{const F=S.fund||(S.fund={});return F[k]==null?2:F[k]};
+// spending falls into four groups
+const BGRP={Crown:['Court life','Court offices','Royal allowances','Palace upkeep','Royal tutors','Appanages','Stipends','Co-opted leaders'],Defense:['Army and navy','Foreign protection'],Debt:['Debt interest','Obligations and repayments']};
+const BCOL={Crown:'#7F77DD',State:'#1D9E75',Defense:'#D85A30',Debt:'#888780'};
+function budgetGroups(c){const g={Crown:0,State:0,Defense:0,Debt:0};c.costs.forEach(([l,v])=>{const k=Object.keys(BGRP).find(k=>BGRP[k].includes(l))||'State';g[k]+=v});return g}
+function budgetHTML(c){const T=taxc(),pc=S.laws.tax==='percapita';
+  const taxRow=(k,lab,sub)=>`<div class="row"><div class="grow"><b>${lab} <span data-taxv="${k}">${T[k==='all'?'lower':k]}%</span></b><small>${sub}</small><input type="range" data-tax="${k}" min="0" max="30" step="1" value="${T[k==='all'?'lower':k]}" aria-label="${lab} tax rate"></div></div>`;
+  const taxes=pc?taxRow('all','Everyone pays',`Per-capita tax: one rate for all. Raises 🪙${fmt(c.tax)} a month. It falls hardest on the lower class (mood ${c.cls.lower}).`)
+    :TAXK.map(k=>taxRow(k,CLN[k],`Raises 🪙${fmt(c.taxBy[k])} a month. Mood ${c.cls[k]}.`)).join('');
+  const fundRow=(k,F)=>{const lv=fund(k);return`<div class="row"><span class="em">${F.e}</span><div class="grow"><b>${F.n}</b> <span class="num" style="float:right">🪙${fmt(c.fundCost[k])}</span><small>${F.eff[lv]}</small><div class="seg">${FUNDL.map((l,j)=>`<button class="btn ${j===lv?'on':''}" data-act="fund" data-arg="${k}" data-n="${j}" aria-pressed="${j===lv}">${l}</button>`).join('')}</div></div></div>`};
+  const court=`<div class="row"><span class="em">🎩</span><div class="grow"><b>Court and administration</b> <span class="num" style="float:right">🪙${fmt(courtCost())}</span><small>${COURT[S.court].d}</small><div class="seg">${COURT.map((C,j)=>`<button class="btn ${j===S.court?'on':''}" data-act="courtLvl" data-n="${j}" aria-pressed="${j===S.court}">${C.n}</button>`).join('')}</div></div></div>`;
+  const g=budgetGroups(c),tot=Object.values(g).reduce((a,b)=>a+b,0)||1;
+  const barH=`<div style="display:flex;height:14px;border-radius:4px;overflow:hidden;margin:10px 0 8px">${Object.entries(g).filter(([,v])=>v>0).map(([k,v])=>`<div style="width:${v/tot*100}%;background:${BCOL[k]}" title="${k}"></div>`).join('')}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem;color:var(--muted)">${Object.entries(g).map(([k,v])=>`<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${BCOL[k]}"></span> ${k} ${Math.round(v/tot*100)}% (🪙${fmt(v)})</span>`).join('')}</div>`;
+  // yearly averages of monthly income and spending
+  const F=S.fin||[],yrs=[];for(let e=F.length;e>0&&yrs.length<5;e-=12){const s=F.slice(Math.max(0,e-12),e);yrs.unshift([s.reduce((a,x)=>a+x[0],0)/s.length,s.reduce((a,x)=>a+x[1],0)/s.length])}
+  const mx=Math.max(1,...yrs.flat())*1.1,bw=Math.min(60,340/Math.max(1,yrs.length));
+  const hist=yrs.length?`<svg viewBox="0 0 360 130" width="100%" role="img" aria-label="Average monthly income and spending, year by year">${yrs.map(([a,b],k)=>{const x=10+k*(bw+12),ha=a/mx*100,hb=b/mx*100,y=S.year-(yrs.length-1-k);
+      return`<rect x="${x}" y="${108-ha}" width="${bw/2-2}" height="${ha}" rx="3" fill="#1D9E75"><title>Income ${fmt(a)}</title></rect><rect x="${x+bw/2}" y="${108-hb}" width="${bw/2-2}" height="${hb}" rx="3" fill="#D85A30"><title>Spending ${fmt(b)}</title></rect><text x="${x+bw/2}" y="124" text-anchor="middle" font-size="11" fill="currentColor">${k===yrs.length-1?'This year':'Year '+y}</text>`}).join('')}</svg>
+    <div style="display:flex;gap:14px;font-size:.85rem;color:var(--muted)"><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1D9E75"></span> Income</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#D85A30"></span> Spending</span><span>Average per month</span></div>`
+    :'<p class="hint">The chart fills in as the months pass.</p>';
+  return`<h2>🧾 Taxes by class</h2><p class="hint">${pc?'Your tax law is per-capita tax, so everyone pays the same rate. Change the tax law in the Court tab to tax each class separately.':S.laws.tax==='progressive'?'Under progressive tax, a wealthier class never pays a lower rate than a poorer one.':'Under proportional tax, each class can be taxed at its own rate.'} Heavier taxes anger the class that pays them.</p><div class="card">${taxes}</div>
+    <h2>⚖️ Spending priorities</h2><p class="hint">Fund each area more for better results, or less to save money. Costs grow with the buildings you have.</p><div class="card">${Object.entries(FUND).map(([k,F])=>fundRow(k,F)).join('')}${court}</div>
+    <h2>📊 Where the money goes</h2><div class="card"><div class="row"><div class="grow">${barH}</div></div></div>
+    <h2>📈 The last five years</h2><div class="card"><div class="row"><div class="grow">${hist}</div></div></div>`}
+
+/* ---------- society: literacy and rising classes, luxuries, culture and faith, age structure, incidents, heritage ---------- */
+// S.soc = {lit, mid, up, midT, upT, kids, adults, old, bM, mM}
+function soc(){if(!S.soc)S.soc={lit:10,mid:null,up:null,kids:.38,adults:.55,old:.07,bM:0,mM:0};return S.soc}
+// heritage: chosen when a kingdom is founded, a lasting mark on its people
+const HERIT={mariners:{n:'Mariners',e:'⚓',d:'Trade capacity +20%, and overseas routes earn 20% more.'},farmers:{n:'Farmers',e:'🌾',d:'Food +15%, and the population grows 10% faster.'},
+  warriors:{n:'Warriors',e:'⚔️',d:'Army quality +15%.'},scholars:{n:'Scholars',e:'📜',d:'Research +15%, and literacy rises faster.'},merchants:{n:'Merchants',e:'💰',d:'Tax income +8%, and business revenue +15%.'}};
+const heritage=k=>typeof S!=='undefined'&&S&&S.herit===k;
+// luxuries: each different one cheers the middle and upper classes
+const LUX={spices:{n:'Spices',e:'🌶️',src:'A trade route to Carthen, or a spice colony'},sugar:{n:'Sugar',e:'🍬',src:'A trade route to Carthen, or a sugar colony'},
+  silk:{n:'Silk',e:'🧣',src:'A trade route to Serenth'},tea:{n:'Tea',e:'🍵',src:'A trade route to Serenth'},porcelain:{n:'Porcelain',e:'🏺',src:'A trade route to Serenth, from the Enlightenment'},
+  furs:{n:'Furs',e:'🦊',src:'A trade route to Valdor'},wine:{n:'Wine',e:'🍷',src:'A vineyard on the hills'},finery:{n:'Fine goods',e:'💎',src:'A luxury workshop, from the Age of Industry'}};
+function luxHave(){const h=new Set(),O=S.ov;
+  if(O&&O.known){if(routeLive('serenth')){h.add('silk');h.add('tea');if(era()>=1)h.add('porcelain')}if(routeLive('carthen')){h.add('spices');h.add('sugar')}if(routeLive('valdor'))h.add('furs');
+    O.isl.forEach(I=>{if(I.o==='me'){if(I.res==='spice')h.add('spices');if(I.res==='sugar')h.add('sugar')}})}
+  if(has('vineyard'))h.add('wine');if(has('atelier'))h.add('finery');return h}
+const luxCount=()=>luxHave().size;
+// culture and faith: provinces won from a neighbor keep that neighbor's people, who adopt your ways over time
+const FAITH={me:'the Island Church',norvik:'the Northern Rite',solenne:'the Island Church',aurelia:'the Sun Creed'};
+const CULN={norvik:'Norvik',solenne:'Solennais',aurelia:'Aurelian'};
+const MINI=()=>({tolerance:0,assimilation:1,suppression:2}[S.laws.minorities]??1);
+const minC=P=>P&&P.cul?1-(P.cult??100)/100:0,minF=P=>P&&P.cul?1-(P.fth??100)/100:0;
+const minPen=P=>{const l=MINI();return minC(P)*[1,4,12][l]+minF(P)*[1,3,8][l]};
+function newPeople(P,from){if(NATIONS[from]&&P.core!=='me'){P.cul=from;P.cult=0;P.fth=FAITH[from]===FAITH.me?100:0}else{delete P.cul;delete P.cult;delete P.fth}}
+// incidents: fires and epidemics strike dense provinces that lack watchmen, fire engines, clean water and good health
+const provDens=i=>(S.prov[i].pop||0)/Math.max(1,provTiles(i).length);
+const bIn=(i,b)=>provTiles(i).filter(t=>S.map[t].b===b).length;
+const fireProt=i=>Math.min(.9,bIn(i,'watch')*.35+bIn(i,'firestation')*.7+adjProvs(i).filter(j=>S.prov[j].o==='me').reduce((a,j)=>a+bIn(j,'firestation')*.3,0));
+
+/* each month */
+function socMonth(c,notes,stop){const s=soc(),own=provsOf('me');
+  // literacy rises toward what your schools teach; families rise into the middle and upper classes as literacy, prosperity and jobs allow
+  const litT=clamp(c.sc.learn*.85+era()*4+(heritage('scholars')?8:0),3,99);s.lit=Math.round((s.lit+(litT-s.lit)*.015*(heritage('scholars')?1.25:1))*100)/100;
+  const prosp=(c.sc.homes+c.sc.goods+c.sc.health+c.sc.jobs)/400,serf=S.laws.labor==='serfdom';
+  s.midT=clamp(.04+s.lit/100*.25*prosp+c.t.mid/Math.max(1,S.pop)*.5,.05,.55);s.upT=clamp(.025+s.lit/100*.05*prosp+luxCount()*.006+(serf?.02:0),.03,.16);
+  const mob=serf?.004:.012;s.mid+= (s.midT-s.mid)*mob;s.up+=(s.upT-s.up)*mob;
+  // the generations: children grow up, adults age, and the old pass on sooner or later depending on health and the age
+  const P=Math.max(1,S.pop),b=s.bM/P,m=s.mM/P;s.bM=0;s.mM=0;const life=8+Math.min(100,c.sc.health)/10+era()*3;
+  const dO=s.old/(life*12),k=s.kids+b+m*.35+dO-s.kids/192,a=s.adults+s.kids/192-s.adults/480+m*.6,o=s.old+s.adults/480+m*.05-dO,tot=k+a+o;s.kids=k/tot;s.adults=a/tot;s.old=o/tot;
+  // culture and faith
+  const L=MINI(),rate=[.5,1,2.2][L];
+  own.forEach(i=>{const Pr=S.prov[i];if(!Pr.cul)return;const p=c.pv[i];const hasChurch=bIn(i,'church')>0;
+    Pr.cult=Math.min(100,(Pr.cult??0)+(.25+(govKid(Pr)?.3:0)+(p&&p.sc.learn>=60?.25:0)+((Pr.integ??100)>=100?.15:0))*rate);
+    Pr.fth=Math.min(100,(Pr.fth??0)+(.25+(hasChurch?.35:0)+(S.laws.church==='state'?.2:0))*rate);
+    const mm=minC(Pr)+minF(Pr);if(mm>0&&NATIONS[Pr.cul]&&!isFallen(Pr.cul)&&L>0){relA(Pr.cul,-mm*[0,.05,.3][L]);if(L===2)tenA(Pr.cul,mm*.3)}
+    if(Pr.cult>=100&&Pr.fth>=100){notes.push(['🤝',`${Pr.name} has adopted your ways`,`Its ${CULN[Pr.cul]} people now share your language and faith.`]);delete Pr.cul;delete Pr.cult;delete Pr.fth}});
+  // incidents, at most one a year in each province
+  own.forEach(i=>{const Pr=S.prov[i];if(!Pr.pop||Pr.revolt||(Pr.incCd>S.turn))return;const d=provDens(i),p=c.pv[i];if(!p)return;
+    const pF=Math.min(.08,d/400*.03)*(1-fireProt(i))*(era()>=2?1.2:1);
+    if(Math.random()<pF){const tl=provTiles(i).filter(t=>S.map[t].hs);let lost=0,homes=0;tl.sort(()=>Math.random()-.5).slice(0,1+rnd(3)).forEach(t=>{S.map[t].hs=null;delete S.map[t].hp;homes++});
+      const bt=provTiles(i).filter(t=>{const x=S.map[t];return x.b&&B[x.b]&&!B[x.b].fixed&&x.b!=='hall'});let bn='';if(bt.length&&Math.random()<.3){const t=pick(bt);bn=B[S.map[t].b].n;S.map[t].b=null}
+      lost=Math.min(Pr.pop,Math.ceil(Pr.pop*.01));Pr.pop-=lost;Pr.incCd=S.turn+12;const t=`Fire in ${Pr.name}`;
+      notes.push(['🔥',t,`${homes} block${homes===1?'':'s'} of homes${bn?` and a ${bn.toLowerCase()}`:''} burned down, and ${lost} people died. Watch houses and fire stations make fires rarer.`]);stop.push(t);return}
+    const pE=Math.min(.05,d/400*.02)*(1-Math.min(100,p.sc.health)/100)*(1-Math.min(100,p.sc.water)/200);
+    if(Math.random()<pE){const lost=Math.min(Pr.pop,Math.ceil(Pr.pop*(.04+Math.random()*.06)));Pr.pop-=lost;Pr.incCd=S.turn+12;
+      adjProvs(i).filter(j=>S.prov[j].o==='me'&&S.prov[j].pop).forEach(j=>{S.prov[j].pop-=Math.ceil(S.prov[j].pop*.02)});addMod('health',-10,3,'Epidemic');
+      const t=`Epidemic in ${Pr.name}`;notes.push(['🦠',t,`${lost} people died, and the sickness spread to neighboring provinces. Clean water, healthcare and hospitals keep epidemics away.`]);stop.push(t)}});
+  syncPop()}
+
+/* screens */
+function societyHTML(c){const s=soc(),ar=v=>v>.002?' ↑':v<-.002?' ↓':'';
+  const age=[['Children',s.kids,'#85B7EB'],['Working age',s.adults,'#1D9E75'],['Elderly',s.old,'#BA7517']];
+  return`<h2>📚 Literacy and the classes</h2><div class="card"><div class="row"><span class="em">📖</span><div class="grow"><b>Literacy ${Math.round(s.lit)}%</b><small>Rises slowly with schooling (education ${c.sc.learn}). Literate kingdoms research faster, and literacy lets families rise into the middle and upper classes.</small>${bar(s.lit)}</div></div>
+    <div class="row"><div class="grow"><small>Middle class ${Math.round((s.mid??c.share.middle)*100)}%${ar((s.midT??s.mid)-s.mid)}, heading for ${Math.round((s.midT??s.mid??0)*100)}%. Upper class ${Math.round((s.up??c.share.upper)*100)}%${ar((s.upT??s.up)-s.up)}, heading for ${Math.round((s.upT??s.up??0)*100)}%. Classes grow with literacy, prosperity, middle-class jobs and luxuries, and change over decades.${S.laws.labor==='serfdom'?' Serfdom keeps families tied to their station.':''}</small></div></div></div>
+    <h2>👪 The generations</h2><div class="card"><div class="row"><div class="grow"><div style="display:flex;height:14px;border-radius:4px;overflow:hidden;margin:4px 0 8px">${age.map(([n,v,col])=>`<div style="width:${v*100}%;background:${col}" title="${n}"></div>`).join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem;color:var(--muted)">${age.map(([n,v,col])=>`<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col}"></span> ${n} ${Math.round(v*100)}%</span>`).join('')}</div>
+      <small style="margin-top:6px">Only those of working age can work. Births swell the young, peace brings baby booms, and better health lets people live longer, which in the modern age makes pensions dearer.</small></div></div></div>`}
+function luxHTML(){const h=luxHave();return`<h2>💎 Luxuries</h2><p class="hint">The middle and upper classes prize variety: each different luxury raises their mood. You have ${h.size} of ${Object.keys(LUX).length}.</p><div class="card">${Object.entries(LUX).map(([k,L])=>`<div class="row"><span class="em" ${h.has(k)?'':'style="opacity:.4"'}>${L.e}</span><div class="grow"><b>${L.n}</b><small>${h.has(k)?'Available.':L.src+'.'}</small></div>${h.has(k)?'<span class="tag" style="color:var(--good)">Have</span>':''}</div>`).join('')}</div>`}
+function peopleRow(i){const P=S.prov[i];if(!P.cul)return'';const cu=Math.round(P.cult??0),fa=Math.round(P.fth??0);
+  return`<div class="row"><span class="em">🗣️</span><div class="grow"><b>A ${CULN[P.cul]} province</b><small>${cu}% share your culture, ${100-cu}% are ${CULN[P.cul]}. ${fa}% follow ${FAITH.me}${fa<100?`, ${100-fa}% ${FAITH[P.cul]}`:''}. Under ${law('minorities').n.toLowerCase()}, minorities cost ${Math.round(minPen(P))} mood here. Schools, a governor, a church and integration speed their adoption of your ways.</small>${bar(cu,'var(--deep)')}</div></div>`}
 
 /* ---------- goals ---------- */
 const GOALS=[
@@ -1895,7 +2016,7 @@ function revoltSheet(){const h=heirOf(S),win=clamp(.25+(S.leg-40)/100+(S.army-1)
 /* ---------- people: natural growth, the private economy, granaries and famine ---------- */
 // natural growth a year: slow before industry, booming with it, easing in the modern age as people grow richer and better educated
 const GROWR=[.02,.03,.05,.04];
-const growRate=c=>GROWR[era()]/12*(c.sc.food>=80?1:c.sc.food>=50?.6:c.sc.food>=30?.25:0)*(.6+Math.min(100,c.sc.health)/250)*(era()>=3?1-Math.max(0,c.sc.learn-60)/200:1);
+const growRate=c=>GROWR[era()]/12*(c.sc.food>=80?1:c.sc.food>=50?.6:c.sc.food>=30?.25:0)*(.6+Math.min(100,c.sc.health)/250)*(era()>=3?1-Math.max(0,c.sc.learn-60)/200:1)*(S.boom>S.turn?1.3:1)*(heritage('farmers')?1.1:1);
 // the share of workers who find private work (shops, crafts, trades and services) without any crown building
 const PJ=[.35,.4,.45,.5];
 // fishing and sugar colonies send food home as well as money
@@ -1927,12 +2048,12 @@ function builderMonth(c,notes){const rate=.12*(S.dec&&S.dec.builders?2:1);let bu
 /* ---------- provinces each month ---------- */
 // Mood follows each province's target; people grow into free homes where they're content and leave where they're miserable,
 // and some move from an unhappy province to a happier neighbour with room. Integration rises, and unrest follows mood.
-function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=(law('labor').grow||1)*(hasTech('antibiotics')?1.1:1)*(gp('nhs')?1.1:1);
+function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=(law('labor').grow||1)*(hasTech('antibiotics')?1.1:1)*(gp('nhs')?1.1:1)*(fund('infra')===4?1.05:1);
   own.forEach(i=>{const P=S.prov[i],p=c.pv[i];if(!p)return;const was=P.hap??p.target;P.hap=Math.round(was+(p.target-was)*.35);
     const room=p.homes-(P.pop||0),o=(P.pop||0)/Math.max(1,p.homes);
     // people move quickly into free homes; beyond that, families keep growing, crowding in more slowly the more crowded it gets
-    if(P.hap>=50&&room>0)P.pop+=Math.max(1,Math.ceil(room*.22*grow*(P.hap-40)/60));
-    if(P.hap>=45&&P.pop>0&&o<1.6){P.gf=(P.gf||0)+P.pop*growRate(c)*grow*Math.min(1,(1.6-o)/.6);const n=Math.floor(P.gf);if(n){P.pop+=n;P.gf-=n}}
+    if(P.hap>=50&&room>0){const mv=Math.max(1,Math.ceil(room*.22*grow*(P.hap-40)/60));P.pop+=mv;soc().mM+=mv}
+    if(P.hap>=45&&P.pop>0&&o<1.6){P.gf=(P.gf||0)+P.pop*growRate(c)*grow*Math.min(1,(1.6-o)/.6);const n=Math.floor(P.gf);if(n){P.pop+=n;P.gf-=n;soc().bM+=n}}
     if(P.hap<35&&P.pop>0)P.pop-=Math.min(P.pop,Math.ceil(P.pop*.03*(35-P.hap)/35)+1);
     // with a severe housing shortage (60% more people than homes), people leave
     if(o>1.6)P.pop=Math.max(Math.round(p.homes*1.6),P.pop-Math.ceil((P.pop-p.homes*1.6)*.5))});
@@ -1941,7 +2062,7 @@ function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=(law('labor').
   own.forEach(i=>{const P=S.prov[i],was=P.unrest||0;if(P.pm)P.pm=P.pm.filter(x=>x.until>S.turn);
     const before=P.integ??100;P.integ=Math.min(100,before+((P.core==='me'?6:3)+(govKid(P)?3:0))*(lg('war',3)?1.5:1)+altS('steward')*.4);
     if(before<100&&P.integ>=100)notes.push(['🤝',`${P.name} is fully integrated`,'It now pays full taxes and has no integration penalty.']);
-    let du=((P.hap??50)<40?(40-P.hap)/6:-2)+(P.integ<50?(50-P.integ)/25:0)+(c.pv[i]&&(P.pop||0)>c.pv[i].homes*1.3?((P.pop||0)/c.pv[i].homes-1.3)*5:0)+(c.sc.food<30?(30-c.sc.food)/10:0)+(S.leg<40?1:0)+(P.core!=='me'&&P.core!=='wild'?.5:0)-govCalm(P)-(P.app!=null?1:0);
+    let du=((P.hap??50)<40?(40-P.hap)/6:-2)+(P.integ<50?(50-P.integ)/25:0)+(c.pv[i]&&(P.pop||0)>c.pv[i].homes*1.3?((P.pop||0)/c.pv[i].homes-1.3)*5:0)+(c.sc.food<30?(30-c.sc.food)/10:0)+(minC(P)+minF(P))*[0,.3,1][MINI()]+(S.leg<40?1:0)+(P.core!=='me'&&P.core!=='wild'?.5:0)-govCalm(P)-(P.app!=null?1:0);
     if(du>0)du*=(S.laws.press==='censor'?.8:1)*(trait('cautious')?.8:1)*(1-altS('marshal')*.06)*(msHas('p7')?.9:1)*(law('government').unrest||1);if(S.god)du=Math.min(0,du);
     P.unrest=clamp(Math.round((was+du)*10)/10,0,100);
     if(was<60&&P.unrest>=60&&!P.revolt){notes.push(['🔥',`Riots in ${P.name}`,'Unrest there reached 60. Its buildings produce a quarter less, people start to flee, buildings may be burned, and the anger spreads to neighboring provinces. Send soldiers or offer relief from the province panel.']);stop.push(`Riots in ${P.name}`)}
@@ -1994,7 +2115,7 @@ function endMonth(silent){
   const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
   let du=unrestBase(c).reduce((a,r)=>a+r[1],0);if(du>0)du*=unrestMult();if(du>0&&hasPal('guard'))du=Math.max(0,du-.5);
   S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
-  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);foodMonth(c,notes,stop);builderMonth(c,notes);S.best=Math.max(S.best,S.pop);
+  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);foodMonth(c,notes,stop);builderMonth(c,notes);socMonth(c,notes,stop);S.best=Math.max(S.best,S.pop);
   researchMonth(c.rp,notes,stop);eraCheck(stop);
   if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
   pressureMonth(notes,stop);
@@ -2023,7 +2144,7 @@ function endMonth(silent){
   S.month++;if(S.month>11){S.month=0;S.year++;hh().cands={};if(S.aging){S.monarch.age++;if(S.fam.spouse)S.fam.spouse.age++;kids().forEach(k=>k.age++)}}
   familyMonth(notes,stop);houseMonth(notes,stop);unityMonth(notes,stop);pretMonth(notes,stop);
   S.turn++;
-  S.hist.push([S.pop,S.hap,S.leg]);if(S.hist.length>60)S.hist.shift();
+  S.hist.push([S.pop,S.hap,S.leg]);if(S.hist.length>60)S.hist.shift();S.fin=S.fin||[];S.fin.push([Math.round(c.inT),Math.round(c.outT)]);if(S.fin.length>60)S.fin.shift();
   const got=checkGoals(),newTier=tierOf(S.best).n;msMonth(notes,stop);
   if(S.aging){const a=S.monarch.age,p=a>50?Math.pow(a-50,2)/60000:0;if(Math.random()<p){queueSuccession(succeed('died'),'died')}}
   if(S.coins<-debtLimit(c)&&!(S.bkCd>S.turn)){S.bkCd=S.turn+18;queue.push(bankruptEvent(c));stop.push('The treasury is bankrupt')}
@@ -2235,6 +2356,10 @@ const PIECES={
     g.box(.08,.46,.56,.88,0,.26,PC.brick);g.gable(.06,.44,.58,.9,.26,.14,PC.dark)},
   wind(g){g.cyl(.5,.6,.15,0,.5,PC.cream);g.windows(.4,.6,.75,.08,.44,2,1);g.cone(.5,.6,.17,.5,.74,PC.dark);const H=[.5,.78,.6];
     [[.32,.32],[-.32,.32],[.32,-.3],[-.32,-.3]].forEach(([dx,dh])=>{g.line([H,[.5+dx,.78,.6+dh]],'#E9DDC2',.055);g.line([H,[.5+dx,.78,.6+dh]],'#6b4f33',.012)});g.disc(.5,.78,.035,.6,PC.dark)},
+  vineyard(g){[0,1,2,3].forEach(k=>{g.line([[.08,.18+k*.18,.07],[.62,.18+k*.18,.07]],'#5B8C3A',.07);if(g.detail)g.line([[.08,.18+k*.18,0],[.08,.18+k*.18,.1]],'#6b4f33',.015)});drawHouse(g,.68,.52,.94,.9,.22,.12,PC.roof)},
+  atelier(g){g.box(.14,.3,.86,.86,0,.4,PC.cream);g.windows(.14,.86,.86,.06,.36,2,4);g.gableY(.12,.28,.88,.88,.4,.14,PC.slate);g.dome(.5,.56,.1,.6,PC.gold)},
+  watch(g){drawHouse(g,.14,.4,.62,.86,.26,.16,PC.roof);g.box(.66,.2,.86,.42,0,.72,PC.stone);g.pyr(.64,.18,.88,.44,.72,.18,PC.dark);g.disc(.76,.42,.035,.6,PC.gold)},
+  firestation(g){g.box(.1,.32,.72,.86,0,.34,PC.brick);if(g.detail)[.22,.46].forEach(x=>g.poly([[x,.86,0],[x+.16,.86,0],[x+.16,.86,.22],[x,.86,.22]],'#7A2E22'));g.gable(.08,.3,.74,.88,.34,.12,PC.dark);g.box(.74,.2,.9,.4,0,.8,PC.brick);g.pyr(.72,.18,.92,.42,.8,.16,PC.dark)},
   granary(g){g.cyl(.32,.5,.17,0,.5,PC.stone);g.cone(.32,.5,.2,.5,.76,PC.roof);g.box(.56,.4,.9,.86,0,.26,PC.wood);g.gable(.54,.38,.92,.88,.26,.14,PC.dark)},
   mill(g){g.poly([[.76,0,0],[1,0,0],[1,1,0],[.76,1,0]],PC.water);g.box(.14,.26,.7,.84,0,.34,PC.stone);g.windows(.14,.7,.84,.06,.3,1,3);g.gable(.11,.23,.73,.87,.34,.18,PC.roof);
     g.disc(.8,.6,.2,.2,'#6E4C2F');g.disc(.8,.6,.13,.2,'#9C7B55');if(g.detail)[0,1,2,3].forEach(k=>{const a=k*Math.PI/4;g.line([[.8-Math.cos(a)*.19,.6,.2-Math.sin(a)*.19],[.8+Math.cos(a)*.19,.6,.2+Math.sin(a)*.19]],'#4a3b2c',.015)})},
@@ -2295,7 +2420,7 @@ const PIECES={
     g.line([[.62,.4,0],[.72,.4,.7],[.82,.4,0]],'#8C8880',.018);g.disc(.72,.4,.04,1.12,'#D0383E')},
   lighthouse(g){g.cyl(.5,.6,.16,0,.1,PC.stone);g.cyl(.5,.6,.12,.1,.9,PC.white);[.3,.6].forEach(h=>g.cyl(.5,.6,.121,h,h+.09,'#C8553D'));g.cyl(.5,.6,.1,.9,1,'#FFE9A8');g.cone(.5,.6,.13,1,1.16,PC.gold)}};
 // rough piece heights, for shadows
-const PH=id=>({granary:.6,mill:.5,inn:.55,canal:.1,charcoal:.25,ferry:.25,tenement:.8,polytechnic:.8,steelworks:.8,powerstation:.8,hospital:.6,deptstore:.7,broadcaster:.7,textile:.6,tradeco:.5,apartments:.9,hotel:.85,factory:.6,hall:.9,church:.9,lighthouse:1.1,wind:.8,diesel:.7,waterworks:.8,mine:.6,coalmine:.5,brickworks:.6,university:.6,school:.6}[id]||.42);
+const PH=id=>({vineyard:.2,atelier:.6,watch:.8,firestation:.8,granary:.6,mill:.5,inn:.55,canal:.1,charcoal:.25,ferry:.25,tenement:.8,polytechnic:.8,steelworks:.8,powerstation:.8,hospital:.6,deptstore:.7,broadcaster:.7,textile:.6,tradeco:.5,apartments:.9,hotel:.85,factory:.6,hall:.9,church:.9,lighthouse:1.1,wind:.8,diesel:.7,waterworks:.8,mine:.6,coalmine:.5,brickworks:.6,university:.6,school:.6}[id]||.42);
 // category colours for the simple squares drawn when zoomed far out
 const CATC={};GROUPS.forEach(([,ids],k)=>ids.forEach(id=>{CATC[id]=['#C8553D','#D6BE5C','#8A64B0','#9C7B55','#3E7CB1','#5F9E55','#8C9396','#4FA3C0','#E08A2E','#7A2E22','#E2AE2A'][k]}));CATC.hall=CATC.fcap='#BDB7AA';
 function depositPiece(g,d){if(d==='ore'){[[.66,.8,'#9A5B3A'],[.8,.74,'#8A4F32'],[.76,.86,'#A8663F']].forEach(([x,y,c])=>g.box(x-.05,y-.04,x+.05,y+.04,0,.06,c));g.disc(.74,.76,.018,.07,'#F2D27A',1)}
@@ -2465,6 +2590,7 @@ function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.s
   <h2>Provinces</h2><p class="hint">Each province has its own people, services and mood. Approval is their average, weighted by population.</p><div class="card">${provRows(c)}</div>
   <p class="hint">${fmt(S.pop)} subjects, ${fmt(c.workers)} of working age, ${fmt(c.employed)} employed. Housing for ${fmt(c.t.homes)}. Cost of living is ${c.colIdx>1.05?`${Math.round((c.colIdx-1)*100)}% above normal`:c.colIdx<.95?`${Math.round((1-c.colIdx)*100)}% below normal`:'normal'}.</p>
   <h2>Social classes</h2><div class="card">${classes}</div>
+  ${societyHTML(c)}
   <p class="hint">Each class cares about different things, and tax laws weigh on them differently. Approval is the average, weighted by class size.</p>
   <h2>Public opinion</h2><div class="card">${quotes}</div>
   <h2>Needs</h2><div class="card">${needs}</div>
@@ -2489,6 +2615,7 @@ function courtHTML(){const c=calc(),m=S.monarch,h=S.heir;
   return `<h2>The crown</h2><div class="card">
     <div class="row"><span class="em">👑</span><div class="grow"><b>${monarchName(m)}</b><small>${S.aging?`Aged ${m.age}. `:''}Reigning since year ${m.since}. ${TRAITS[m.trait].n}: ${TRAITS[m.trait].d}</small></div>${!h.none&&h.age>=16?`<button class="btn" data-act="abdicate" id="abdBtn">Abdicate</button>`:''}</div>
     ${S.empire?`<div class="row"><span class="em">🏛️</span><div class="grow"><b>An empire since year ${S.empire.y}</b><small>Proclaimed by ${S.empire.who}. Legitimacy +3.</small></div></div>`:empireOK()?`<div class="row"><span class="em">🏛️</span><div class="grow"><b>Proclaim an empire</b><small>${empireWhy()||'Your realm dominates the island. Crown yourself '+(m.g==='f'?'Empress':'Emperor')+': legitimacy +8 for three years and +3 for good, but your neighbors and the overseas powers will resent it.'}</small></div><button class="btn primary" data-act="empire" ${empireWhy()?'disabled':''}>🪙${fmt(EMPIRE_COST)}</button></div>`:''}
+    ${S.herit?`<div class="row"><span class="em">${HERIT[S.herit].e}</span><div class="grow"><b>Heritage: ${HERIT[S.herit].n}</b><small>${HERIT[S.herit].d}</small></div></div>`:`<div class="row"><span class="em">🏺</span><div class="grow"><b>Choose your people's heritage</b><small>A lasting mark on your people, chosen once.</small><div class="seg">${Object.entries(HERIT).map(([k,Hh])=>`<button class="btn" data-act="herit" data-arg="${k}">${Hh.e} ${Hh.n}</button>`).join('')}</div></div></div>`}
     <div class="row"><span class="em">⚖️</span><div class="grow"><b>Legitimacy ${S.leg}</b><small>How accepted your rule is. It follows the mood of powerful interest groups and public approval. Trending toward ${c.legT}.</small>${bar(S.leg)}</div><button class="btn" data-act="why" data-arg="legitimacy">Why?</button></div>
     <div class="row"><span class="em">🔥</span><div class="grow"><b>Unrest ${Math.round(S.unrest)}</b><small>Builds when legitimacy falls below 40 or powerful groups turn radical. At 100, revolution breaks out.</small>${bar(100-S.unrest)}</div><button class="btn" data-act="why" data-arg="unrest">Why?</button></div></div>
   <h2>The royal house</h2>${houseHTML()}
@@ -2580,9 +2707,8 @@ function econHTML(){const c=calc();
   const market=RES.map(({k,n,e})=>{const p=c.price[k],ratio=p/PRICE[k];return `<div class="row"><span class="em">${e}</span><div class="grow"><b>${n}</b><small>Supply ${fmt(c.sup[k])}, demand ${fmt(c.dem[k])}. ${ratio>1.15?'Scarce, so prices are high.':ratio<.85?'Plentiful, so prices are low.':'Balanced.'}</small></div><span class="num" style="color:${ratio>1.15?'var(--bad)':ratio<.85?'var(--good)':'var(--ink)'}">${p.toFixed(1)} <small style="display:inline;color:var(--muted)">(${Math.round(ratio*100)}%)</small></span></div>`}).join('');
   const rentRow=`<div class="row"><span class="em">🏠</span><div class="grow"><b>Rent</b><small>Homes are ${Math.round(c.occ*100)}% full. ${c.rentIdx>1.3?'Housing is scarce, so landlords are raising rents.':c.rentIdx>1.05?'Rents are starting to climb.':'Plenty of vacancies keep rents low.'}${S.dec.rentcap?' Rent controls are in force.':''}</small></div><span class="num" style="color:${c.rentIdx>1.3?'var(--bad)':c.rentIdx>1.05?'var(--warn)':'var(--good)'}">${c.rent.toFixed(1)} <small style="display:inline;color:var(--muted)">(${Math.round(c.rentIdx*100)}%)</small></span></div>`;
   return `<h2>Monthly budget</h2><div class="mood" style="margin-top:0"><div><div class="big ${c.net>=0?'pos':'neg'}">${c.net>=0?'+':''}${fmt(c.net)}</div><div class="sub">projected ${c.net>=0?'surplus':'deficit'} next month</div></div></div>
-  <h2>Tax rate: <span id="taxVal">${S.tax}%</span></h2>
-  <input type="range" id="tax" min="0" max="30" step="1" value="${S.tax}" aria-label="Tax rate">
-  <p class="hint">Under ${law('tax').n.toLowerCase()}, ${S.laws.tax==='percapita'?'the lower class feels taxes most':S.laws.tax==='progressive'?'the upper class feels taxes most':'every class feels taxes about equally'}. Change the tax law in the Court tab.</p>
+  ${budgetHTML(c)}
+  ${luxHTML()}
   <h2>Prices and rent</h2><p class="hint">Prices follow supply and demand, and rent rises once homes are more than 80% full. Together they set the cost of living, which hits the lower class hardest. Building homes brings rent down, and imports lower prices.</p><div class="card">${market}${rentRow}</div>
   <h2>Building materials</h2><div class="card"><div class="row"><span class="em">🧱</span><div class="grow"><b>${fmt(S.mat||0)} in stock</b><small>Storage for ${fmt(c.matCap)}. ${c.t.mat?`Producing ${fmt(c.t.mat)} a month.`:'You don’t produce any yet. Build a lumber camp in a forest, or a quarry or brickworks on a stone or clay deposit.'}</small><small>Buildings costing 🪙800 or more also need materials. Anything you don’t have is imported at 🪙${matPrice().toFixed(1)} each.${c.matSale?` Production beyond storage sells for 🪙${fmt(c.matSale)} a month.`:''}</small>${bar(Math.min(100,(S.mat||0)/c.matCap*100),'var(--deep)')}</div></div>
   ${c.coalImp?`<div class="row"><span class="em">⚫</span><div class="grow"><b>Imported coal: 🪙${fmt(c.coalImp)} a month</b><small>Each engine house without a coal mine to supply it costs 🪙20 a month.</small></div></div>`:''}</div>
@@ -2649,7 +2775,9 @@ function render(){
   MAP.dirty=true;drawSoon();if(tab==='people')drawCharts();
   const ar=$('#army');if(ar){ar.addEventListener('input',e=>{$('#armyVal').textContent=ARMY[+e.target.value].n});ar.addEventListener('change',e=>{S.army=+e.target.value;render()})}
   const ct=$('#court');if(ct){ct.addEventListener('input',e=>{const i=+e.target.value;$('#courtVal').textContent=COURT[i].n;$('#courtHint').textContent=courtHint(i)});ct.addEventListener('change',e=>{S.court=+e.target.value;render()})}
-  const tx=$('#tax');if(tx){tx.addEventListener('input',e=>{S.tax=+e.target.value;$('#taxVal').textContent=S.tax+'%'});tx.addEventListener('change',()=>render())}
+    document.querySelectorAll('input[data-tax]').forEach(el=>{el.addEventListener('input',()=>{const k=el.dataset.tax,T=taxc();if(k==='all')TAXK.forEach(x=>T[x]=+el.value);else{T[k]=+el.value;taxFit(k)}
+    document.querySelectorAll('[data-taxv]').forEach(s=>{s.textContent=T[s.dataset.taxv==='all'?'lower':s.dataset.taxv]+'%'});document.querySelectorAll('input[data-tax]').forEach(o=>{if(o!==el)o.value=T[o.dataset.tax==='all'?'lower':o.dataset.tax]})});el.addEventListener('change',()=>render())});
+
   save()}
 
 /* ---------- sheets ---------- */
@@ -2671,6 +2799,7 @@ function provStats(i){const P=S.prov[i],c=calc(),p=c.pv[i];if(!p)return'';const 
     <div class="row"><span class="em">🏛️</span><div class="grow"><b>${govKid(P)?`Governor: ${kidName(govKid(P))}`:'No governor'}</b><small>${govKid(P)?`Mood +${govMood(P)}, unrest falls faster, integrates faster.`:'An adult prince or princess can govern here, from the royal family in the Court tab.'}</small></div>${govKid(P)?`<button class="btn" data-act="kid" data-arg="${govKid(P).id}">View</button>`:''}</div>
     ${P.app!=null&&cadetById(P.app)?`<div class="row"><span class="em">🌿</span><div class="grow"><b>Appanage of House ${esc(cadetById(P.app).name)}</b><small>Held by a cadet branch of the royal house: mood +3, and unrest falls faster. Costs 🪙${APP_COST} a month.</small></div></div>`:''}
     ${(P.integ??100)<100?`<div class="row"><span class="em">🤝</span><div class="grow"><b>Integration ${Math.round(P.integ)}%</b><small>New provinces pay half their taxes at first, rising to full at 100%.</small>${bar(P.integ,'var(--deep)')}</div></div>`:''}</div>
+    ${peopleRow(i)}
     ${R?`<div class="card" style="margin-top:10px"><div class="row"><span class="em">🔥</span><div class="grow"><b>In revolt, month ${R.m}</b><small>Rebels about ${R.str} strong. ${R.sup?`Your troops are fighting: ${Math.max(0,R.prog)}% put down.${c.str<R.str*.6?' Your army is much weaker than the rebels: recruit soldiers or negotiate.':''}`:`${6-R.m} month${6-R.m===1?'':'s'} before it breaks away.`}</small>${R.sup?bar(Math.max(0,R.prog),'var(--good)'):''}</div></div>
       <div class="row"><div class="grow btns" style="margin-top:0"><button class="btn primary" data-act="suppress" data-arg="${i}" ${R.sup?'disabled':''}>${R.sup?'Troops sent':'Send troops'}</button><button class="btn" data-act="negotiate" data-arg="${i}" ${S.coins<revoltCost(i)?'disabled':''}>Negotiate 🪙${fmt(revoltCost(i))}</button><button class="btn" id="letGo" data-act="letgo" data-arg="${i}">Let it go</button></div></div></div>`:''}
     <h2>Local needs</h2><p class="hint">Met by services in this province, plus spare capacity from your neighbouring provinces.</p><div class="needs">${cov}</div>`}
@@ -2734,6 +2863,7 @@ function welcome(){const m=S.monarch;openSheet(`<div class="event"><div class="p
   <p class="hint" style="margin-bottom:0">Your monarch</p><div class="seg" role="group" aria-label="King or queen">${[['m','👑 King'],['f','👑 Queen']].map(([g,l])=>`<button class="btn ${m.g===g?'on':''}" data-act="mgender" data-arg="${g}" aria-pressed="${m.g===g}">${l}</button>`).join('')}</div>
   <p class="hint" style="margin-bottom:0">${S.fam.spouse?`Married to ${S.fam.spouse.name}. The consort is your`:'The consort is your'}</p><div class="seg" role="group" aria-label="Husband or wife">${[['m','Husband'],['f','Wife']].map(([g,l])=>`<button class="btn ${S.fam.spouse&&S.fam.spouse.g===g?'on':''}" data-act="sgender" data-arg="${g}" aria-pressed="${!!S.fam.spouse&&S.fam.spouse.g===g}">${l}</button>`).join('')}</div>
   <p class="hint">Any royal couple can have children.</p>
+  <p class="hint" style="margin-bottom:0">Your people's heritage</p><div class="seg" role="group" aria-label="Heritage">${Object.entries(HERIT).map(([k,Hh])=>`<button class="btn ${S.herit===k?'on':''}" data-act="herit" data-arg="${k}" aria-pressed="${S.herit===k}">${Hh.e} ${Hh.n}</button>`).join('')}</div><p class="hint">${S.herit?HERIT[S.herit].d:'Choose what your people are known for. It lasts for the whole game.'}</p>
   <label class="hint" for="nm">Name your kingdom</label><input type="text" id="nm" maxlength="24" value="${esc(S.name)}">
   <p class="hint" style="margin-bottom:0">World size</p><div class="seg">${Object.entries(WSIZES).map(([k,v])=>`<button class="btn ${S.wsize===k?'on':''}" data-act="wsize" data-arg="${k}" aria-pressed="${S.wsize===k}">${v.n}</button>`).join('')}<button class="btn" data-act="wsize" data-arg="${S.wsize}" aria-label="Draw a new map">🎲 New map</button></div>
   <p class="hint">${S.W} by ${S.H} tiles, ${S.prov.length} provinces. Bigger worlds have more frontier to settle and larger neighbors.</p>
@@ -2782,7 +2912,7 @@ function whySheet(k){const w=whyData(k),n=v=>Math.round(v*10)/10;
 const monthIdx=m=>{const i=MONTHS.findIndex(x=>x.toLowerCase().startsWith(String(m).toLowerCase().slice(0,3)));return i>=0?i:clamp(num(m,1)-1,0,11)};
 function statusLines(){const c=calc();return[`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}, aged ${S.monarch.age}.`,`Treasury ${fmt(S.coins)}, net ${c.net>=0?'+':''}${fmt(c.net)} a month.`,`Population ${fmt(S.pop)} of ${fmt(c.t.homes)} housing. Approval ${S.hap}% (to ${c.target}).`,`Legitimacy ${S.leg} (to ${c.legT}). Unrest ${Math.round(S.unrest)}.`,`Army ${c.soldiers} soldiers, strength ${c.str}. Navy ${S.navy}.`,S.war?`At war with ${S.war.foes.map(n=>NATIONS[n].n).join(', ')}: score ${S.war.score}, support ${S.war.support}%.`:'At peace.',`Provinces: ${provsOf('me').length}. Research: ${S.tech.cur?techOf(S.tech.cur).n:'none'}.${S.god?' God mode on.':''}${S.noEvents?' Random events off.':''}`]}
 const CMDS={
-  help:()=>['money N           set the treasury','add N             add to the treasury','era 0-3           jump to an era (0 Crowns, 1 Enlightenment, 2 Industry, 3 Modern)','mat N             set building materials','child [m|f] [AGE] add a royal child','gender m|f        make the monarch a king or queen','consort m|f       the consort becomes a husband or wife (new name, same age)','rulers            list neighboring rulers and their personalities','empire            proclaim an empire at once, for testing','overseas          reveal the overseas powers and outer islands','nwar A B          nation A declares war on nation B','renown N          add renown to the royal house','heirloom KEY      give the house an heirloom ('+Object.keys(HEIRLOOMS).join(', ')+')','pretender         a pretender appears, with support 70','bastard           the monarch has an acknowledged bastard','kids              list the royal children with IDs','makeheir ID       name a child heir','drama off|some|lots  family drama level','spouse            marry the monarch to a noble','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
+  help:()=>['money N           set the treasury','add N             add to the treasury','era 0-3           jump to an era (0 Crowns, 1 Enlightenment, 2 Industry, 3 Modern)','mat N             set building materials','child [m|f] [AGE] add a royal child','gender m|f        make the monarch a king or queen','consort m|f       the consort becomes a husband or wife (new name, same age)','rulers            list neighboring rulers and their personalities','heritage KEY      set your people’s heritage (mariners, farmers, warriors, scholars, merchants)','empire            proclaim an empire at once, for testing','overseas          reveal the overseas powers and outer islands','nwar A B          nation A declares war on nation B','renown N          add renown to the royal house','heirloom KEY      give the house an heirloom ('+Object.keys(HEIRLOOMS).join(', ')+')','pretender         a pretender appears, with support 70','bastard           the monarch has an acknowledged bastard','kids              list the royal children with IDs','makeheir ID       name a child heir','drama off|some|lots  family drama level','spouse            marry the monarch to a noble','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
   money:n=>{S.coins=num(n,0);return`Treasury set to ${fmt(S.coins)}`},
   era:n=>{const e=clamp(num(n,era()+1),0,3);S.era=e;return`The kingdom is now in the ${ERAS[e].n}`},
   mat:n=>{S.mat=Math.max(0,num(n,500));return`Building materials set to ${fmt(S.mat)}`},
@@ -2844,6 +2974,7 @@ const CMDS={
   consort:g=>{const sp=S.fam.spouse;if(!sp)return E('The monarch is unmarried');if(!['m','f'].includes(g))return E('Use consort m or consort f');sp.g=g;sp.name=royalName(g,new Set([S.monarch.name,...kids().map(k=>k.name)]));return`${sp.name} is now the ${g==='m'?'husband':'wife'}`},
   overseas:()=>{const O=ov();O.known=true;genIslands();return`Overseas powers revealed, with ${O.isl.length} outer islands`},
   empire:()=>{if(S.empire)return E('Already an empire');S.empire={y:S.year,who:''};S.empire.who=monarchName(S.monarch);return`${S.empire.who} rules an empire`},
+  heritage:k=>{if(!HERIT[k])return E('Use '+Object.keys(HERIT).join(', '));S.herit=k;return`Heritage: ${HERIT[k].n}`},
   rulers:()=>liveNations().map(n=>`${NATIONS[n].n}: ${rName(n)}, ${ruler(n).age}, ${ruler(n).pers}${ruler(n).heir?`, heir ${ruler(n).heir.name}`:', no heir'}${pact(n)?`, ${pact(n).t}`:''}`),
   nwar:(a,b)=>{if(!NATIONS[a]||!NATIONS[b]||a===b)return E('Usage: nwar norvik solenne');if(nwarOf(a)||nwarOf(b))return E('One of them is already at war');nwars().push({a,b,m:0,sc:0});return`${NATIONS[a].n} declares war on ${NATIONS[b].n}`},
   renown:v=>{addRen(num(v,100));return`Renown ${Math.floor(house().ren)}`},
@@ -3023,6 +3154,9 @@ function act(a,arg,n){
     case'makeHeir':{const k=kidById(+arg);if(!k)return;makeHeir(k);toast(`${kidName(k)} is now heir to the throne`);kidSheet(k.id);render();return}
     case'tryMore':{S.fam.tryMore=!S.fam.tryMore;const b=$('#view [data-act=tryMore]');if(b)b.setAttribute('aria-pressed',S.fam.tryMore);toast(S.fam.tryMore?'The royal couple hope for more children':'The royal couple are content with their family');return}
     case'drama':if(!['off','some','lots'].includes(arg))return;S.drama=arg;settings();return;
+    case'fund':{const j=+n;if(!FUND[arg]||!(j>=0&&j<=4))return;S.fund=S.fund||{};S.fund[arg]=j;render();return}
+    case'courtLvl':{const j=+n;if(!(j>=0&&j<COURT.length))return;S.court=j;render();return}
+    case'herit':{if(!HERIT[arg]||(S.herit&&S.turn>0))return;S.herit=arg;if(S.turn===0&&$('#nm')){const v=$('#nm').value;welcome();$('#nm').value=v;render();return}chron(HERIT[arg].e,`A people of ${HERIT[arg].n.toLowerCase()}`,HERIT[arg].d);toast(`${HERIT[arg].e} Your people are ${HERIT[arg].n.toLowerCase()}`);render();return}
     case'evFreq':if(!['few','normal','many'].includes(arg))return;S.evFreq=arg;settings();return;
     case'enact':{if(S.enact||!LAWS[arg]||!LAWS[arg].o[n])return;{const O=LAWS[arg].o[n];if((O.era||0)>era()||(LAW_ERA[arg]||0)>era()||(LAWS[arg].needs&&!LAWS[arg].needs.includes(S.laws.government)))return}const mo=lawMonths();S.enact={cat:arg,opt:n,left:mo};
       IGIDS.forEach(g=>{const v=(IGS[g].likes[arg]||{})[n]||0,cv=(IGS[g].likes[arg]||{})[S.laws[arg]]||0;if(v<cv)igM(g,-5,mo,`Opposes ${LAWS[arg].o[n].n.toLowerCase()}`)});
