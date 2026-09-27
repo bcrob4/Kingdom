@@ -2844,28 +2844,80 @@ function v3Borders(){const T=THREE,pos=[],cols=[],col=new T.Color();
 /* buildings, homes and trees: each is a few simple shapes, drawn as instances so thousands cost little */
 const V3C={wall:'#D6CAAE',stone:'#A9A394',brick:'#935643',timber:'#76593E',roof:'#8F4F3B',slate:'#4A545C',dark:'#3F3C3A',grey:'#7F7C77',white:'#D9D6CC',glass:'#8FB3BF',
   gold:'#C09238',water:'#3B6878',crop1:'#B9A462',crop2:'#8C9B55',red:'#A8453A',barn:'#8E3F2E',copper:'#5F8A7E',thatch:'#A08A5A',win:'#3A3F44'};
+// surfaces drawn in code, in a 4×4 grid: 0 plaster with windows, 1 brick, 2 stone, 3 half-timbering, 4 roof tiles, 5 slate, 6 thatch, 7 castle stone,
+// 8 glass, 9 industrial brick, 10 planks, 11 concrete flats, 12 classical stone, 13 corrugated metal, 14 plain, 15 rough. They are light, so each part's color tints them.
+function v3Atlas(){const S=256,cv=document.createElement('canvas');cv.width=cv.height=S*4;const g=cv.getContext('2d');let seed=7;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const cell=(k,fn)=>{g.save();g.translate((k%4)*S,(k/4|0)*S);g.beginPath();g.rect(0,0,S,S);g.clip();fn();g.restore()};
+  const fill=(c,x=0,y=0,w=S,h=S)=>{g.fillStyle=c;g.fillRect(x,y,w,h)};
+  const speck=(n,a,sz=3)=>{for(let i=0;i<n;i++){g.fillStyle=R()<.5?`rgba(0,0,0,${a*R()})`:`rgba(255,255,255,${a*R()})`;g.fillRect(R()*S,R()*S,sz*R()+1,sz*R()+1)}};
+  const win=(x,y,w,h,fr='#F4F1E8',panes=true)=>{fill(fr,x-5,y-5,w+10,h+10);fill('#4E5962',x,y,w,h);fill('rgba(170,194,210,.35)',x,y,w,h*.35);if(panes){fill(fr,x+w/2-2,y,4,h);fill(fr,x,y+h*.45,w,4)}fill('rgba(0,0,0,.25)',x-5,y+h+5,w+10,4)};
+  const courses=(bh,bw,lo,hi,mortar,m=2)=>{fill(mortar);for(let y=0,r=0;y<S;y+=bh,r++)for(let x=-(r%2)*bw/2;x<S;x+=bw){const v=lo+R()*(hi-lo)|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(x+m/2,y+m/2,bw-m,bh-m)}};
+  const gv=v=>`rgb(${v},${v},${v})`;
+  cell(0,()=>{fill('#F3F2EE');speck(1400,.07);fill('rgba(0,0,0,.06)',0,124,S,6);for(const y of[40,168])for(let i=0;i<3;i++)win(30+i*84,y,34,48)});
+  cell(1,()=>{courses(16,40,188,232,'#F0EDE6');for(const y of[30,158])for(let i=0;i<3;i++){fill('#E8E4DA',20+i*84,y-12,56,8);win(26+i*84,y,44,60,'#EDE9DF')}});
+  cell(2,()=>{courses(32,64,196,236,'#9A9690',3);for(const y of[34,162])for(let i=0;i<2;i++){const x=48+i*128;g.fillStyle='#39424A';g.beginPath();g.moveTo(x,y+70);g.lineTo(x,y+18);g.arc(x+18,y+18,18,Math.PI,0);g.lineTo(x+36,y+70);g.fill();fill('rgba(160,184,200,.3)',x,y+14,36,20)}});
+  cell(3,()=>{fill('#F2EEE2');speck(900,.06);const b='#4B3A2A';[[0,0,12,S],[122,0,12,S],[244,0,12,S],[0,0,S,10],[0,122,S,12],[0,246,S,10]].forEach(r=>fill(b,...r));
+    g.strokeStyle=b;g.lineWidth=10;[[6,10,128,122],[250,10,128,122],[6,134,60,246],[250,134,190,246]].forEach(([a,b2,c,d])=>{g.beginPath();g.moveTo(a,b2);g.lineTo(c,d);g.stroke()});
+    for(const y of[40,166])for(const x of[34,166])win(x,y,40,44,'#E9E3D2',false)});
+  cell(4,()=>{fill('#BDBDBD');for(let y=0,r=0;y<S;y+=32,r++)for(let x=-(r%2)*16;x<S;x+=32){const v=205+R()*40|0,gr=g.createLinearGradient(0,y,0,y+32);gr.addColorStop(0,gv(v));gr.addColorStop(1,gv(v-70));g.fillStyle=gr;g.beginPath();g.moveTo(x+1,y);g.lineTo(x+31,y);g.lineTo(x+31,y+24);g.quadraticCurveTo(x+16,y+36,x+1,y+24);g.fill()}});
+  cell(5,()=>{fill('#6E6E6E');for(let y=0,r=0;y<S;y+=24,r++)for(let x=-(r%2)*18;x<S;x+=36){const v=170+R()*60|0;g.fillStyle=gv(v);g.fillRect(x+1,y+1,34,21);fill('rgba(0,0,0,.25)',x+1,y+18,34,4)}});
+  cell(6,()=>{fill('#D8D2C4');for(let i=0;i<2600;i++){const x=R()*S,y=R()*S,v=150+R()*100|0;g.strokeStyle=gv(v);g.lineWidth=1+R()*1.5;g.beginPath();g.moveTo(x,y);g.lineTo(x+(R()-.5)*4,y+10+R()*14);g.stroke()}
+    for(let y=60;y<S;y+=64)fill('rgba(0,0,0,.28)',0,y,S,5)});
+  cell(7,()=>{courses(48,80,170,228,'#807A70',5);speck(1200,.1,4);for(const x of[60,188])fill('#2E2B28',x,90,8,40)});
+  cell(8,()=>{fill('#9AAAB6');for(let y=0;y<S;y+=42)for(let x=0;x<S;x+=32){const v=90+R()*40|0;g.fillStyle=`rgb(${v},${v+14},${v+26})`;g.fillRect(x+3,y+3,26,36);fill('rgba(255,255,255,.18)',x+3,y+3,10,36)}});
+  cell(9,()=>{courses(16,40,180,226,'#EDE9E0');for(const x of[42,166]){fill('#E4DFD2',x-6,26,62,196);g.fillStyle='#3A434B';g.beginPath();g.moveTo(x,216);g.lineTo(x,56);g.arc(x+25,56,25,Math.PI,0);g.lineTo(x+50,216);g.fill();
+    g.strokeStyle='#D8D2C4';g.lineWidth=3;for(let y=60;y<216;y+=26){g.beginPath();g.moveTo(x,y);g.lineTo(x+50,y);g.stroke()}g.beginPath();g.moveTo(x+25,32);g.lineTo(x+25,216);g.stroke()}});
+  cell(10,()=>{for(let x=0;x<S;x+=24){const v=176+R()*56|0;fill(gv(v),x,0,24,S);fill('rgba(0,0,0,.35)',x,0,2,S)}speck(800,.1,3);for(let x=12;x<S;x+=24)for(const y of[20,140])fill('rgba(0,0,0,.4)',x,y,2,2)});
+  cell(11,()=>{fill('#EAEAE6');speck(700,.05);for(let r=0;r<3;r++){const y=14+r*84;for(let i=0;i<4;i++)win(18+i*62,y,34,42,'#DAD9D3',false);fill('rgba(0,0,0,.18)',0,y+56,S,8)}});
+  cell(12,()=>{fill('#F4F2EC');speck(600,.04);for(const x of[0,128])fill('#FFFFFF',x,0,18,S);for(const x of[50,178]){win(x,52,38,150,'#FBFAF6');g.fillStyle='#E4E0D6';g.beginPath();g.moveTo(x-10,44);g.lineTo(x+19,22);g.lineTo(x+48,44);g.fill()}});
+  cell(13,()=>{for(let x=0;x<S;x+=12){const gr=g.createLinearGradient(x,0,x+12,0);gr.addColorStop(0,'#9E9E9E');gr.addColorStop(.5,'#F0F0F0');gr.addColorStop(1,'#A6A6A6');g.fillStyle=gr;g.fillRect(x,0,12,S)}speck(500,.08)});
+  cell(14,()=>fill('#FFFFFF'));
+  cell(15,()=>{fill('#F4F4F2');speck(1800,.08)});
+  const t=new THREE.CanvasTexture(cv);t.anisotropy=V3.r.capabilities.getMaxAnisotropy();return t}
+// fields in a 2×2 grid: 0 ripe wheat, 1 green crops, 2 ploughed furrows, 3 pasture
+function v3FieldAtlas(){const S=256,cv=document.createElement('canvas');cv.width=cv.height=S*2;const g=cv.getContext('2d');let seed=11;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const cell=(k,fn)=>{g.save();g.translate((k%2)*S,(k/2|0)*S);g.beginPath();g.rect(0,0,S,S);g.clip();fn();g.restore()};
+  const fill=(c,x=0,y=0,w=S,h=S)=>{g.fillStyle=c;g.fillRect(x,y,w,h)},dots=(n,cols,sz)=>{for(let i=0;i<n;i++){g.fillStyle=cols[R()*cols.length|0];g.fillRect(R()*S,R()*S,sz*(.5+R()),sz*(.5+R()))}};
+  cell(0,()=>{fill('#C8B066');for(let y=0;y<S;y+=16){fill('#A38C4B',0,y,S,5);fill('rgba(255,240,190,.25)',0,y+8,S,3)}dots(1600,['#D8C27A','#B39C58','#E0CC88'],3)});
+  cell(1,()=>{fill('#7E9B4D');for(let y=0;y<S;y+=14){fill('#5C7835',0,y,S,5)}dots(2200,['#94B05E','#6A8A3E','#A6BE6C'],3)});
+  cell(2,()=>{fill('#7A634A');for(let y=0;y<S;y+=12){fill('#5B4835',0,y,S,5);fill('#937A5E',0,y+7,S,2)}dots(900,['#6A5540','#8C735A'],3)});
+  cell(3,()=>{fill('#7D9E56');dots(3000,['#8DAE64','#6C8C46','#9AB870','#62823E'],4);dots(60,['#E8E4C8','#E0C860'],3)});
+  const t=new THREE.CanvasTexture(cv);t.anisotropy=V3.r.capabilities.getMaxAnisotropy();return t}
+// which surface a part gets, from its shape and color, unless its recipe says
+function v3TexOf(sh,c,tx,w,h,d){if(tx>=0)return tx;const C=V3C;
+  if(sh==='gable'||sh==='pyr'||sh==='cone'){if([C.slate,'#4A545C'].includes(c))return 5;if([C.thatch,'#978152','#A89363','#B89E58'].includes(c))return 6;if([C.white,C.glass,'#C4E0EA'].includes(c))return 14;
+    if(sh==='cone'&&![C.roof,C.red,'#83493A','#6E5E4C'].includes(c))return 15;return 4}
+  if(sh==='box'){if(Math.min(w,d)<.045||h<.04)return c===C.timber?10:15;if([C.brick,'#865040','#9A6450'].includes(c))return 1;if(c===C.stone)return 2;if(c===C.timber)return 3;if(c===C.barn)return 10;if(c===C.white)return 12;
+    if(c===C.glass)return 8;if([C.grey,'#8F8B85','#5C5A58'].includes(c))return 13;if(['#CFC8B8','#B2B8BA','#C4BCA9'].includes(c))return 11;if([C.dark,C.win,C.water,C.gold,C.red].includes(c))return 14;return 0}
+  if(sh==='cyl')return c===C.stone?7:15;return 15}
+// the building material: each instance picks its surface, and the surface is sized in real units, so windows and bricks stay the same size on any building
+function v3TexMat(map,grid,vert,frag){const m=new THREE.MeshLambertMaterial({map,vertexColors:frag==='patch'}),gl2=V3.r.capabilities.isWebGL2,k=(.96/grid).toFixed(4);m.customProgramCacheKey=()=>'v3'+frag+grid;
+  m.onBeforeCompile=sh=>{sh.vertexShader='attribute float aTex;\nvarying float vTile;\nvarying vec2 vTUV;\n'+sh.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\n'+vert);
+    const samp=gl2?`textureGrad(map,uv0,dFdx(vTUV)*${k},dFdy(vTUV)*${k})`:'texture2D(map,uv0)';
+    sh.fragmentShader='varying float vTile;\nvarying vec2 vTUV;\n'+sh.fragmentShader.replace('#include <map_fragment>',`if(vTile>-.5){vec2 cell=vec2(mod(vTile,${grid}.),${grid-1}.-floor(vTile/${grid}.));vec2 uv0=(cell+.02+fract(vTUV)*.96)/${grid}.;diffuseColor*=${samp};}`)};
+  return m}
 function v3Protos(){const T=THREE,unit=g=>{g.computeBoundingBox();const b=g.boundingBox,s=new T.Vector3();b.getSize(s);g.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);g.scale(1/(s.x||1),1/(s.y||1),1/(s.z||1));return g};
   const gable=new T.CylinderGeometry(1,1,1,3);gable.rotateZ(Math.PI/2);gable.rotateX(-Math.PI/2);
   return{box:unit(new T.BoxGeometry(1,1,1)),gable:unit(gable),pyr:unit(new T.ConeGeometry(1,1,4).rotateY(Math.PI/4)),cyl:unit(new T.CylinderGeometry(1,1,1,10)),
     cone:unit(new T.ConeGeometry(1,1,8)),pine:unit(new T.ConeGeometry(1,1,6)),trunk:unit(new T.CylinderGeometry(1,1,1,5,1,true)),ball:unit(new T.IcosahedronGeometry(1,1)),dome:unit(new T.SphereGeometry(1,12,6,0,Math.PI*2,0,Math.PI/2))}}
 // each recipe returns parts: [shape, x, z, y, width, height, depth, color, turn, tilt] in tile units, x and z from −0.5 to 0.5
-function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0)=>P.push([s,x,z,y,w,h,d,c,ry,rz]);
-  const house=(x,z,w,h,d,wall,roof,ry=0)=>{add('box',x,z,0,w,h,d,wall,ry);add('gable',x,z,h,w*1.08,h*.7,d*1.12,roof,ry)};
+function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)=>P.push([s,x,z,y,w,h,d,c,ry,rz,tx]);
+  const house=(x,z,w,h,d,wall,roof,ry=0,wt=-1)=>{add('box',x,z,0,w,h,d,wall,ry,0,wt);add('gable',x,z,h,w*1.08,h*.7,d*1.12,roof,ry)};
   const tower=(x,z,r,h,c,cap)=>{add('cyl',x,z,0,r,h,r,c);add('cone',x,z,h,r*1.3,r*1.7,r*1.3,cap)};
+  const merlons=(x,z,r,y,c)=>{for(let k=0;k<6;k++){const a=k/6*Math.PI*2;add('box',x+Math.cos(a)*r*.42,z+Math.sin(a)*r*.42,y,r*.26,r*.26,r*.26,c,-a,0,7)}};
   const chim=(x,z,h,c=C.dark)=>add('cyl',x,z,0,.05,h,.05,c);
   const pier=(x,len)=>add('box',x,.25+len/2,.01,.09,.035,len,C.timber);
   const boat=(x,z)=>{add('box',x,z,0,.07,.045,.2,'#7A5234');add('box',x,z+.01,.045,.01,.13,.09,C.white)};
   const R={
-    hall:()=>{add('box',0,0,0,.48,.24,.4,C.stone);add('pyr',0,0,.24,.54,.2,.46,C.slate);[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>tower(a*.26,b*.22,.1,.38,C.stone,C.red))},
+    hall:()=>{add('box',0,.02,0,.48,.22,.38,C.stone);add('gable',0,.02,.22,.5,.12,.4,C.slate);add('box',0,-.08,0,.18,.4,.18,C.stone,0,0,7);add('pyr',0,-.08,.4,.2,.18,.2,C.slate);
+      [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>{tower(a*.26,b*.21,.1,.34,C.stone,C.red);merlons(a*.26,b*.21,.1,.3,C.stone)})},
     fcap:()=>{house(0,.04,.4,.18,.28,C.stone,C.slate);tower(.2,-.16,.08,.34,C.stone,C.slate)},
     // homes are little clusters, like a Civilization IV town: thatch and timber early on, then tiled terraces, then brick and concrete blocks
     cottage:()=>{const th=era()<1,ws=[C.wall,C.timber,'#C4B596'],rs=th?[C.thatch,'#978152','#A89363']:[C.roof,'#83493A','#6E5E4C'];
-      for(let k=0;k<5;k++){const gx=k%3,gz=k/3|0,w=.14+rnd()*.04;house((gz?-.14+gx*.28:-.28+gx*.28)+(rnd()-.5)*.05,-.16+gz*.32+(rnd()-.5)*.05,w,.085,.11,ws[k%3],rs[(k+gz)%3],rnd()<.5?0:Math.PI/2)}},
+      for(let k=0;k<5;k++){const gx=k%3,gz=k/3|0,w=.14+rnd()*.04,hx=(gz?-.14+gx*.28:-.28+gx*.28)+(rnd()-.5)*.05,hz=-.16+gz*.32+(rnd()-.5)*.05;house(hx,hz,w,.085,.11,ws[k%3],rs[(k+gz)%3],rnd()<.5?0:Math.PI/2);if(rnd()<.4)add('box',hx+w*.22,hz,.07,.018,.06,.018,C.brick)}},
     townhouse:()=>{const ws=['#D0C5AC','#B3BDBE','#C7AFA0','#C2BA97','#BFB3A0'];for(const z of[-.17,.17])for(let k=0;k<5;k++){const h=.12+rnd()*.04;house(-.28+k*.14,z,.13,h,.13,ws[(k+(z>0?2:0))%5],k%2?C.slate:C.roof);if(rnd()<.5)add('box',-.28+k*.14+.03,z,h+.02,.02,.06,.02,C.brick)}},
-    tenement:()=>{[[-.2,-.15,.22,.2,.18,C.brick],[.15,-.12,.2,.24,.18,'#865040'],[0,.2,.36,.18,.16,'#9A6450']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);
-      for(let y=.05;y<h-.02;y+=.055)add('box',x,z,y,w+.004,.018,d+.004,C.win)})},
-    apartments:()=>{[[-.18,-.14,.18,.42,.18,'#CFC8B8'],[.18,-.1,.16,.34,.16,'#B2B8BA'],[0,.2,.3,.24,.16,'#C4BCA9']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);
-      for(let y=.05;y<h-.02;y+=.05)add('box',x,z,y,w+.004,.016,d+.004,C.win)})},
+    tenement:()=>{[[-.2,-.15,.22,.2,.18,C.brick],[.15,-.12,.2,.24,.18,'#865040'],[0,.2,.36,.18,.16,'#9A6450']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);})},
+    apartments:()=>{[[-.18,-.14,.18,.42,.18,'#CFC8B8'],[.18,-.1,.16,.34,.16,'#B2B8BA'],[0,.2,.3,.24,.16,'#C4BCA9']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);})},
     farm:()=>{house(-.22,.3,.16,.1,.12,C.wall,era()<1?C.thatch:C.roof);house(.05,.32,.2,.13,.14,C.barn,C.slate);add('cyl',.28,.3,0,.09,.08,.09,'#C9B06A');add('cone',.28,.3,.08,.1,.06,.1,'#B89E58')},
     greenhouse:()=>{for(let k=0;k<3;k++){add('box',-.26+k*.26,0,0,.2,.1,.7,C.glass);add('gable',-.26+k*.26,0,.1,.2,.07,.72,'#C4E0EA',Math.PI/2)}},
     vineyard:()=>{for(let k=0;k<5;k++)for(let s=0;s<3;s++)add('box',-.26+s*.26,-.36+k*.15,0,.24,.07,.06,'#4F6E34');house(.3,.34,.14,.1,.12,C.wall,C.roof)},
@@ -2875,22 +2927,22 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0)=>P.pu
     harbor:()=>{house(-.1,-.18,.42,.16,.2,C.brick,C.slate);pier(-.22,.55);pier(.2,.55);add('box',.3,.05,0,.04,.34,.04,C.gold);add('box',.3,.18,.32,.03,.03,.34,C.gold);boat(0,.55)},
     shipyard:()=>{add('box',0,.22,0,.32,.02,.62,C.grey);add('box',0,.2,.02,.14,.1,.36,C.timber);house(-.28,-.26,.2,.16,.2,C.timber,C.slate);add('box',.25,0,0,.04,.36,.04,C.gold);add('box',.12,0,.34,.3,.03,.03,C.gold)},
     lighthouse:()=>{add('box',0,0,0,.3,.06,.3,C.stone);add('cyl',0,0,.06,.1,.46,.1,C.stone);add('ball',0,0,.52,.13,.13,.13,C.gold)},
-    market:()=>{const rs=[C.red,'#B8964A','#4E6F8E','#5A7F4E'];[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b],k)=>{add('box',a*.16,b*.16,0,.15,.08,.12,C.timber);add('gable',a*.16,b*.16,.08,.18,.06,.15,rs[k])})},
+    market:()=>{const rs=[C.red,'#B8964A','#4E6F8E','#5A7F4E'];[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b],k)=>{add('box',a*.16,b*.16,0,.15,.08,.12,C.timber,0,0,10);add('gable',a*.16,b*.16,.08,.18,.06,.15,rs[k],0,0,14)})},
     workshop:()=>{house(0,0,.32,.14,.22,C.timber,C.slate);chim(.1,.06,.28)},
-    factory:()=>{add('box',0,0,0,.54,.2,.38,C.brick);for(let k=0;k<3;k++)add('gable',0,-.13+k*.13,.2,.54,.08,.13,C.slate);chim(-.2,.22,.52);chim(.18,.22,.44)},
-    textile:()=>{house(0,0,.6,.18,.26,C.brick,C.slate);chim(.24,.18,.5)},
+    factory:()=>{add('box',0,0,0,.54,.2,.38,C.brick,0,0,9);for(let k=0;k<3;k++)add('gable',0,-.13+k*.13,.2,.54,.08,.13,C.slate);chim(-.2,.22,.52);chim(.18,.22,.44)},
+    textile:()=>{house(0,0,.6,.18,.26,C.brick,C.slate,0,9);chim(.24,.18,.5)},
     steelworks:()=>{add('box',.05,0,0,.46,.22,.3,'#5C5A58');add('cyl',-.28,.2,0,.16,.4,.16,C.dark);chim(.1,.22,.56);chim(.25,.22,.5);chim(-.05,.22,.48)},
     powerstation:()=>{add('box',0,-.08,0,.46,.26,.3,'#8F8B85');[-.14,.14].forEach(x=>{add('cyl',x,.22,0,.08,.7,.08,C.grey);add('cyl',x,.22,.62,.085,.06,.085,C.red)})},
     gasworks:()=>{add('cyl',-.17,0,0,.32,.2,.32,'#6E7D83');add('cyl',.18,.1,0,.28,.16,.28,'#7C8B90');add('box',.2,-.25,0,.2,.1,.14,C.brick)},
-    diesel:()=>{house(0,0,.32,.16,.24,C.brick,C.slate);chim(.16,.1,.56)},
+    diesel:()=>{house(0,0,.32,.16,.24,C.brick,C.slate,0,9);chim(.16,.1,.56)},
     bank:()=>{add('box',0,-.03,0,.42,.2,.28,C.white);for(let k=0;k<4;k++)add('cyl',-.15+k*.1,.14,0,.035,.18,.035,C.white);add('gable',0,0,.2,.46,.08,.34,C.white)},
     clinic:()=>{house(0,0,.32,.16,.24,C.white,C.roof);add('box',0,.121,.06,.08,.024,.004,C.red);add('box',0,.121,.035,.024,.075,.004,C.red)},
-    hospital:()=>{add('box',0,0,0,.56,.26,.36,C.white);[.06,.13,.2].forEach(y=>add('box',0,0,y,.564,.025,.364,C.win));add('box',0,0,.26,.57,.015,.37,'#C9C7BF');add('box',0,0,.275,.18,.006,.05,C.red);add('box',0,0,.275,.05,.006,.18,C.red)},
+    hospital:()=>{add('box',0,0,0,.56,.26,.36,C.white,0,0,11);add('box',0,0,.26,.57,.015,.37,'#C9C7BF');add('box',0,0,.275,.18,.006,.05,C.red);add('box',0,0,.275,.05,.006,.18,C.red)},
     school:()=>{house(0,.02,.38,.16,.24,C.brick,C.slate);add('box',.2,-.16,0,.08,.3,.08,C.white);add('pyr',.2,-.16,.3,.1,.1,.1,C.slate)},
     library:()=>{add('box',0,0,0,.38,.18,.28,C.stone);add('dome',0,0,.18,.2,.13,.2,C.copper)},
     university:()=>{add('box',-.22,.04,0,.14,.2,.48,C.stone);add('box',.22,.04,0,.14,.2,.48,C.stone);add('box',0,-.2,0,.3,.2,.14,C.stone);add('gable',-.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);add('gable',.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);tower(0,-.2,.07,.42,C.stone,C.slate)},
     polytechnic:()=>{add('box',0,0,0,.5,.24,.3,'#B7BCC0');add('box',0,0,.09,.505,.06,.305,C.glass)},
-    church:()=>{house(0,.07,.36,.16,.18,C.wall,C.slate,Math.PI/2);add('box',0,-.2,0,.1,.34,.1,C.wall);add('pyr',0,-.2,.34,.12,.24,.12,C.slate)},
+    church:()=>{house(0,.07,.36,.16,.18,C.wall,C.slate,Math.PI/2,2);add('box',0,-.2,0,.1,.34,.1,C.wall,0,0,2);add('pyr',0,-.2,.34,.12,.24,.12,C.slate)},
     park:()=>{add('box',0,0,0,.8,.012,.06,'#CFC3A0');add('box',0,0,0,.06,.012,.8,'#CFC3A0');add('cyl',.16,.14,0,.3,.02,.22,C.water);[[-.2,-.2],[.22,-.18],[-.2,.2]].forEach(([x,z])=>{add('cyl',x,z,0,.03,.08,.03,C.timber);add('ball',x,z,.07,.2,.18,.2,'#4F8A3E')})},
     garden:()=>{[['#A8667A',-.2,-.2],['#B89A4E',.2,-.2],['#7E6E9E',-.2,.2],['#B07A52',.2,.2]].forEach(([c,x,z])=>add('box',x,z,0,.22,.04,.22,c));add('dome',0,0,0,.26,.2,.26,C.glass)},
     tavern:()=>{house(0,0,.28,.14,.2,C.timber,C.roof);add('box',.16,.1,.08,.01,.06,.08,C.gold)},
@@ -2898,7 +2950,7 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0)=>P.pu
     tent:()=>{add('box',0,0,0,.44,.18,.3,C.wall);add('gable',0,0,.18,.48,.12,.34,C.red)},
     fair:()=>{add('cyl',0,0,0,.88,.1,.7,C.grey);add('cyl',0,0,0,.68,.106,.5,'#6FAE5A')},
     cinema:()=>{add('box',0,0,0,.38,.2,.28,'#C9B79C');add('box',0,.15,.12,.3,.05,.02,C.red)},
-    deptstore:()=>{add('box',0,0,0,.44,.36,.34,'#CFC4AE');[.08,.18,.28].forEach(y=>add('box',0,0,y,.445,.035,.345,C.win))},
+    deptstore:()=>{add('box',0,0,0,.44,.36,.34,'#CFC4AE',0,0,12);add('box',0,0,.36,.45,.02,.35,C.dark)},
     hotel:()=>{add('box',0,0,0,.42,.3,.26,C.wall);add('pyr',0,0,.3,.46,.14,.3,C.roof)},
     bus:()=>{house(0,-.1,.5,.12,.28,'#8C7C6A',C.slate);[-.12,.12].forEach(x=>add('box',x,.26,0,.1,.07,.18,'#B84A3A'))},
     inn:()=>{house(-.08,-.02,.3,.14,.2,C.timber,C.roof);house(.24,.16,.14,.08,.2,C.timber,C.slate)},
@@ -2912,11 +2964,11 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0)=>P.pu
     charcoal:()=>{[[-.18,-.1],[.15,-.15],[0,.18]].forEach(([x,z])=>add('dome',x,z,0,.2,.14,.2,'#4A4540'));add('box',.25,.25,0,.14,.06,.08,C.timber)},
     hydro:()=>{add('box',0,0,0,.92,.2,.12,C.grey);add('box',0,-.25,0,.9,.15,.36,C.water)},
     barracks:()=>{house(0,-.16,.6,.1,.14,'#9C8F78',C.slate);house(0,.16,.6,.1,.14,'#9C8F78',C.slate);add('cyl',.34,0,0,.015,.34,.015,C.dark);add('box',.34,.04,.28,.005,.06,.09,C.red)},
-    fort:()=>{[[0,-.3,.64,.05],[0,.3,.64,.05],[-.3,0,.05,.64],[.3,0,.05,.64]].forEach(([x,z,w,d])=>add('box',x,z,0,w,.12,d,C.stone));[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>add('cyl',a*.3,b*.3,0,.14,.18,.14,C.stone));add('box',0,0,0,.18,.22,.18,C.stone)},
+    fort:()=>{[[0,-.3,.64,.05],[0,.3,.64,.05],[-.3,0,.05,.64],[.3,0,.05,.64]].forEach(([x,z,w,d])=>{add('box',x,z,0,w,.12,d,C.stone,0,0,7);for(let k=-2;k<=2;k++)add('box',x+(w>d?k*.12:0),z+(w>d?0:k*.12),.12,.035,.035,.035,C.stone,0,0,7)});[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>add('cyl',a*.3,b*.3,0,.14,.18,.14,C.stone));add('box',0,0,0,.18,.22,.18,C.stone)},
     academy:()=>{add('box',0,0,0,.4,.2,.28,C.stone);tower(-.2,-.14,.08,.34,C.stone,C.slate);tower(.2,-.14,.08,.34,C.stone,C.slate)},
     lumber:()=>{[0,1,2].forEach(k=>add('cyl',.1,-.1+k*.05,.03+(k===1?.04:0),.06,.3,.06,C.timber,0,Math.PI/2));house(-.2,.18,.18,.1,.14,C.timber,C.slate)},
     quarry:()=>{add('box',0,0,-.03,.62,.05,.62,'#A9A49B');add('box',0,0,-.06,.4,.05,.4,'#8F8A82');add('box',.3,.3,0,.04,.3,.04,C.gold)},
-    brickworks:()=>{add('box',-.06,0,0,.36,.14,.26,C.brick);add('dome',.24,.16,0,.18,.12,.18,C.brick);chim(.24,-.16,.46)},
+    brickworks:()=>{add('box',-.06,0,0,.36,.14,.26,C.brick,0,0,9);add('dome',.24,.16,0,.18,.12,.18,C.brick);chim(.24,-.16,.46)},
     mine:()=>{add('box',-.12,.05,0,.3,.12,.2,'#6F6A64');add('box',.16,-.12,0,.06,.36,.06,C.dark);add('cyl',.16,-.12,.34,.12,.02,.12,C.dark,0,Math.PI/2);add('cone',.22,.22,0,.2,.1,.2,'#8A6E55')},
     coalmine:()=>{add('box',-.12,.05,0,.3,.12,.2,'#5E5A55');add('box',.16,-.12,0,.06,.36,.06,C.dark);add('cone',.2,.22,0,.22,.12,.22,'#2A2826');add('cone',-.24,-.24,0,.14,.08,.14,'#2A2826')},
     watch:()=>{add('box',0,0,0,.13,.3,.13,C.stone);add('pyr',0,0,.3,.16,.12,.16,C.slate)},
@@ -2934,12 +2986,13 @@ function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.
   const lay=(i,rec,ox,oz,sc,ry)=>{const cx=i%W+.5,cz=(i/W|0)+.5,co=Math.cos(ry),si=Math.sin(ry);
     // a building stands on one base height, with foundations reaching down into any slope; flat things like crop rows follow the ground
     const g0=v3G(cx+ox,cz+oz);
-    rec.forEach(([sh,x,z,y,w,h,d,c,pry,rz])=>{const lx=x*sc,lz=z*sc,u=cx+ox+lx*co+lz*si,v=cz+oz-lx*si+lz*co;
-      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,1]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz])})};
-  const RURALB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine'],dev=x=>x&&x.t!=='w'&&(x.hs||(x.b&&!RURALB.includes(x.b))),patches=[],FIELD=['#B3A05F','#879752','#7A674B','#8B9D5A','#9E956A'];
+    rec.forEach(([sh,x,z,y,w,h,d,c,pry,rz,tx])=>{const lx=x*sc,lz=z*sc,u=cx+ox+lx*co+lz*si,v=cz+oz-lx*si+lz*co,t2=v3TexOf(sh,c,tx,w*sc,h*sc,d*sc);
+      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,t2]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2])})};
+  const RURALB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine'],dev=x=>x&&x.t!=='w'&&(x.hs||(x.b&&!RURALB.includes(x.b))),patches=[];
   // a flat patch on the ground (fields, roads), given by its four corners in tile units
-  const patch=(a,b,c,d,col,n=3)=>patches.push([a,b,c,d,col,n]);
-  const parcel=(u0,v0,u1,v1,col)=>patch([u0,v0],[u1,v0],[u1,v1],[u0,v1],col);
+  const patch=(a,b,c,d,col,n=3,tx=-1,rot=0)=>patches.push([a,b,c,d,col,n,tx,rot]);
+  // a field: one of the crop surfaces, its rows turned one way or the other
+  const parcel=(u0,v0,u1,v1,tx,rot,f)=>patch([u0,v0],[u1,v0],[u1,v1],[u0,v1],new T.Color(f,f,f),3,tx,rot);
   const dens=W<=36?26:W<=52?18:14,bushes=[];
   S.map.forEach((x,i)=>{if(x.t==='w')return;let seed=i*9301+49297;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};const c=i%W,r=i/W|0;
     let ry=Math.floor(rnd()*4)*Math.PI/2;
@@ -2951,7 +3004,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.
     if(x.sm)lay(i,v3Recipe(x.sm,rnd),.3,-.3,.38,0);
     // fields: a farm is a patchwork of crops, and open land beside a town is farmed too
     const town=!x.b&&!x.hs&&x.t!=='f'&&!x.hl&&[-1,0,1].some(dr=>[-1,0,1].some(dc=>{const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)return false;const y=S.map[rr*W+cc];return y.hs&&y.o===x.o}))&&rnd()<.75;
-    if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++)parcel(c+a/nx+g,r+b*z1/nz+g,c+(a+1)/nx-g,r+(b+1)*z1/nz-g,FIELD[Math.floor(rnd()*FIELD.length)])}
+    if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++)parcel(c+a/nx+g,r+b*z1/nz+g,c+(a+1)/nx-g,r+(b+1)*z1/nz-g,Math.floor(rnd()*4),rnd()<.5,.88+rnd()*.2)}
     // trees: forests are thick with them, open country has a few; pines in the north and on hills
     const n=x.t==='f'?(x.b||x.hs?5:dens):(!x.b&&!x.hs&&!town&&rnd()<.18?1+Math.floor(rnd()*3):0);
     for(let k=0;k<n;k++){const u=c+.06+rnd()*.88,v=r+.06+rnd()*.88;if((x.b||x.hs)&&Math.abs(u-c-.5)<.34&&Math.abs(v-r-.5)<.34)continue;if(v3river(u,v)<.22)continue;
@@ -2971,8 +3024,10 @@ function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.
   const meshes=[],protos=V3.protos,col=new T.Color();
   const inst=(geo,list,fill)=>{const mesh=new T.InstancedMesh(geo,new T.MeshLambertMaterial({color:0xffffff}),list.length);list.forEach((it,k)=>{fill(it,k,mesh)});
     mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;meshes.push(mesh)};
-  Object.entries(by).forEach(([sh,list])=>inst(protos[sh],list,([,u,v,y,w,h,d,c,ry,rz],k,mesh)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(u),y-.012,v3Z(v));s.set(w,h,d);
-    m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.set(c))}));
+  // buildings share one textured material; each instance carries which surface it shows
+  Object.entries(by).forEach(([sh,list])=>{const geo=protos[sh].clone(),tex=new Float32Array(list.length),mesh=new T.InstancedMesh(geo,V3.bmat,list.length);
+    list.forEach(([,u,v,y,w,h,d,c,ry,rz,t2],k)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(u),y-.012,v3Z(v));s.set(w,h,d);m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.set(c));tex[k]=t2});
+    geo.setAttribute('aTex',new T.InstancedBufferAttribute(tex,1));mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.castShadow=mesh.receiveShadow=true;mesh.userData.shared=true;meshes.push(mesh)});
   const pines=trees.filter(t=>t[3]),leafy=trees.filter(t=>!t[3]),put=(mesh,k,u,v,dy,sx,sy,r)=>{e.set(0,r*6,0);q.setFromEuler(e);p.set(v3X(u),v3G(u,v)+dy,v3Z(v));s.set(sx,sy,sx);m4.compose(p,q,s);mesh.setMatrixAt(k,m4)};
   if(trees.length)inst(protos.trunk,trees,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,-.01,.018*sc,.07*sc,r);mesh.setColorAt(k,col.set('#5A4430'))});
   if(pines.length){inst(protos.pine,pines,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.03*sc,.12*sc,.15*sc,r);mesh.setColorAt(k,col.setHSL(.3+r*.06,.28+r*.12,.17+r*.06))});
@@ -2980,19 +3035,20 @@ function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.
   if(bushes.length)inst(protos.ball,bushes,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,-.01,.07*sc,.05*sc,r);mesh.setColorAt(k,col.setHSL(.24+r*.06,.3+r*.1,.15+r*.05))});
   if(leafy.length)inst(protos.ball,leafy,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.05*sc,.15*sc,.13*sc,r);mesh.setColorAt(k,col.setHSL(.2+r*.08,.34+r*.12,.22+r*.08))});
   // the ground patches: one mesh that follows the terrain
-  if(patches.length){const pos=[],cols=[],cc=new T.Color();patches.forEach(([a,b,c2,d,cl,n])=>{cc.set(cl);const f=v3fbm(a[0]*2,a[1]*2)*.14+.93;
+  if(patches.length){const pos=[],cols=[],uvs=[],txs=[],cc=new T.Color();patches.forEach(([a,b,c2,d,cl,n,tx,rot])=>{cc.set(cl);const Ls=Math.hypot(b[0]-a[0],b[1]-a[1])*3,Lt=Math.hypot(d[0]-a[0],d[1]-a[1])*3;const f=v3fbm(a[0]*2,a[1]*2)*.14+.93;
       const at=(s1,t1)=>{const u=(a[0]*(1-s1)+b[0]*s1)*(1-t1)+(d[0]*(1-s1)+c2[0]*s1)*t1,v=(a[1]*(1-s1)+b[1]*s1)*(1-t1)+(d[1]*(1-s1)+c2[1]*s1)*t1;return[v3X(u),v3G(u,v)+.007,v3Z(v)]};
       const m=n,k2=n===6?1:n;for(let i2=0;i2<m;i2++)for(let j2=0;j2<k2;j2++){const s0=i2/m,s1=(i2+1)/m,t0=j2/k2,t1=(j2+1)/k2,A=at(s0,t0),B2=at(s1,t0),C2=at(s1,t1),D=at(s0,t1);
-        [A,C2,B2,A,D,C2].forEach(pt=>{pos.push(...pt);cols.push(cc.r*f,cc.g*f,cc.b*f)})}});
-    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(cols,3));g.computeVertexNormals();
-    const pm=new T.Mesh(g,new T.MeshLambertMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));pm.receiveShadow=true;pm.isPatch=true;meshes.push(pm)}
+        [[A,s0,t0],[C2,s1,t1],[B2,s1,t0],[A,s0,t0],[D,s0,t1],[C2,s1,t1]].forEach(([pt,ss,tt])=>{pos.push(...pt);cols.push(cc.r*f,cc.g*f,cc.b*f);uvs.push(...(rot?[tt*Lt,ss*Ls]:[ss*Ls,tt*Lt]));txs.push(tx)})}});
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(cols,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setAttribute('aTex',new T.Float32BufferAttribute(txs,1));g.computeVertexNormals();
+    const pm=new T.Mesh(g,V3.pmat);pm.receiveShadow=true;pm.isPatch=true;pm.userData.shared=true;meshes.push(pm)}
   return meshes}
 
 /* setup, syncing with the game, and drawing */
 function v3Init(){const T=THREE,cv=$('#cv3d');
   if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;
     V3.scene=new T.Scene();V3.cam=new T.PerspectiveCamera(38,1,.05,400);V3.protos=v3Protos();
-    V3.det=v3DetailTex();V3.hemi=new T.HemisphereLight(0xdde8ec,0x5b4d36,.5);V3.scene.add(V3.hemi);
+    V3.det=v3DetailTex();V3.bmat=v3TexMat(v3Atlas(),4,'{vec3 sc=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));vec3 lp=position*sc;vec3 an=abs(normal);vec2 q=an.x>an.z?vec2(lp.z,lp.y-.1):vec2(lp.x,lp.y-.1);if(an.y>.72)q=lp.xz;vTUV=q*vec2(6.,7.);vTile=aTex;}','b');
+    V3.pmat=v3TexMat(v3FieldAtlas(),2,'vTile=aTex;vTUV=uv;','patch');Object.assign(V3.pmat,{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});V3.hemi=new T.HemisphereLight(0xdde8ec,0x5b4d36,.5);V3.scene.add(V3.hemi);
     V3.sun=new T.DirectionalLight(0xffe2b4,1.1);V3.sun.castShadow=true;V3.sun.shadow.mapSize.set(2048,2048);V3.sun.shadow.bias=-.0006;V3.sun.shadow.normalBias=.02;V3.scene.add(V3.sun,V3.sun.target);
     V3.wave=v3WaveTex();V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x3b6878,transparent:true,opacity:.8,shininess:40,specular:0x55656b,normalMap:V3.wave,normalScale:new T.Vector2(.3,.3)}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
     V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x27454e}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
@@ -3007,7 +3063,7 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
     V3.sky=new T.Color(K.dark?'#1A262C':'#AFC3CB');V3.scene.background=V3.sky;V3.scene.fog=new T.Fog(V3.sky,20,60);V3.hemi.intensity=K.dark?.34:.5;V3.sun.intensity=K.dark?.75:1.1;
     V3.sun.position.set(-big*.5,big*.5,big*.32);V3.sun.target.position.set(0,0,0);Object.assign(V3.sun.shadow.camera,{left:-big*.8,right:big*.8,top:big*.8,bottom:-big*.8,near:1,far:big*3});V3.sun.shadow.camera.updateProjectionMatrix();
     V3.oSig=''}
-  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);m.material.dispose();if(m.isPatch)m.geometry.dispose();else m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m))}
+  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m))}
   // the selected tile gets a gold outline
   if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
   if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
