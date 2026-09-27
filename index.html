@@ -138,6 +138,7 @@ body.on-isle .mappane{display:block}
 .mapwrap canvas.v3cv{display:none}
 body.v3 #mapcv,body.v3 .minimap,body.v3 #modeSel,body.v3 #legBtn,body.v3 .mapover .legend{display:none!important}
 body.v3 .mapwrap canvas.v3cv{display:block}
+#lifeBtn{display:none}body.v3 #lifeBtn{display:inline-block}
 .v3lab{position:absolute;inset:0;pointer-events:none;overflow:hidden;display:none}
 body.v3 .v3lab{display:block}
 .v3lab span{position:absolute;left:0;top:0;white-space:nowrap;font:600 12px/1.1 system-ui,sans-serif;color:#FFFFFF;text-shadow:0 0 3px rgba(20,25,30,.95),0 0 2px rgba(20,25,30,.95)}
@@ -242,7 +243,7 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
       <div class="mapwrap" id="mapwrap">
         <canvas class="cv" id="mapcv" tabindex="0" role="img" aria-label="Map of your kingdom and its neighbors. Arrow keys move the cursor, Enter selects, plus and minus zoom."></canvas>
         <canvas class="cv v3cv" id="cv3d" tabindex="0" role="img" aria-label="3D view of your kingdom. Drag to move, pinch to zoom, and twist or drag with two fingers to turn and tilt. Arrow keys move, Q and E turn."></canvas><div class="v3lab" id="v3lab" aria-hidden="true"></div><div class="v3msg" id="v3msg" role="status" hidden></div>
-        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button><button class="pill" id="v3Btn" data-act="view3d" aria-pressed="false" title="Switch between the flat map and the 3D view">3D</button></div><div class="legend" id="legend"></div></div>
+        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button><button class="pill" id="v3Btn" data-act="view3d" aria-pressed="false" title="Switch between the flat map and the 3D view">3D</button><button class="pill" id="lifeBtn" data-act="life" aria-pressed="true" title="Turn the living world on or off: people, carts, animals, boats and smoke">Life</button></div><div class="legend" id="legend"></div></div>
         <div class="maptip" id="maptip" aria-live="polite"></div>
         <div class="mapctl"><button data-act="zoom" data-arg="in" aria-label="Zoom in">+</button><button data-act="zoom" data-arg="out" aria-label="Zoom out">−</button><button data-act="zoom" data-arg="home" aria-label="Center on the capital">⌂</button><button data-act="maphelp" aria-label="How the map works">?</button><button class="wideonly" data-act="panel" id="panelBtn" aria-label="Hide the side panel" title="Hide or show the side panel">⤢</button></div>
         <canvas class="minimap" id="minimap" aria-hidden="true"></canvas>
@@ -2884,7 +2885,7 @@ function v3FieldAtlas(){const S=256,cv=document.createElement('canvas');cv.width
   cell(3,()=>{fill('#7D9E56');dots(3000,['#8DAE64','#6C8C46','#9AB870','#62823E'],4);dots(60,['#E8E4C8','#E0C860'],3)});
   const t=new THREE.CanvasTexture(cv);t.anisotropy=V3.r.capabilities.getMaxAnisotropy();return t}
 // which surface a part gets, from its shape and color, unless its recipe says
-function v3TexOf(sh,c,tx,w,h,d){if(tx>=0)return tx;const C=V3C;
+function v3TexOf(sh,c,tx,w,h,d){if(tx>=0)return tx;if(tx===-2)return 15;const C=V3C;
   if(sh==='gable'||sh==='pyr'||sh==='cone'){if([C.slate,'#4A545C'].includes(c))return 5;if([C.thatch,'#978152','#A89363','#B89E58'].includes(c))return 6;if([C.white,C.glass,'#C4E0EA'].includes(c))return 14;
     if(sh==='cone'&&![C.roof,C.red,'#83493A','#6E5E4C'].includes(c))return 15;return 4}
   if(sh==='box'){if(Math.min(w,d)<.045||h<.04)return c===C.timber?10:15;if([C.brick,'#865040','#9A6450'].includes(c))return 1;if(c===C.stone)return 2;if(c===C.timber)return 3;if(c===C.barn)return 10;if(c===C.white)return 12;
@@ -2902,33 +2903,37 @@ function v3Protos(){const T=THREE,unit=g=>{g.computeBoundingBox();const b=g.boun
     cone:unit(new T.ConeGeometry(1,1,8)),pine:unit(new T.ConeGeometry(1,1,6)),trunk:unit(new T.CylinderGeometry(1,1,1,5,1,true)),ball:unit(new T.IcosahedronGeometry(1,1)),dome:unit(new T.SphereGeometry(1,12,6,0,Math.PI*2,0,Math.PI/2))}}
 // each recipe returns parts: [shape, x, z, y, width, height, depth, color, turn, tilt] in tile units, x and z from −0.5 to 0.5
 function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)=>P.push([s,x,z,y,w,h,d,c,ry,rz,tx]);
-  const house=(x,z,w,h,d,wall,roof,ry=0,wt=-1)=>{add('box',x,z,0,w,h,d,wall,ry,0,wt);add('gable',x,z,h,w*1.08,h*.7,d*1.12,roof,ry)};
+  const house=(x,z,w,h,d,wall,roof,ry=0,wt=-1)=>{add('box',x,z,0,w,h,d,wall,ry,0,wt);add('gable',x,z,h,w*1.08,h*.7,d*1.12,roof,ry);
+    add('box',x+Math.sin(ry)*(d/2+.003),z+Math.cos(ry)*(d/2+.003),0,Math.min(.03,w*.2),h*.55,.006,'#4A3526',ry,0,14)};
+  // barrels and crates stacked about a workplace
+  const props=(x,z,n=4)=>{for(let k=0;k<n;k++){const a=rnd()*6.28,r=rnd()*.06;if(rnd()<.5)add('cyl',x+Math.cos(a)*r,z+Math.sin(a)*r,0,.028,.035,.028,'#6E4E32',0,0,10);else add('box',x+Math.cos(a)*r,z+Math.sin(a)*r,0,.032,.03,.032,'#9A7A52',rnd()*1.5,0,10)}};
+  const flag=(x,z,y,c='#B8312F')=>{add('cyl',x,z,y,.008,.13,.008,C.dark,0,0,15);add('box',x+.027,z,y+.09,.05,.032,.004,c,0,0,14)};
   const tower=(x,z,r,h,c,cap)=>{add('cyl',x,z,0,r,h,r,c);add('cone',x,z,h,r*1.3,r*1.7,r*1.3,cap)};
   const merlons=(x,z,r,y,c)=>{for(let k=0;k<6;k++){const a=k/6*Math.PI*2;add('box',x+Math.cos(a)*r*.42,z+Math.sin(a)*r*.42,y,r*.26,r*.26,r*.26,c,-a,0,7)}};
-  const chim=(x,z,h,c=C.dark)=>add('cyl',x,z,0,.05,h,.05,c);
+  const chim=(x,z,h,c=C.dark)=>add('cyl',x,z,0,.05,h,.05,c,0,0,-2);
   const pier=(x,len)=>add('box',x,.25+len/2,.01,.09,.035,len,C.timber);
   const boat=(x,z)=>{add('box',x,z,0,.07,.045,.2,'#7A5234');add('box',x,z+.01,.045,.01,.13,.09,C.white)};
   const R={
-    hall:()=>{add('box',0,.02,0,.48,.22,.38,C.stone);add('gable',0,.02,.22,.5,.12,.4,C.slate);add('box',0,-.08,0,.18,.4,.18,C.stone,0,0,7);add('pyr',0,-.08,.4,.2,.18,.2,C.slate);
+    hall:()=>{add('box',0,.02,0,.48,.22,.38,C.stone);flag(0,-.08,.58);add('gable',0,.02,.22,.5,.12,.4,C.slate);add('box',0,-.08,0,.18,.4,.18,C.stone,0,0,7);add('pyr',0,-.08,.4,.2,.18,.2,C.slate);
       [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>{tower(a*.26,b*.21,.1,.34,C.stone,C.red);merlons(a*.26,b*.21,.1,.3,C.stone)})},
     fcap:()=>{house(0,.04,.4,.18,.28,C.stone,C.slate);tower(.2,-.16,.08,.34,C.stone,C.slate)},
     // homes are little clusters, like a Civilization IV town: thatch and timber early on, then tiled terraces, then brick and concrete blocks
     cottage:()=>{const th=era()<1,ws=[C.wall,C.timber,'#C4B596'],rs=th?[C.thatch,'#978152','#A89363']:[C.roof,'#83493A','#6E5E4C'];
-      for(let k=0;k<5;k++){const gx=k%3,gz=k/3|0,w=.14+rnd()*.04,hx=(gz?-.14+gx*.28:-.28+gx*.28)+(rnd()-.5)*.05,hz=-.16+gz*.32+(rnd()-.5)*.05;house(hx,hz,w,.085,.11,ws[k%3],rs[(k+gz)%3],rnd()<.5?0:Math.PI/2);if(rnd()<.4)add('box',hx+w*.22,hz,.07,.018,.06,.018,C.brick)}},
-    townhouse:()=>{const ws=['#D0C5AC','#B3BDBE','#C7AFA0','#C2BA97','#BFB3A0'];for(const z of[-.17,.17])for(let k=0;k<5;k++){const h=.12+rnd()*.04;house(-.28+k*.14,z,.13,h,.13,ws[(k+(z>0?2:0))%5],k%2?C.slate:C.roof);if(rnd()<.5)add('box',-.28+k*.14+.03,z,h+.02,.02,.06,.02,C.brick)}},
+      for(let k=0;k<5;k++){const gx=k%3,gz=k/3|0,w=.14+rnd()*.04,hx=(gz?-.14+gx*.28:-.28+gx*.28)+(rnd()-.5)*.05,hz=-.16+gz*.32+(rnd()-.5)*.05;house(hx,hz,w,.085,.11,ws[k%3],rs[(k+gz)%3],rnd()<.5?0:Math.PI/2);if(rnd()<.4)add('box',hx+w*.22,hz,.07,.018,.06,.018,C.brick,0,0,-2)}add('box',.3,.3,0,.07,.03,.03,C.timber,0,0,10)},
+    townhouse:()=>{const ws=['#D0C5AC','#B3BDBE','#C7AFA0','#C2BA97','#BFB3A0'];for(const z of[-.17,.17])for(let k=0;k<5;k++){const h=.12+rnd()*.04;house(-.28+k*.14,z,.13,h,.13,ws[(k+(z>0?2:0))%5],k%2?C.slate:C.roof);if(rnd()<.5)add('box',-.28+k*.14+.03,z,h+.02,.02,.06,.02,C.brick,0,0,-2)}},
     tenement:()=>{[[-.2,-.15,.22,.2,.18,C.brick],[.15,-.12,.2,.24,.18,'#865040'],[0,.2,.36,.18,.16,'#9A6450']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);})},
     apartments:()=>{[[-.18,-.14,.18,.42,.18,'#CFC8B8'],[.18,-.1,.16,.34,.16,'#B2B8BA'],[0,.2,.3,.24,.16,'#C4BCA9']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);})},
     farm:()=>{house(-.22,.3,.16,.1,.12,C.wall,era()<1?C.thatch:C.roof);house(.05,.32,.2,.13,.14,C.barn,C.slate);add('cyl',.28,.3,0,.09,.08,.09,'#C9B06A');add('cone',.28,.3,.08,.1,.06,.1,'#B89E58')},
     greenhouse:()=>{for(let k=0;k<3;k++){add('box',-.26+k*.26,0,0,.2,.1,.7,C.glass);add('gable',-.26+k*.26,0,.1,.2,.07,.72,'#C4E0EA',Math.PI/2)}},
     vineyard:()=>{for(let k=0;k<5;k++)for(let s=0;s<3;s++)add('box',-.26+s*.26,-.36+k*.15,0,.24,.07,.06,'#4F6E34');house(.3,.34,.14,.1,.12,C.wall,C.roof)},
     granary:()=>{tower(-.12,0,.15,.3,'#CBBF9E',C.roof);tower(.15,.06,.13,.26,'#CBBF9E',C.roof)},
-    dock:()=>{pier(0,.5);house(0,-.15,.22,.12,.16,C.timber,C.slate);boat(.18,.5)},
+    dock:()=>{pier(0,.5);house(0,-.15,.22,.12,.16,C.timber,C.slate);boat(.18,.5);props(-.15,.12,4)},
     ferry:()=>{pier(-.05,.45);house(-.05,-.12,.16,.1,.14,C.wall,C.roof);boat(.16,.45)},
     harbor:()=>{house(-.1,-.18,.42,.16,.2,C.brick,C.slate);pier(-.22,.55);pier(.2,.55);add('box',.3,.05,0,.04,.34,.04,C.gold);add('box',.3,.18,.32,.03,.03,.34,C.gold);boat(0,.55)},
     shipyard:()=>{add('box',0,.22,0,.32,.02,.62,C.grey);add('box',0,.2,.02,.14,.1,.36,C.timber);house(-.28,-.26,.2,.16,.2,C.timber,C.slate);add('box',.25,0,0,.04,.36,.04,C.gold);add('box',.12,0,.34,.3,.03,.03,C.gold)},
     lighthouse:()=>{add('box',0,0,0,.3,.06,.3,C.stone);add('cyl',0,0,.06,.1,.46,.1,C.stone);add('ball',0,0,.52,.13,.13,.13,C.gold)},
-    market:()=>{const rs=[C.red,'#B8964A','#4E6F8E','#5A7F4E'];[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b],k)=>{add('box',a*.16,b*.16,0,.15,.08,.12,C.timber,0,0,10);add('gable',a*.16,b*.16,.08,.18,.06,.15,rs[k],0,0,14)})},
-    workshop:()=>{house(0,0,.32,.14,.22,C.timber,C.slate);chim(.1,.06,.28)},
+    market:()=>{const rs=[C.red,'#B8964A','#4E6F8E','#5A7F4E'];[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b],k)=>{add('box',a*.16,b*.16,0,.15,.08,.12,C.timber,0,0,10);add('gable',a*.16,b*.16,.08,.18,.06,.15,rs[k],0,0,14)});props(0,0,6)},
+    workshop:()=>{house(0,0,.32,.14,.22,C.timber,C.slate);chim(.1,.06,.28);props(.2,.2,5)},
     factory:()=>{add('box',0,0,0,.54,.2,.38,C.brick,0,0,9);for(let k=0;k<3;k++)add('gable',0,-.13+k*.13,.2,.54,.08,.13,C.slate);chim(-.2,.22,.52);chim(.18,.22,.44)},
     textile:()=>{house(0,0,.6,.18,.26,C.brick,C.slate,0,9);chim(.24,.18,.5)},
     steelworks:()=>{add('box',.05,0,0,.46,.22,.3,'#5C5A58');add('cyl',-.28,.2,0,.16,.4,.16,C.dark);chim(.1,.22,.56);chim(.25,.22,.5);chim(-.05,.22,.48)},
@@ -2942,10 +2947,10 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
     library:()=>{add('box',0,0,0,.38,.18,.28,C.stone);add('dome',0,0,.18,.2,.13,.2,C.copper)},
     university:()=>{add('box',-.22,.04,0,.14,.2,.48,C.stone);add('box',.22,.04,0,.14,.2,.48,C.stone);add('box',0,-.2,0,.3,.2,.14,C.stone);add('gable',-.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);add('gable',.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);tower(0,-.2,.07,.42,C.stone,C.slate)},
     polytechnic:()=>{add('box',0,0,0,.5,.24,.3,'#B7BCC0');add('box',0,0,.09,.505,.06,.305,C.glass)},
-    church:()=>{house(0,.07,.36,.16,.18,C.wall,C.slate,Math.PI/2,2);add('box',0,-.2,0,.1,.34,.1,C.wall,0,0,2);add('pyr',0,-.2,.34,.12,.24,.12,C.slate)},
+    church:()=>{house(0,.07,.36,.16,.18,C.wall,C.slate,Math.PI/2,2);for(let k=0;k<6;k++)add('box',.22+(k%2)*.08,-.05+(k>>1)*.1,0,.022,.03,.008,'#8E8A82',0,0,15);add('box',0,-.2,0,.1,.34,.1,C.wall,0,0,2);add('pyr',0,-.2,.34,.12,.24,.12,C.slate)},
     park:()=>{add('box',0,0,0,.8,.012,.06,'#CFC3A0');add('box',0,0,0,.06,.012,.8,'#CFC3A0');add('cyl',.16,.14,0,.3,.02,.22,C.water);[[-.2,-.2],[.22,-.18],[-.2,.2]].forEach(([x,z])=>{add('cyl',x,z,0,.03,.08,.03,C.timber);add('ball',x,z,.07,.2,.18,.2,'#4F8A3E')})},
     garden:()=>{[['#A8667A',-.2,-.2],['#B89A4E',.2,-.2],['#7E6E9E',-.2,.2],['#B07A52',.2,.2]].forEach(([c,x,z])=>add('box',x,z,0,.22,.04,.22,c));add('dome',0,0,0,.26,.2,.26,C.glass)},
-    tavern:()=>{house(0,0,.28,.14,.2,C.timber,C.roof);add('box',.16,.1,.08,.01,.06,.08,C.gold)},
+    tavern:()=>{house(0,0,.28,.14,.2,C.timber,C.roof);add('box',.16,.1,.08,.01,.06,.08,C.gold);props(-.18,.16,3)},
     coffeehouse:()=>{house(0,0,.28,.15,.2,C.wall,'#6B8E5A')},
     tent:()=>{add('box',0,0,0,.44,.18,.3,C.wall);add('gable',0,0,.18,.48,.12,.34,C.red)},
     fair:()=>{add('cyl',0,0,0,.88,.1,.7,C.grey);add('cyl',0,0,0,.68,.106,.5,'#6FAE5A')},
@@ -2953,18 +2958,20 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
     deptstore:()=>{add('box',0,0,0,.44,.36,.34,'#CFC4AE',0,0,12);add('box',0,0,.36,.45,.02,.35,C.dark)},
     hotel:()=>{add('box',0,0,0,.42,.3,.26,C.wall);add('pyr',0,0,.3,.46,.14,.3,C.roof)},
     bus:()=>{house(0,-.1,.5,.12,.28,'#8C7C6A',C.slate);[-.12,.12].forEach(x=>add('box',x,.26,0,.1,.07,.18,'#B84A3A'))},
-    inn:()=>{house(-.08,-.02,.3,.14,.2,C.timber,C.roof);house(.24,.16,.14,.08,.2,C.timber,C.slate)},
+    inn:()=>{house(-.08,-.02,.3,.14,.2,C.timber,C.roof);house(.24,.16,.14,.08,.2,C.timber,C.slate);props(-.2,.28,3)},
     canal:()=>{add('box',0,0,-.02,1,.04,.24,C.water);add('box',-.2,0,0,.03,.07,.26,C.timber);add('box',.2,0,0,.03,.07,.26,C.timber)},
     rail:()=>{add('box',0,.18,0,1,.02,.1,C.dark);house(0,-.15,.34,.14,.18,C.brick,C.slate);[-.18,-.04,.1].forEach((x,k)=>add('box',x,.18,.02,.12,.07,.07,k?'#3E5A48':C.dark))},
     garage:()=>{add('box',0,-.08,0,.42,.14,.28,'#9AA3A8');['#C8453B','#3F7FB5','#E0B43C'].forEach((c,k)=>add('box',-.14+k*.14,.24,0,.08,.05,.13,c))},
     well:()=>{add('cyl',0,0,0,.16,.06,.16,C.stone);add('pyr',0,0,.16,.2,.08,.2,C.roof);[-.07,.07].forEach(x=>add('box',x,0,.05,.015,.11,.015,C.timber))},
     waterworks:()=>{house(-.14,.12,.26,.14,.2,C.brick,C.slate);add('cyl',.16,-.12,0,.05,.28,.05,C.grey);add('cyl',.16,-.12,.28,.24,.12,.24,'#8FA9B5')},
-    wind:()=>{add('cyl',0,0,0,.14,.3,.14,C.wall);add('cone',0,0,.3,.16,.1,.16,C.slate);for(let k=0;k<4;k++)add('box',0,.1,.3,.05,.28,.015,C.white,0,k*Math.PI/2+.5)},
-    mill:()=>{house(-.05,0,.28,.16,.22,C.stone,C.slate);add('cyl',.14,0,.1,.2,.04,.2,C.timber,0,Math.PI/2)},
+    wind:()=>{add('cyl',0,0,0,.14,.3,.14,C.wall);add('cone',0,0,.3,.16,.1,.16,C.slate);add('cyl',0,.08,.3,.03,.02,.03,C.dark,0,Math.PI/2)},
+    // the windmill's sails and the water wheel turn in the living world
+
+    mill:()=>{house(-.05,0,.28,.16,.22,C.stone,C.slate)},
     charcoal:()=>{[[-.18,-.1],[.15,-.15],[0,.18]].forEach(([x,z])=>add('dome',x,z,0,.2,.14,.2,'#4A4540'));add('box',.25,.25,0,.14,.06,.08,C.timber)},
     hydro:()=>{add('box',0,0,0,.92,.2,.12,C.grey);add('box',0,-.25,0,.9,.15,.36,C.water)},
     barracks:()=>{house(0,-.16,.6,.1,.14,'#9C8F78',C.slate);house(0,.16,.6,.1,.14,'#9C8F78',C.slate);add('cyl',.34,0,0,.015,.34,.015,C.dark);add('box',.34,.04,.28,.005,.06,.09,C.red)},
-    fort:()=>{[[0,-.3,.64,.05],[0,.3,.64,.05],[-.3,0,.05,.64],[.3,0,.05,.64]].forEach(([x,z,w,d])=>{add('box',x,z,0,w,.12,d,C.stone,0,0,7);for(let k=-2;k<=2;k++)add('box',x+(w>d?k*.12:0),z+(w>d?0:k*.12),.12,.035,.035,.035,C.stone,0,0,7)});[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>add('cyl',a*.3,b*.3,0,.14,.18,.14,C.stone));add('box',0,0,0,.18,.22,.18,C.stone)},
+    fort:()=>{flag(0,0,.22);[[0,-.3,.64,.05],[0,.3,.64,.05],[-.3,0,.05,.64],[.3,0,.05,.64]].forEach(([x,z,w,d])=>{add('box',x,z,0,w,.12,d,C.stone,0,0,7);for(let k=-2;k<=2;k++)add('box',x+(w>d?k*.12:0),z+(w>d?0:k*.12),.12,.035,.035,.035,C.stone,0,0,7)});[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>add('cyl',a*.3,b*.3,0,.14,.18,.14,C.stone));add('box',0,0,0,.18,.22,.18,C.stone)},
     academy:()=>{add('box',0,0,0,.4,.2,.28,C.stone);tower(-.2,-.14,.08,.34,C.stone,C.slate);tower(.2,-.14,.08,.34,C.stone,C.slate)},
     lumber:()=>{[0,1,2].forEach(k=>add('cyl',.1,-.1+k*.05,.03+(k===1?.04:0),.06,.3,.06,C.timber,0,Math.PI/2));house(-.2,.18,.18,.1,.14,C.timber,C.slate)},
     quarry:()=>{add('box',0,0,-.03,.62,.05,.62,'#A9A49B');add('box',0,0,-.06,.4,.05,.4,'#8F8A82');add('box',.3,.3,0,.04,.3,.04,C.gold)},
@@ -2975,36 +2982,46 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
     firestation:()=>{add('box',0,.04,0,.34,.18,.26,'#B84A3A');add('box',.16,-.14,0,.1,.36,.1,'#B84A3A');add('pyr',.16,-.14,.36,.12,.08,.12,C.slate)},
     printhouse:()=>{house(0,0,.32,.16,.24,C.brick,C.slate);chim(-.1,.08,.3)},
     observatory:()=>{add('box',0,0,0,.3,.14,.3,C.white);add('dome',0,0,.14,.24,.16,.24,C.white)},
-    tradeco:()=>{house(0,.04,.44,.2,.26,C.brick,C.slate);add('cyl',.26,-.2,0,.015,.4,.015,C.dark);add('box',.26,-.16,.33,.005,.06,.09,C.gold)},
+    tradeco:()=>{house(0,.04,.44,.2,.26,C.brick,C.slate);add('cyl',.26,-.2,0,.015,.4,.015,C.dark);add('box',.26,-.16,.33,.005,.06,.09,C.gold);props(-.26,-.26,6)},
     atelier:()=>{house(0,0,.3,.16,.22,'#E8D8C0','#7E5A8C')},
     broadcaster:()=>{add('box',-.15,.15,0,.24,.12,.18,C.white);add('cone',.12,-.1,0,.1,.8,.1,C.red)},
     };
   (R[id]||(()=>house(0,0,.34,.16,.26,C.wall,C.roof)))();return P}
 const V3FACE=['dock','ferry','harbor','shipyard'];
-function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
+function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels:[],pastures:[],farm:[],ships:[]},m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
   // lay one recipe on tile i at a sub-position and scale, turned by ry
   const lay=(i,rec,ox,oz,sc,ry)=>{const cx=i%W+.5,cz=(i/W|0)+.5,co=Math.cos(ry),si=Math.sin(ry);
     // a building stands on one base height, with foundations reaching down into any slope; flat things like crop rows follow the ground
     const g0=v3G(cx+ox,cz+oz);
     rec.forEach(([sh,x,z,y,w,h,d,c,pry,rz,tx])=>{const lx=x*sc,lz=z*sc,u=cx+ox+lx*co+lz*si,v=cz+oz-lx*si+lz*co,t2=v3TexOf(sh,c,tx,w*sc,h*sc,d*sc);
-      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,t2]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2])})};
+      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,t2]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);if(tx===-2){const p2=parts[parts.length-1];L.smoke.push([p2[1],p2[2],p2[3]+p2[5]])}})};
   const RURALB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine'],dev=x=>x&&x.t!=='w'&&(x.hs||(x.b&&!RURALB.includes(x.b))),patches=[];
   // a flat patch on the ground (fields, roads), given by its four corners in tile units
   const patch=(a,b,c,d,col,n=3,tx=-1,rot=0)=>patches.push([a,b,c,d,col,n,tx,rot]);
   // a field: one of the crop surfaces, its rows turned one way or the other
   const parcel=(u0,v0,u1,v1,tx,rot,f)=>patch([u0,v0],[u1,v0],[u1,v1],[u0,v1],new T.Color(f,f,f),3,tx,rot);
   const dens=W<=36?26:W<=52?18:14,bushes=[];
+  // small things set straight onto the ground: fence rails and posts, haystacks, street lamps
+  const prop=(sh,u,v,y,w,h,d,c,ry,tx)=>parts.push([sh,u,v,v3G(u,v)+y-.004,w,h,d,c,ry,0,tx]);
+  const fence=(u0,v0,u1,v1)=>[[u0,v0,u1,v0],[u1,v0,u1,v1],[u1,v1,u0,v1],[u0,v1,u0,v0]].forEach(([a1,b1,a2,b2])=>{const L2=Math.hypot(a2-a1,b2-b1),n=Math.max(1,Math.ceil(L2/.1)),ry=Math.abs(a2-a1)>Math.abs(b2-b1)?0:Math.PI/2;
+    for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n;prop('box',a1+(a2-a1)*(t0+t1)/2,b1+(b2-b1)*(t0+t1)/2,.012,L2/n,.006,.006,'#6B5238',ry,15);prop('box',a1+(a2-a1)*t0,b1+(b2-b1)*t0,0,.008,.026,.008,'#5A4430',0,15)}});
+  // pastures are fenced and grazed, wheat has haystacks, and farmers work the rest
+  const fieldLife=(u0,v0,u1,v1,tx,rnd)=>{if(tx===3){fence(u0,v0,u1,v1);L.pastures.push([u0,v0,u1,v1])}else if(tx===0)for(let k=0;k<2;k++)prop('cone',u0+(u1-u0)*(.25+rnd()*.5),v0+(v1-v0)*(.25+rnd()*.5),0,.045,.04,.045,'#C8AE5E',0,6);
+    if(tx!==3&&rnd()<.45)L.farm.push([u0+(u1-u0)*(.2+rnd()*.6),v0+(v1-v0)*(.2+rnd()*.6),rnd()])};
   S.map.forEach((x,i)=>{if(x.t==='w')return;let seed=i*9301+49297;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};const c=i%W,r=i/W|0;
     let ry=Math.floor(rnd()*4)*Math.PI/2;
     if(x.b&&V3FACE.includes(x.b)){const w=NB(i).find(j=>S.map[j].t==='w');if(w!=null){const dx=w%W-c,dz=(w/W|0)-r;ry=Math.atan2(dx,dz)}}
     const both=x.b&&x.hs;
     // buildings are kept small against the land, as in Civilization IV
     if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.14:0,both?-.14:0,both?.6:.8,ry);
+    if(x.b==='wind'||x.b==='mill'){const sc=both?.6:.8,o=both?-.14:0,co=Math.cos(ry),si=Math.sin(ry),cx=c+.5+o,cz=r+.5+o,g0=v3G(cx,cz);
+      if(x.b==='wind')L.mills.push([cx+.1*sc*si,cz+.1*sc*co,g0+.3*sc,ry,sc]);else L.wheels.push([cx+.14*sc*co,cz-.14*sc*si,g0+.1*sc,ry,sc])}
+    if(['dock','harbor','shipyard','ferry','tradeco'].includes(x.b)){const w=NB(i).find(j=>S.map[j].t==='w');if(w!=null){const dx=w%W-c,dz=(w/W|0)-r;L.ships.push([w%W+.5+dx*.25,(w/W|0)+.5+dz*.25,rnd(),x.b==='ferry'||x.b==='dock'?0:1])}}
     if(x.hs)lay(i,v3Recipe(x.hs,rnd),both?.22:0,both?.22:0,both?.5:.92,both?0:ry);
     if(x.sm)lay(i,v3Recipe(x.sm,rnd),.3,-.3,.38,0);
     // fields: a farm is a patchwork of crops, and open land beside a town is farmed too
     const town=!x.b&&!x.hs&&x.t!=='f'&&!x.hl&&[-1,0,1].some(dr=>[-1,0,1].some(dc=>{const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)return false;const y=S.map[rr*W+cc];return y.hs&&y.o===x.o}))&&rnd()<.75;
-    if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++)parcel(c+a/nx+g,r+b*z1/nz+g,c+(a+1)/nx-g,r+(b+1)*z1/nz-g,Math.floor(rnd()*4),rnd()<.5,.88+rnd()*.2)}
+    if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++){const u0=c+a/nx+g,v0=r+b*z1/nz+g,u1=c+(a+1)/nx-g,v1=r+(b+1)*z1/nz-g,tf=Math.floor(rnd()*4);parcel(u0,v0,u1,v1,tf,rnd()<.5,.88+rnd()*.2);fieldLife(u0,v0,u1,v1,tf,rnd)}}
     // trees: forests are thick with them, open country has a few; pines in the north and on hills
     const n=x.t==='f'?(x.b||x.hs?5:dens):(!x.b&&!x.hs&&!town&&rnd()<.18?1+Math.floor(rnd()*3):0);
     for(let k=0;k<n;k++){const u=c+.06+rnd()*.88,v=r+.06+rnd()*.88;if((x.b||x.hs)&&Math.abs(u-c-.5)<.34&&Math.abs(v-r-.5)<.34)continue;if(v3river(u,v)<.22)continue;
@@ -3013,13 +3030,15 @@ function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.
   // roads join the built-up tiles of each kingdom, and link each settlement to its nearest neighbor across the countryside
   const roadCol=era()<2?'#A08F6E':'#88857E',edges=new Set(),road=(i,j)=>{const k=i<j?i+','+j:j+','+i;if(edges.has(k))return;edges.add(k);
     const a=[i%W+.5,(i/W|0)+.5],b=[j%W+.5,(j/W|0)+.5],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,dx=(b[0]-a[0])/L,dy=(b[1]-a[1])/L,w=.026,e=.026;
-    patch([a[0]-dx*e+dy*w,a[1]-dy*e-dx*w],[b[0]+dx*e+dy*w,b[1]+dy*e-dx*w],[b[0]+dx*e-dy*w,b[1]+dy*e+dx*w],[a[0]-dx*e-dy*w,a[1]-dy*e+dx*w],roadCol,6)};
+    patch([a[0]-dx*e+dy*w,a[1]-dy*e-dx*w],[b[0]+dx*e+dy*w,b[1]+dy*e-dx*w],[b[0]+dx*e-dy*w,b[1]+dy*e+dx*w],[a[0]-dx*e-dy*w,a[1]-dy*e+dx*w],roadCol,6);
+    if(era()>=2){const mu=(a[0]+b[0])/2-dy*.05,mv=(a[1]+b[1])/2+dx*.05;prop('cyl',mu,mv,0,.007,.07,.007,'#2E2E2E',0,15);prop('ball',mu,mv,.066,.016,.016,.016,'#F2D38A',0,14)}};
   const st=setlStats();Object.values(st).forEach(s=>{const own=s.o,home=s.t.reduce((b,t)=>Math.hypot(t%W-s.cx,(t/W|0)-s.cy)<Math.hypot(b%W-s.cx,(b/W|0)-s.cy)?t:b,s.t[0]);
     // streets branch out from the town's centre to each of its built-up tiles
     const inT=new Set(s.t.filter(t=>dev(S.map[t])));s.t.forEach(t=>NB(t).forEach(j=>{const y=S.map[j];if(dev(y)&&y.o===own&&(y.sid==null||y.sid===s.id))inT.add(j)}));const seen=new Set([home]),qq=[home];for(let k=0;k<qq.length;k++){const t=qq[k];for(const j of NB(t))if(inT.has(j)&&!seen.has(j)){seen.add(j);qq.push(j);road(t,j)}}
     const par=new Map([[home,-1]]),q2=[home];let hit=-1;for(let k=0;k<q2.length&&hit<0;k++){const t=q2[k];if(k>600)break;
       for(const j of NB(t)){if(par.has(j))continue;const y=S.map[j];if(y.t==='w'||y.o!==own)continue;par.set(j,t);if(y.sid!=null&&y.sid!==s.id&&st[y.sid]){hit=j;break}q2.push(j)}}
     for(let t=hit;t>=0&&par.get(t)>=0;t=par.get(t))road(t,par.get(t))});
+  L.edges=[...edges].map(k=>k.split(',').map(Number));V3.L=L;
   const by={};parts.forEach(pt=>{(by[pt[0]]=by[pt[0]]||[]).push(pt)});
   const meshes=[],protos=V3.protos,col=new T.Color();
   const inst=(geo,list,fill)=>{const mesh=new T.InstancedMesh(geo,new T.MeshLambertMaterial({color:0xffffff}),list.length);list.forEach((it,k)=>{fill(it,k,mesh)});
@@ -3043,9 +3062,69 @@ function v3Objects(){const T=THREE,parts=[],trees=[],m4=new T.Matrix4(),q=new T.
     const pm=new T.Mesh(g,V3.pmat);pm.receiveShadow=true;pm.isPatch=true;pm.userData.shared=true;meshes.push(pm)}
   return meshes}
 
+/* ---------- the living world ---------- */
+// Anno-style life when you are close: townsfolk walk the streets, carts ply the roads, farmers work the fields, sheep and cows graze the pastures,
+// boats sail off the docks, windmills and water wheels turn, and chimneys smoke. It moves only while you are zoomed in and the map is on screen,
+// at no more than 30 frames a second, and the Life button turns it off.
+const LIFE_DIST=8.5;
+const v3LifeOn=()=>V3.on&&UI.life!==false&&V3.dist<LIFE_DIST&&!document.hidden&&$('#mapwrap').clientWidth>0;
+function v3LifeBuild(){const T=THREE,L=V3.L;if(!L)return;if(V3.life)V3.life.meshes.forEach(m=>{V3.scene.remove(m);m.material.dispose();m.dispose&&m.dispose()});
+  const lf={meshes:[],walkers:[],carts:[],farm:[],sheep:[],ships:[],mills:L.mills,wheels:L.wheels,smoke:L.smoke.slice(0,160)};V3.life=lf;
+  let seed=12345;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  // the road network as a graph, with the ground's height sampled along each road
+  const E=L.edges,adj=new Map(),ctr=i=>[i%W+.5,(i/W|0)+.5];E.forEach(([i,j],k)=>[i,j].forEach(n=>{if(!adj.has(n))adj.set(n,[]);adj.get(n).push(k)}));
+  lf.E=E.map(([i,j])=>{const a=ctr(i),b=ctr(j),hs=[];for(let s=0;s<=6;s++){const t=s/6;hs.push(v3G(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t))}return{i,j,a,b,hs}});lf.adj=adj;
+  const cap=W<=36?220:180,nW=Math.min(cap,E.length*4),nC=Math.min(30,Math.round(E.length*.5));
+  if(E.length){for(let k=0;k<nW;k++)lf.walkers.push({e:rnd()*E.length|0,t:rnd(),dir:rnd()<.5?1:-1,sp:.08+rnd()*.06,side:rnd()<.5?1:-1,ph:rnd()*6});
+    for(let k=0;k<nC;k++)lf.carts.push({e:rnd()*E.length|0,t:rnd(),dir:rnd()<.5?1:-1,sp:.05+rnd()*.03,side:rnd()<.5?1:-1})}
+  lf.farm=L.farm.filter((f,k)=>k%Math.max(1,Math.ceil(L.farm.length/(W<=36?120:90)))===0).map(([u,v,r])=>({u,v,ph:r*6,ry:r*6}));
+  L.pastures.forEach(([u0,v0,u1,v1])=>{const n=2+(rnd()*3|0);for(let k=0;k<n;k++)lf.sheep.push({cu:u0+(u1-u0)*(.3+rnd()*.4),cv:v0+(v1-v0)*(.3+rnd()*.4),r:Math.min(u1-u0,v1-v0)*.22,ph:rnd()*6,w:.05+rnd()*.08,cow:rnd()<.3})});
+  const sc2=W<=36?240:180;if(lf.sheep.length>sc2)lf.sheep=lf.sheep.filter((s,k)=>k%Math.ceil(lf.sheep.length/sc2)===0);
+  lf.ships=L.ships.map(([u,v,r,big])=>({u,v,ph:r*6,big,r:.28+r*.2}));
+  // each kind of figure is one set of instances
+  const P=V3.protos,C=new T.Color(),mk=n=>n,mesh=(geo,n)=>{const m=new T.InstancedMesh(geo,new T.MeshLambertMaterial({color:0xffffff}),Math.max(1,n));m.count=n;m.frustumCulled=false;m.receiveShadow=true;lf.meshes.push(m);V3.scene.add(m);return m};
+  const cols=era()<2?['#7A4A36','#4E5F74','#6E6A3A','#8A7A5A','#5A3E5E','#A8452F','#3E5A4A']:['#3A3F4A','#5A4E44','#2F4A5E','#6E6A64','#4A3A30','#7A2E2E'],skin=['#E2B99A','#C99A78','#A87756','#F0CBB0'];
+  const nP=lf.walkers.length+lf.farm.length;lf.body=mesh(P.cyl,nP);lf.head=mesh(P.ball,nP);
+  for(let k=0;k<nP;k++){lf.body.setColorAt(k,C.set(cols[k%cols.length]));lf.head.setColorAt(k,C.set(skin[(k*7)%skin.length]))}
+  lf.cart=mesh(P.box,lf.carts.length);lf.horse=mesh(P.box,lf.carts.length);
+  lf.carts.forEach((c,k)=>{lf.cart.setColorAt(k,C.set(era()>=3?['#A8322E','#2E5A8A','#D8B84A','#2E2E2E'][k%4]:'#7A5A3A'));lf.horse.setColorAt(k,C.set(['#5A3E2A','#3A2A1E','#8A6A4A'][k%3]))});
+  lf.sheepB=mesh(P.ball,lf.sheep.length);lf.sheepH=mesh(P.ball,lf.sheep.length);
+  lf.sheep.forEach((s,k)=>{lf.sheepB.setColorAt(k,C.set(s.cow?(k%2?'#6E4A30':'#E8E4DA'):'#EDEAE0'));lf.sheepH.setColorAt(k,C.set(s.cow?'#4A3222':'#2E2A26'))});
+  lf.hull=mesh(P.box,lf.ships.length);lf.sail=mesh(P.box,lf.ships.length);
+  lf.ships.forEach((s,k)=>{const steam=era()>=3&&s.big;lf.hull.setColorAt(k,C.set(steam?'#4A4E54':'#6E4A2E'));lf.sail.setColorAt(k,C.set(steam?'#2E2E2E':'#EDE8DA'))});
+  lf.blade=mesh(P.box,lf.mills.length*4);for(let k=0;k<lf.mills.length*4;k++)lf.blade.setColorAt(k,C.set('#E4DED0'));
+  lf.wheel=mesh(P.cyl,lf.wheels.length);lf.wheels.forEach((w,k)=>lf.wheel.setColorAt(k,C.set('#6B4F33')));
+  lf.puff=mesh(P.ball,lf.smoke.length*6);Object.assign(lf.puff.material,{transparent:true,opacity:.28,depthWrite:false});for(let k=0;k<lf.smoke.length*6;k++)lf.puff.setColorAt(k,C.set('#E6E3DC'));
+  lf.meshes.forEach(m=>{if(m.instanceColor)m.instanceColor.needsUpdate=true;m.visible=UI.life!==false&&V3.dist<LIFE_DIST});
+  v3LifeTick(performance.now()/1000,0)}
+function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.Matrix4(),q=new T.Quaternion(),q2=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3(),ax=new T.Vector3(0,1,0);
+  const set=(mesh,k,x,y,z,ry,sx,sy,sz,rz=0)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(x),y,v3Z(z));s.set(sx,sy,sz);m4.compose(p,q,s);mesh.setMatrixAt(k,m4)};
+  // something moving along a road: at the end of each road it turns onto another
+  const move=o=>{const E=lf.E;o.t+=o.dir*o.sp*dt;if(o.t>1||o.t<0){const ed=E[o.e],node=o.t>1?ed.j:ed.i,opts=lf.adj.get(node)||[o.e];let ne=opts[Math.random()*opts.length|0];
+      if(opts.length>1&&ne===o.e)ne=opts[(opts.indexOf(ne)+1)%opts.length];const n2=E[ne];o.e=ne;if(n2.i===node){o.t=0;o.dir=1}else{o.t=1;o.dir=-1}}
+    const ed=E[o.e],tt=clamp(o.t,0,1),dx=ed.b[0]-ed.a[0],dz=ed.b[1]-ed.a[1],L=Math.hypot(dx,dz)||1,nx=-dz/L,nz=dx/L,hi=tt*6,f=Math.floor(hi),h0=ed.hs[f],h1=ed.hs[Math.min(6,f+1)];
+    return[ed.a[0]+dx*tt+nx*o.side*.014,ed.a[1]+dz*tt+nz*o.side*.014,h0+(h1-h0)*(hi-f),Math.atan2(dx*o.dir,dz*o.dir)]};
+  // people and carts gather where you are looking: anyone who wanders far off reappears on a street near the view
+  const tu=V3.tx+W/2,tv=V3.tz+H/2,R=V3.dist*.8+1;if(lf.E.length&&(!lf.nearT||Math.abs(t-lf.nearT)>.5)){lf.nearT=t;lf.near=[];lf.E.forEach((ed,k)=>{if(Math.hypot((ed.a[0]+ed.b[0])/2-tu,(ed.a[1]+ed.b[1])/2-tv)<R)lf.near.push(k)})}
+  const home=o=>{const ed=lf.E[o.e];if(lf.near&&lf.near.length&&Math.hypot((ed.a[0]+ed.b[0])/2-tu,(ed.a[1]+ed.b[1])/2-tv)>R+.6){o.e=lf.near[Math.random()*lf.near.length|0];o.t=Math.random()}};
+  if(lf.E.length){lf.walkers.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),b=Math.abs(Math.sin(t*9+o.ph))*.004;set(lf.body,k,u,h+b,v,ry,.016,.034,.016);set(lf.head,k,u,h+.034+b,v,ry,.016,.016,.016)});
+    lf.carts.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),fx=Math.sin(ry)*.032,fz=Math.cos(ry)*.032;set(lf.cart,k,u,h,v,ry,.03,.022,.045);
+      if(era()>=3)set(lf.horse,k,u,h,v,ry,0,0,0);else set(lf.horse,k,u+fx,h+.004,v+fz,ry,.012,.022,.032)})}
+  const n0=lf.walkers.length;lf.farm.forEach((f,k)=>{const h=v3G(f.u,f.v),bend=.75+Math.abs(Math.sin(t*2+f.ph))*.25;set(lf.body,n0+k,f.u,h,f.v,f.ry,.016,.034*bend,.016);set(lf.head,n0+k,f.u,h+.034*bend,f.v,f.ry,.016,.016,.016)});
+  lf.sheep.forEach((o,k)=>{const a=t*o.w+o.ph,u=o.cu+Math.cos(a)*o.r,v=o.cv+Math.sin(a*1.3)*o.r,h=v3G(u,v),ry=Math.atan2(-Math.sin(a),1.3*Math.cos(a*1.3)),sz=o.cow?1.35:1,fx=Math.sin(ry)*.022*sz,fz=Math.cos(ry)*.022*sz;
+    set(lf.sheepB,k,u,h+.004,v,ry,.028*sz,.022*sz,.04*sz);set(lf.sheepH,k,u+fx,h+.012*sz,v+fz,ry,.013*sz,.013*sz,.015*sz)});
+  lf.ships.forEach((o,k)=>{const a=t*.12+o.ph,u=o.u+Math.cos(a)*o.r,v=o.v+Math.sin(a)*o.r*.7,ry=Math.atan2(-Math.sin(a),Math.cos(a)*.7),sc=o.big?1.4:1,roll=Math.sin(t*1.7+o.ph)*.06;
+    set(lf.hull,k,u,-.01,v,ry,.05*sc,.025*sc,.14*sc,roll);set(lf.sail,k,u,.012,v,ry,.006*sc,.09*sc,.08*sc,roll)});
+  lf.mills.forEach(([u,v,y,ry,sc],k)=>{for(let b=0;b<4;b++)set(lf.blade,k*4+b,u,y,v,ry,.045*sc,.28*sc,.012*sc,t*1.2+b*Math.PI/2)});
+  lf.wheels.forEach(([u,v,y,ry,sc],k)=>{q.setFromEuler(e.set(0,ry,Math.PI/2));q2.setFromAxisAngle(ax,t*1.5);q.multiply(q2);p.set(v3X(u),y,v3Z(v));s.set(.2*sc,.04*sc,.2*sc);m4.compose(p,q,s);lf.wheel.setMatrixAt(k,m4)});
+  lf.smoke.forEach(([u,v,y],k)=>{for(let j=0;j<6;j++){const a=(t*.2+j/6+k*.37)%1,sz=(.01+a*.028)*(1-a*a*.6);set(lf.puff,k*6+j,u+a*.07+Math.sin(a*9+k)*.006,y+a*.2,v+a*.015,0,sz,sz*.85,sz)}});
+  lf.meshes.forEach(m=>{m.instanceMatrix.needsUpdate=true})}
+function v3Loop(now){V3.loop=0;if(!v3LifeOn())return;V3.loop=requestAnimationFrame(v3Loop);if(now-(V3.last||0)<33)return;
+  const dt=V3.last?Math.min(.1,(now-V3.last)/1000):0;V3.last=now;v3LifeTick(now/1000,dt);v3Render()}
+function v3LifeToggle(){UI.life=UI.life===false;saveUI();const b=$('#lifeBtn');if(b)b.setAttribute('aria-pressed',UI.life!==false?'true':'false');v3Draw()}
 /* setup, syncing with the game, and drawing */
 function v3Init(){const T=THREE,cv=$('#cv3d');
-  if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;
+  if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;V3.r.shadowMap.autoUpdate=false;document.addEventListener('visibilitychange',()=>{if(!document.hidden)v3Draw()});
     V3.scene=new T.Scene();V3.cam=new T.PerspectiveCamera(38,1,.05,400);V3.protos=v3Protos();
     V3.det=v3DetailTex();V3.bmat=v3TexMat(v3Atlas(),4,'{vec3 sc=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));vec3 lp=position*sc;vec3 an=abs(normal);vec2 q=an.x>an.z?vec2(lp.z,lp.y-.1):vec2(lp.x,lp.y-.1);if(an.y>.72)q=lp.xz;vTUV=q*vec2(6.,7.);vTile=aTex;}','b');
     V3.pmat=v3TexMat(v3FieldAtlas(),2,'vTile=aTex;vTUV=uv;','patch');Object.assign(V3.pmat,{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});V3.hemi=new T.HemisphereLight(0xdde8ec,0x5b4d36,.5);V3.scene.add(V3.hemi);
@@ -3053,7 +3132,7 @@ function v3Init(){const T=THREE,cv=$('#cv3d');
     V3.wave=v3WaveTex();V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x3b6878,transparent:true,opacity:.8,shininess:40,specular:0x55656b,normalMap:V3.wave,normalScale:new T.Vector2(.3,.3)}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
     V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x27454e}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
     v3Controls(cv)}
-  V3.on=true;v3Msg('');document.body.classList.add('v3');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
+  V3.on=true;v3Msg('');document.body.classList.add('v3');$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
   V3.tSig='';V3.oSig='';v3Resize();v3Sync()}
 function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map;
   const th=palette().grass+(document.documentElement.dataset.theme||''),tS=th+'|'+S.map.map(x=>x.t+(x.o||'')+(x.hs||x.b?1:0)+(x.p)).join(''),oS=S.map.map(x=>(x.b||'')+','+(x.hs||'')+','+(x.sm||'')).join(';');
@@ -3063,16 +3142,16 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
     V3.sky=new T.Color(K.dark?'#1A262C':'#AFC3CB');V3.scene.background=V3.sky;V3.scene.fog=new T.Fog(V3.sky,20,60);V3.hemi.intensity=K.dark?.34:.5;V3.sun.intensity=K.dark?.75:1.1;
     V3.sun.position.set(-big*.5,big*.5,big*.32);V3.sun.target.position.set(0,0,0);Object.assign(V3.sun.shadow.camera,{left:-big*.8,right:big*.8,top:big*.8,bottom:-big*.8,near:1,far:big*3});V3.sun.shadow.camera.updateProjectionMatrix();
     V3.oSig=''}
-  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m))}
+  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m));v3LifeBuild();V3.r.shadowMap.needsUpdate=true}
   // the selected tile gets a gold outline
   if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
   if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
     V3.sel=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xE2AE2A}));V3.scene.add(V3.sel)}
   v3Draw()}
 function v3Resize(){if(!V3.r)return;const w=$('#mapwrap'),vw=w.clientWidth,vh=w.clientHeight;if(!vw||!vh)return;V3.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));V3.r.setSize(vw,vh,false);V3.cam.aspect=vw/vh;V3.cam.updateProjectionMatrix();v3Draw()}
-function v3Draw(){if(!V3.on||V3.raf)return;V3.raf=requestAnimationFrame(()=>{V3.raf=0;v3Render()})}
+function v3Draw(){if(!V3.on)return;if(v3LifeOn()){if(!V3.loop){V3.last=0;V3.loop=requestAnimationFrame(v3Loop)}return}if(V3.raf)return;V3.raf=requestAnimationFrame(()=>{V3.raf=0;v3Render()})}
 function v3Clamp(){V3.dist=clamp(V3.dist,2.2,Math.max(W,H)*1.1);V3.pitch=clamp(V3.pitch,.38,1.45);V3.tx=clamp(V3.tx,-W/2,W/2);V3.tz=clamp(V3.tz,-H/2,H/2)}
-function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();const c=V3.cam,cp=Math.cos(V3.pitch);
+function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();if(V3.life){const vis=UI.life!==false&&V3.dist<LIFE_DIST;V3.life.meshes.forEach(m=>{m.visible=vis})}const c=V3.cam,cp=Math.cos(V3.pitch);
   c.position.set(V3.tx+Math.sin(V3.yaw)*cp*V3.dist,.1+Math.sin(V3.pitch)*V3.dist,V3.tz+Math.cos(V3.yaw)*cp*V3.dist);c.lookAt(V3.tx,.1,V3.tz);
   if(V3.scene.fog){V3.scene.fog.near=V3.dist*1.3;V3.scene.fog.far=V3.dist*3.6}V3.r.render(V3.scene,c);v3Labels()}
 // settlement names float above their towns; small places only when you are close
@@ -3599,6 +3678,7 @@ function act(a,arg,n){
     case'fullpanel':setFull(!UI.full);return;
     case'panel':setPanel(document.body.classList.contains('nopanel'));return;
     case'view3d':v3Toggle();return;
+    case'life':v3LifeToggle();return;
     case'legend':UI.legend=!keyShown();saveUI();renderModes();return;
     case'icons':{UI.icons=!UI.icons;saveUI();const b=$('#sheet [data-act=icons]');if(b)b.setAttribute('aria-pressed',!!UI.icons);MAP.dirty=true;drawSoon();return}
     case'maphelp':openSheet(`<h3>🗺️ The map</h3><div class="card">
@@ -3606,7 +3686,7 @@ function act(a,arg,n){
       <div class="row"><span class="em">🏗️</span><div class="grow"><b>Tapping tiles</b><small>Tap your own land to build or upgrade. Tap a neighbor’s province to buy, claim or contest it, or frontier to settle it.</small></div></div>
       <div class="row"><span class="em">🧭</span><div class="grow"><b>Borders</b><small>Thick lines are national borders, thin lines are provinces. Sand-coloured edges mark your coastline.</small></div></div>
       <div class="row"><span class="em">🎨</span><div class="grow"><b>Map modes</b><small>The menu at the top left recolours the map: Land shows terrain and deposits, Pollution shows how pleasant your neighborhoods are, and Relations, Tension and Claims show diplomacy. Key shows or hides the legend.</small></div></div>
-      <div class="row"><span class="em">🏔️</span><div class="grow"><b>3D view</b><small>The 3D button switches to a 3D view of the same map. Drag to move, pinch to zoom, and twist two fingers to turn (drag two fingers up or down to tilt). On a computer, drag with the right mouse button to turn and tilt, and scroll to zoom. Tap a tile as usual. It needs an internet connection the first time you open it.</small></div></div>
+      <div class="row"><span class="em">🏔️</span><div class="grow"><b>3D view</b><small>The 3D button switches to a 3D view of the same map. Drag to move, pinch to zoom, and twist two fingers to turn (drag two fingers up or down to tilt). On a computer, drag with the right mouse button to turn and tilt, and scroll to zoom. Tap a tile as usual. It needs an internet connection the first time you open it. Zoom in close to see the living world: people, carts, farmers, animals, boats, turning windmills and chimney smoke. Life turns it off to save battery.</small></div></div>
       ${isWide()?'<div class="row"><span class="em">⤢</span><div class="grow"><b>More room</b><small>⤢ hides the side panel for a full-screen map. Tap any tab to bring it back, or the open tab again to hide it.</small></div></div>':''}</div>
       <button class="btn primary wide" data-act="closeSheet">Done</button>`);return;
     case'zoom':if(V3.on){v3Zoom(arg);return}if(arg==='home')centerOn(capIdx(),TS);else zoomAt(MAP.vw/2,MAP.vh/2,arg==='in'?1.35:1/1.35);drawSoon();return;
