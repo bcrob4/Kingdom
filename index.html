@@ -629,7 +629,8 @@ function royalName(g,taken){let n=pick(MNAMES[g]);for(let t=0;t<12&&taken.has(n)
 // a spouse's name avoids anyone already in the family
 function newSpouse(ofG,age,from,want){const g=want||(ofG==='f'?'m':'f'),taken=new Set();
   if(typeof S!=='undefined'&&S&&S.fam){taken.add(S.monarch.name);(S.pastSp||[]).forEach(n=>taken.add(n));if(S.fam.spouse)taken.add(S.fam.spouse.name);S.fam.kids.forEach(k=>{taken.add(k.name);if(k.spouse)taken.add(k.spouse.name)})}
-  return{name:royalName(g,taken),g,age:Math.max(16,age),from}}
+  const pool=RNAMES[from]||(OVP[from]&&OVP[from].hn);let nm=pool?pick(pool[g]):royalName(g,taken);if(pool)for(let t=0;t<8&&taken.has(nm);t++)nm=pick(pool[g]);
+  return{name:nm,g,age:Math.max(16,age),from}}
 // a starting family: a local noble spouse and 1–3 children, the eldest aged 6–12
 function makeFamily(mo){const f={spouse:newSpouse(mo.g,mo.age-3+rnd(7),'noble'),kids:[],heirId:null,next:1,tryMore:false},taken=new Set([mo.name]);
   let age=6+rnd(7);const n=1+rnd(3);for(let k=0;k<n&&age>=0;k++){const g=Math.random()<.5?'m':'f',name=royalName(g,taken);taken.add(name);f.kids.push({id:f.next++,name,g,age,trait:pick(Object.keys(TRAITS))});age-=2+rnd(3)}
@@ -849,7 +850,7 @@ const hasPal=k=>!!hh().palace[k];
 const task=k=>(hh().task||{})[k]?1:0,offT=k=>task(k)?0:officeSkill(k),altS=k=>task(k)?officeSkill(k):0;
 const kidOfficeSkill=(k,key)=>Math.min(5,2+(OFFICES[key].fit.includes(k.trait)?2:0)+(k.age>=25?1:0)+(k.edu?1:0)+(lg('blood',2)?1:0));
 function officeSkill(key){const H=hh(),o=H.offices[key];if(!o)return 0;if(o.kid!=null){const k=kidById(o.kid);if(!k||k.role!=='office'||k.office!==key){delete H.offices[key];return 0}return kidOfficeSkill(k,key)}return o.skill||0}
-const wedCost=n=>Math.round((n==='noble'?200:500)*(lg('kin',1)?.5:1));
+const wedCost=n=>Math.round((n==='noble'?200:OVP[n]?1500:500)*(lg('kin',1)?.5:1));
 const hireCost=s=>150*s,salary=s=>15*s,stars=s=>'★'.repeat(s)+'☆'.repeat(5-s);
 function officeCands(key){const H=hh();if(!H.cands[key])H.cands[key]=[0,1,2].map(()=>{const r=Math.random(),g=Math.random()<.5?'m':'f';return{name:`${pick(MNAMES[g])} ${pick(GNAMES)}`,skill:r<.3?1:r<.65?2:r<.9?3:4}});return H.cands[key]}
 function hhCosts(){const H=hh(),A=ALLOW[H.allow]||ALLOW.fair;
@@ -868,7 +869,9 @@ function makeHeir(k){const f=S.fam,old=heirOf(S),e=eldest();if(!k||k===old)retur
   if(e&&e!==k&&isAdult(e)&&atHome(e)){e.rival=true;addMod('leg',-3,24,`Passed over ${kidName(e)}`)}}
 function assignGov(k,i){const P=S.prov[i];if(!P||P.o!=='me'||P.gov!=null)return false;clearRole(k);k.role='gov';k.gov=i;P.gov=k.id;return true}
 function marryKid(k,to,want){const msg0=marryKid_(k,to,want);if(!curEvent){chron('💍','A royal wedding',msg0);logNews('💍','A royal wedding',msg0)}return msg0}
-function marryKid_(k,to,want){const f=S.fam;
+function marryKid_(k,to,want){
+  if(OVP[to]){const who=k==='monarch'?S.monarch:k,sp=newSpouse(who.g,who.age-2+rnd(5),to,want);if(k==='monarch')S.fam.spouse=sp;else{k.spouse=sp;if(k!==heirOf(S)){clearRole(k);k.role='abroad'}}
+    ovRelA(to,15);addMod('leg',4,24,`A prestigious match with ${OVP[to].n}`);addRen(40);return`${k==='monarch'?monarchName(S.monarch):kidName(k)} marries ${sp.name} of the royal house of ${OVP[to].full}. The match brings great prestige. 🏅+40.${k!=='monarch'&&k.role==='abroad'?` ${k.name} now lives at the ${OVP[to].n} court.`:''}`}const f=S.fam;
   if(to==='noble'){const who=k==='monarch'?S.monarch:k,sp=newSpouse(who.g,who.age-2+rnd(5),'noble',want);if(k==='monarch')f.spouse=sp;else k.spouse=sp;igM('landowners',6,12,'A royal match with a noble house');addRen(5);addMod('leg',1,12,'Royal wedding');return`${k==='monarch'?monarchName(S.monarch):kidName(k)} marries ${sp.name} of a great local family.`}
   const who=k==='monarch'?S.monarch:k,sp=newSpouse(who.g,who.age-2+rnd(5),to,want),Nn=NATIONS[to];if(k==='monarch')f.spouse=sp;else{k.spouse=sp;if(k!==heirOf(S)){clearRole(k);k.role='abroad'}}
   S.wedded=[...new Set([...(S.wedded||[]),to])];addRen(15);relA(to,20);tenA(to,-20);const opts=borderOf(to,'me').filter(i=>!S.prov[i].heart);let msg=`${k==='monarch'?monarchName(S.monarch):kidName(k)} marries ${sp.name} of the ${Nn.n} royal family.`;
@@ -1104,7 +1107,7 @@ function calc(){
     const tm=c.b==='farm'?farmMult(i):c.b==='wind'&&c.hl?1.5:1;
     for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]:d[k]*f*(k==='food'||k==='power'?tm:1);t.up+=d.u||0;
     if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]:d[k]*f})});
-  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy;if(blockaded){t.trade*=.5}
+  t.trade+=S.navy*40;if(msHas('g5'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
   if(trait('frugal'))t.up*=.9;if(lg('stew',3))t.up*=.92;t.up*=1-altS('treasurer')*.02;
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
   const forests=S.map.reduce((a,c)=>a+(c.o==='me'&&c.t==='f'?(!c.b?1:c.b==='lumber'?.5:0):0),0),D=k=>!!S.dec[k];
@@ -1194,14 +1197,14 @@ function calc(){
     if(k==='merchants')m-=Math.max(0,S.army-2)*(inDeficit()?5:1.5)+(S.mob?8:0);
     if(k==='clergy')m+=(eraB('old3')?5:0)+offT('chaplain')*2+(hasPal('chapel')?5:0)+cnt('church')*2+(trait('pious')?10:0)+(hlHas('relic')?5:0)+(legendOn('holy')?5:0);
     if(k==='intelligentsia')m+=(sc.learn-50)*.15+(lg('learn',3)?5:0)+(legendOn('wise')?5:0);
-    if(k==='workers'&&D('fourday'))m+=8;if(k==='merchants'&&D('fourday'))m-=8;
+    if(k==='workers'&&D('fourday'))m+=8;if(k==='merchants'&&D('fourday'))m-=8;if(k==='merchants')m+=ovRoutes().length*3;
     // reform pressure; stipends, co-opted leaders, and pleasure at a rejected reform ease it
     m-=groupPressure(k);m+=stipend(k)*4+(coopted(k)?8:0)+rejected().filter(E=>tradGroups(E).includes(k)).length*5;
     // a lavish court galls working people most when the lower class is struggling, and hardly at all when it's doing well
     m+=(COURT[S.court].ig[k]||0)*(k==='workers'&&(COURT[S.court].ig[k]||0)<0?(cls.lower<45?1.5:cls.lower>=65?.4:1):1);m+=modSum('ig:'+k);mood[k]=clamp(Math.round(m),0,100)});
   const legT=clamp(Math.round(30+IGIDS.reduce((a,k)=>a+clout[k]*(mood[k]-50)/50*40,0)+(S.hap-50)*.3+(trait('charismatic')?6:0)+(trait('pious')?3:0)+(lg('blood',3)?4:0)+(hlHas('crown')?2:0)+(legendOn()?3:0)+(law('church').leg||0)+(law('press').leg||0)+(D('festival')?2:0)+COURT[S.court].leg+t.leg+modSum('leg')+offT('chancellor')+(hasPal('hall')?2:0)+msLeg()+(hasTech('radio')?2:0)+3*oldWays()+(law('government').leg||0)+(sufOn()?(law('suffrage').leg||0):0)+Math.min(3,rejected().length)),0,100);
   // research
-  const rp=Math.round((5+t.learn/20+t.rp)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(lg('learn',1)?1.05:1)*(lg('learn',3)?1.1:1)*(hlHas('chronicle')?1.03:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(law('education').rp||1)*(eraB('reason')?1.15:1)*(1+msCount(['a1','a2'])*.03+(msHas('a6')?.05:0))*Math.pow(.9,oldWays()));
+  const rp=Math.round((5+t.learn/20+t.rp)*(hasTech('pedagogy')?1.2:1)*(trait('scholarly')?1.25:1)*(lg('learn',1)?1.05:1)*(lg('learn',3)?1.1:1)*(hlHas('chronicle')?1.03:1)*(S.ov&&S.ov.adv>S.turn?1.15:1)*(mood.intelligentsia>=65?1.1:1)*(hasPal('library')?1.1:1)*(hasTech('printing')?1.15:1)*(law('education').rp||1)*(eraB('reason')?1.15:1)*(1+msCount(['a1','a2'])*.03+(msHas('a6')?.05:0))*Math.pow(.9,oldWays()));
   // money
   const fill=t.jobs?employed/t.jobs:0;
   // provinces pay half their taxes at first and the full amount once integrated
@@ -1214,9 +1217,9 @@ function calc(){
   const welfare=L.welfare==='relief'?Math.round(pop*share.lower):L.welfare==='public'?pop*2:L.welfare==='insurance'?pop*3:0;
   const schools=Math.round(pop*(law('education').cost||0)),stipends=IGIDS.reduce((a,g)=>a+STIP[stipend(g)],0),cooptCost=IGIDS.filter(coopted).length*COOPT_MONTHLY;
   const interest=S.coins<0?Math.ceil(-S.coins*.03*(hasTech('banking')?.5:1)*(1-offT('treasurer')*.1)):0;const hc=hhCosts();
-  const income=[['Taxes',tax],['Business revenue',biz],['Tourism',tour],['Exports',expV],['Surplus materials sold',matSale],['Royal estates',hc.estates]];if(extra>0)income.push(['Agreements and grants',extra]);
+  const income=[['Taxes',tax],['Business revenue',biz],['Tourism',tour],['Exports',expV],['Surplus materials sold',matSale],['Royal estates',hc.estates],['Overseas trade',ovTradeInc()],['Colonies',colInc()]];if(extra>0)income.push(['Agreements and grants',extra]);
   const army=Math.round((soldiers*4+(S.war?soldiers*8:0))*(law('army').armyCost||1))+S.navy*20+(S.general?30:0);
-  const costs=[['Building upkeep',t.up],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
+  const costs=[['Building upkeep',t.up],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest],['Foreign protection',S.ov&&S.ov.prot?PROT_COST:0]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
   const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
   return{t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
 
@@ -1317,7 +1320,13 @@ const EVENTS=[
     {l:'Stay out of it',f(){return'The crown watches the frenzy from a safe distance.'}}]},
   {id:'aviator',e:'✈️',t:'The aviator',d:'A daring aviator plans a record flight across the island and asks for royal sponsorship.',cond:()=>era()===3,ch:[
     {l:'Sponsor the flight',c:500,f(){if(Math.random()<.85){addMod('leg',3,12,'A record flight');addMod('tour',10,12,'Aviation fever');igM('intelligentsia',5,12,'The age of flight');return'The flight is a triumph, and the aviator lands to cheering crowds and the royal colors.'}addMod('leg',-1,6,'A failed flight');return'Engine trouble forces a landing in a field. Nobody is hurt, but the papers laugh.'}},
-    {l:'Decline',f(){return'The aviator finds another sponsor.'}}]}
+    {l:'Decline',f(){return'The aviator finds another sponsor.'}}]},
+  {id:'traders',e:'🐪',t:'Traders from beyond the sea',d:'A strange ship arrives with spices, silks and tales of great empires across the ocean.',cond:()=>!ovKnown(),ch:[
+    {l:'Buy their wares for the court',c:300,f(){addMod('hap',2,6,'Exotic luxuries');igM('merchants',5,12,'Foreign trade');igM('landowners',3,12,'Exotic luxuries');return'Pepper and silk become the talk of the court. The sailors promise to return.'}},
+    {l:'Ask them about the lands they came from',f(){addMod('learn',3,12,'Tales from abroad');return'The sailors tell of an empire of eagles, a realm of dragons and a league of merchant cities.'}}]},
+  {id:'pirates',e:'🏴‍☠️',t:'Pirates off the coast',d:'Pirate ships are raiding fishing villages and merchant boats.',cond:()=>(has('dock')||has('harbor'))&&era()<3,ch:[
+    {l:'Send the navy after them',f(){if(S.navy>=2){addMod('leg',2,12,'Pirates hunted down');addRen(5);return'Your warships hunt the pirates down. The coast is safe again. 🏅+5.'}S.coins-=400;return'Your few ships are outmatched. The pirates carry off 🪙400 in goods before sailing away.'}},
+    {l:'Pay them to leave',c:300,f(){addMod('leg',-1,6,'Paid off pirates');return'The pirates take the gold and sail away, for now.'}}]}
 ];
 function crisisEvent(n){const Nn=NATIONS[n];
   const claimed=provsOf('me').filter(i=>i!==0&&(S.fclaims[i]===n||(S.tension[n]>=80&&touches(i,n))));
@@ -1514,6 +1523,103 @@ function courtRow(n){const r=ruler(n),p=pact(n),w=nwarOf(n),other=liveNations().
     ${other.length?`<small>Their relations with ${other.map(o=>`${NATIONS[o].n} ${Math.round(nrel(n,o))}`).join(', ')}.</small>`:''}</div></div>${wr}
     <div class="row"><div class="grow btns" style="margin-top:0">${acts}</div><small>${p?(p.t==='ally'?'Allies join each other’s wars, and neither side attacks the other.':'Neither side will declare war on the other.'):`An alliance needs relations of ${pers(n,'aggressive')?75:65}, and a non-aggression pact 45. Breaking a treaty by attacking is a grave dishonor.`}</small></div>`}
 
+/* ---------- overseas powers ---------- */
+// Three great powers beyond the sea. In the Age of Crowns they are only rumors; researching Navigation reveals them.
+// S.ov = {known, rel:{p}, routes:{p:{off}}, isl:[{n,t,res,o,prog}], prot, adv, loan, block, cd:{p}, evCd}
+const OVP={
+  valdor:{n:'Valdor',full:'the Valdorian Empire',e:'🦅',c:'#8E3B3B',trade:60,navy:10,help:'protect',d:'A vast military empire across the northern sea: proud, demanding and dangerous.',
+    hn:{m:['Konrad','Maximilian','Wilhelm','Friedrich'],f:['Augusta','Wilhelmina','Theodora','Victoria']}},
+  serenth:{n:'Serenth',full:'the Celestial Realm of Serenth',e:'🐉',c:'#2E7D6B',trade:120,navy:6,help:'advisor',d:'An ancient and wealthy realm in the far east. Its silks, porcelain and tea are prized everywhere.',
+    hn:{m:['Jian','Taro','Kaito','Ren'],f:['Mei','Lian','Aiko','Suyin']}},
+  carthen:{n:'Carthen',full:'the Merchant League of Carthen',e:'⚓',c:'#2B5BA8',trade:90,navy:14,help:'loan',d:'A league of rich trading cities with the strongest fleet on the seas, and bankers who lend to kings.',
+    hn:{m:['Alessandro','Marco','Lorenzo','Tiberio'],f:['Giulia','Beatrice','Serena','Ottavia']}}};
+const OVIDS=Object.keys(OVP);
+const ISLRES={spice:{n:'Spices',e:'🌶️',inc:110},sugar:{n:'Sugar',e:'🍬',inc:90},timber:{n:'Timber',e:'🪵',inc:60},gold:{n:'Gold',e:'✨',inc:150},fish:{n:'Fisheries',e:'🐟',inc:70}};
+const ISLN=['Isle of Gulls','Saltmere','Coral Key','Windward Rock','Palmhaven','Emberreef','The Lanterns','Seal Island'];
+function ov(){if(!S.ov)S.ov={known:false,rel:{},routes:{},isl:[],prot:null,adv:0,loan:0,block:0,cd:{},evCd:0};const O=S.ov;OVIDS.forEach(p=>{if(O.rel[p]==null)O.rel[p]=45+rnd(11)});return O}
+const ovKnown=()=>!!(S.ov&&S.ov.known);
+const ovNavy=p=>Math.round(OVP[p].navy*(1+era()*.5));
+const ovRel=p=>Math.round(ov().rel[p]);
+const ovRelA=(p,v)=>{const O=ov();O.rel[p]=clamp(O.rel[p]+v,0,100)};
+const harbors=()=>cnt('harbor');
+const ovRoutes=()=>S.ov?Object.keys(S.ov.routes).filter(p=>S.ov.routes[p]):[];
+const routeLive=p=>{const r=S.ov&&S.ov.routes[p];return!!r&&!(r.off>0)&&!(S.ov.block>0)};
+const routeInc=p=>Math.round(OVP[p].trade*(1+(era()>=2?.5:0)+(era()>=3?.5:0))*(.6+ov().rel[p]/125));
+const ovTradeInc=()=>ovRoutes().filter(routeLive).reduce((a,p)=>a+routeInc(p),0);
+const myColonies=()=>(S.ov?S.ov.isl:[]).filter(I=>I.o==='me');
+const colInc=()=>Math.round(myColonies().reduce((a,I)=>a+ISLRES[I.res].inc,0)*(era()>=2?1.3:1)*(msHas('g6')?1.2:1));
+const PROT_COST=150;
+// outer islands sit on open sea tiles well away from land, spread apart
+function genIslands(){const O=ov();if(O.isl.length)return;const far=i=>{const r=i/W|0,c=i%W;for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){const rr=r+dr,cc=c+dc;if(rr<0||cc<0||rr>=H||cc>=W)continue;if(S.map[rr*W+cc].t!=='w')return false}return true};
+  const cand=S.map.map((x,i)=>i).filter(i=>S.map[i].t==='w'&&i%W>=1&&i%W<=W-2&&(i/W|0)>=1&&(i/W|0)<=H-2&&far(i)).sort(()=>Math.random()-.5),picked=[],names=ISLN.slice().sort(()=>Math.random()-.5);
+  cand.forEach(i=>{if(picked.length>=4)return;if(picked.every(j=>Math.max(Math.abs((i/W|0)-(j/W|0)),Math.abs(i%W-j%W))>=5))picked.push(i)});
+  O.isl=picked.map((t,k)=>({n:names[k],t,res:pick(Object.keys(ISLRES)),o:null,prog:0}))}
+
+/* each month overseas */
+function overseasMonth(notes,stop){const O=ov();
+  if(!O.known){if(hasTech('navigation')){O.known=true;genIslands();const t='Lands beyond the sea';notes.push(['🧭',t,'Your navigators have charted the ocean. Three great powers lie beyond it, and outer islands wait to be claimed. See the Overseas section of the World tab.']);stop.push(t)}return}
+  OVIDS.forEach(p=>{O.rel[p]=Math.round((O.rel[p]+(50-O.rel[p])*.02)*10)/10;if(O.cd[p])O.cd[p]--});
+  if(O.block>0){O.block--;if(!O.block)notes.push(['⚓','The blockade is lifted','Ships can come and go again.'])}
+  if(O.prot)liveNations().forEach(n=>tenA(n,-.5));
+  // pirates prey on sea routes when your navy is weak
+  ovRoutes().forEach(p=>{const r=O.routes[p];if(r.off>0){r.off--;return}if(S.navy<2+era()&&Math.random()<(era()>=3?.01:.03)){r.off=3;notes.push(['🏴‍☠️',`Pirates prey on the route to ${OVP[p].n}`,`The route earns nothing for three months. A navy of ${2+era()} or more keeps pirates away.`])}});
+  // colonies being founded
+  O.isl.forEach(I=>{if(I.o==='pending'){I.prog--;if(I.prog<=0){I.o='me';const t=`A colony is founded on ${I.n}`;notes.push(['🏝️',t,`${ISLRES[I.res].e} ${ISLRES[I.res].n} will bring 🪙${Math.round(ISLRES[I.res].inc*(era()>=2?1.3:1))} a month.`]);stop.push(t)}}});
+  // once a year the powers may claim a free island
+  if(S.month===0)OVIDS.forEach(p=>{const free=O.isl.filter(I=>!I.o);if(free.length&&Math.random()<.12){const I=pick(free);I.o=p;notes.push([OVP[p].e,`${OVP[p].n} claims ${I.n}`,'Another outer island is taken.'])}});
+  // a hostile power may back a claimant to your throne
+  OVIDS.forEach(p=>{if(O.rel[p]<20&&Math.random()<.01&&(S.pret||[]).length<3){const g=Math.random()<.5?'m':'f',nm=royalName(g,new Set());addPret(nm,g,20+rnd(20),40,`a claimant backed by ${OVP[p].n}`);const t=`${OVP[p].n} backs a claimant to your throne`;notes.push([OVP[p].e,t,`${nm} now presses a claim with foreign gold behind them.`]);stop.push(t)}});
+  // great-power pressure, more often in later ages
+  if(O.evCd>0){O.evCd--;return}if(queue.some(e=>e.id==='ovev'))return;
+  const ch=[0,.02,.035,.04][era()];if(Math.random()>=ch)return;const ev=pick([tributeEvent,landingEvent,rivalryEvent,globalEvent].map(f=>f()).filter(Boolean).concat([null]));if(ev){O.evCd=10;queue.push(ev);stop.push(ev.t)}}
+
+/* great-power events */
+function tributeEvent(){const p=OVIDS.filter(x=>ov().rel[x]<50).sort((a,b)=>OVP[b].navy-OVP[a].navy)[0];if(!p)return null;const amt=800+era()*400,strong=S.navy>=ovNavy(p)*.6;
+  return{id:'ovev',e:OVP[p].e,t:`${OVP[p].n} demands tribute`,d:`A squadron of ${OVP[p].n} warships drops anchor off your coast. Their admiral demands 🪙${fmt(amt)}. Their fleet: ${ovNavy(p)} ships. Yours: ${S.navy}.`,ch:[
+    {l:'Pay the tribute',c:amt,f(){ovRelA(p,5);addMod('leg',-3,12,`Paid tribute to ${OVP[p].n}`);return'The squadron sails away, and the court grumbles about the humiliation.'}},
+    {l:'Refuse',f(){ovRelA(p,-10);if(strong){addMod('leg',3,12,`Defied ${OVP[p].n}`);return'Your fleet shadows theirs until they give up and sail home. The kingdom is proud.'}
+      ov().block=6;addMod('leg',-2,12,'Blockaded');return`${OVP[p].n} blockades your ports for six months: sea routes stop, and trade capacity is halved.`}}]}}
+function landingEvent(){if(era()<2)return null;const p=OVIDS.filter(x=>ov().rel[x]<35)[0];if(!p)return null;const coast=provsOf('me').filter(i=>i!==0&&provTiles(i).some(t=>isCoast(t)));if(!coast.length)return null;
+  const i=pick(coast),c=calc(),win=clamp(.35+(c.forts-1)*1.2+(S.navy>=ovNavy(p)*.8?.2:0)+(S.army-1)*.05,.15,.9);
+  return{id:'ovev',e:OVP[p].e,t:`${OVP[p].n} lands troops`,d:`${OVP[p].n} marines have landed near ${S.prov[i].name}, claiming an insult to their flag. They demand compensation.`,ch:[
+    {l:`Drive them into the sea (${Math.round(win*100)}% chance)`,f(){if(Math.random()<win){addMod('leg',4,12,'Repelled a landing');addRen(10);ovRelA(p,-5);return'Your soldiers throw the invaders back to their ships. 🏅+10.'}
+      S.dev[i]=12;S.coins-=1500;addMod('leg',-6,24,'A foreign landing');return`The landing force wins. ${S.prov[i].name} is plundered, and you pay 🪙1,500 before they leave.`}},
+    {l:'Pay compensation',c:2000,f(){addMod('leg',-4,12,'Bought off a landing');ovRelA(p,5);return'The marines re-embark. The court calls it wisdom, or cowardice.'}}]}}
+function rivalryEvent(){if(era()<2)return null;const [a,b]=OVIDS.slice().sort(()=>Math.random()-.5);
+  return{id:'ovev',e:'⚖️',t:`${OVP[a].n} and ${OVP[b].n} compete for your favor`,d:`Both powers want your harbors and your friendship, and each asks you to turn the other away.`,ch:[
+    {l:`Side with ${OVP[a].n}`,f(){ovRelA(a,20);ovRelA(b,-20);return`${OVP[a].n} is pleased. ${OVP[b].n} is not.`}},
+    {l:`Side with ${OVP[b].n}`,f(){ovRelA(b,20);ovRelA(a,-20);return`${OVP[b].n} is pleased. ${OVP[a].n} is not.`}},
+    {l:'Stay neutral',f(){ovRelA(a,-5);ovRelA(b,-5);return'Neither is satisfied, but neither is your enemy.'}}]}}
+function globalEvent(){if(era()<3)return null;const [a,b]=OVIDS.slice().sort(()=>Math.random()-.5);
+  return{id:'ovev',e:'🌍',t:'A great war overseas',d:`${OVP[a].n} and ${OVP[b].n} are at war, and the conflict is spreading across the oceans. Both would welcome your help.`,ch:[
+    {l:'Sell supplies to both sides',f(){addMod('inc',150,24,'Wartime trade');ovRelA(a,-10);ovRelA(b,-10);igM('merchants',8,12,'Wartime trade');return'Your factories and farms work day and night for foreign armies.'}},
+    {l:`Join ${OVP[a].n}`,f(){ovRelA(a,25);ovRelA(b,-30);addMod('leg',3,24,'A world war');S.troops=Math.max(0,S.troops-Math.round(S.troops*.15));return`Your soldiers sail to fight beside ${OVP[a].n}. Some will not come home.`}},
+    {l:'Stay neutral',f(){return'The kingdom watches the world burn, and keeps its sons at home.'}}]}}
+
+/* the World tab: overseas */
+function overseasHTML(){if(!ovKnown())return`<h2>🌊 Overseas</h2><div class="card"><div class="row"><span class="em">🧭</span><div class="grow"><b>Rumors from beyond the sea</b><small>Sailors speak of great empires across the ocean, and of islands no one has claimed. Research Navigation to chart the way to them.</small></div></div></div>`;
+  const O=ov(),H=harbors(),used=ovRoutes().length;
+  const cards=OVIDS.map(p=>{const P=OVP[p],r=ovRel(p),has=!!O.routes[p],live=routeLive(p);
+    const help=P.help==='loan'?`<button class="btn" data-act="ovHelp" data-arg="${p}" ${O.loan>S.turn||r<50?'disabled':''}>${O.loan>S.turn?`Loan repaid in ${O.loan-S.turn} mo`:'Borrow 🪙5,000'}</button>`
+      :P.help==='advisor'?`<button class="btn" data-act="ovHelp" data-arg="${p}" ${O.adv>S.turn||r<60||S.coins<1500?'disabled':''}>${O.adv>S.turn?`Advisors for ${Math.ceil((O.adv-S.turn)/12)} more years`:'Hire advisors 🪙1,500'}</button>`
+      :`<button class="btn" data-act="ovHelp" data-arg="${p}" ${O.prot!==p&&(r<70||O.prot)?'disabled':''}>${O.prot===p?'End protection':'Seek protection'}</button>`;
+    const helpTxt=P.help==='loan'?'Their bankers lend 🪙5,000, repaid at 🪙260 a month for two years (relations 50).':P.help==='advisor'?'Their scholars add 15% to research for five years (relations 60).':`While protected, your neighbors will not declare war on you and tension with them eases, for 🪙${PROT_COST} a month (relations 70).`;
+    return`<div class="card" style="margin-bottom:10px"><div class="row"><span class="em">${P.e}</span><div class="grow"><b>${P.n}</b> <span class="tag">${relWord(r)}</span>${O.prot===p?' <span class="tag" style="color:var(--good)">Protector</span>':''}<small>${P.d} Their fleet: ${ovNavy(p)} ships.</small>${bar(r)}</div></div>
+      <div class="row"><span class="em">⛵</span><div class="grow"><b>${has?(live?`Trade route: 🪙${routeInc(p)} a month`:`Trade route disrupted${O.routes[p].off>0?` for ${O.routes[p].off} more months`:' by the blockade'}`):'No trade route'}</b><small>${has?'Better relations mean richer trade.':`A route needs a free harbor: ${H?`${H-used} of ${H} free`:'build a harbor first'}.`}</small></div>${has?'':`<button class="btn" data-act="ovRoute" data-arg="${p}" ${H-used<1||S.coins<1000||O.block>0?'disabled':''}>Open 🪙1,000</button>`}</div>
+      <div class="row"><div class="grow btns" style="margin-top:0"><button class="btn" data-act="embassy" data-arg="${p}" ${O.cd[p]||S.coins<500?'disabled':''}>${O.cd[p]?`Embassy again in ${O.cd[p]} mo`:'Send an embassy 🪙500'}</button>${help}</div><small>${helpTxt} A royal marriage into their house is arranged from the Court tab.</small></div></div>`}).join('');
+  const isl=O.isl.length?O.isl.map((I,k)=>{const R=ISLRES[I.res],own=I.o==='me'?'Your colony':I.o==='pending'?`Settlers arriving in ${I.prog} months`:I.o?`Claimed by ${OVP[I.o].n}`:'Unclaimed';
+    return`<div class="row"><span class="em">🏝️</span><div class="grow"><b>${I.n}</b> <span class="tag">${R.e} ${R.n}</span><small>${own}.${I.o==='me'?` Earns 🪙${Math.round(R.inc*(era()>=2?1.3:1)*(msHas('g6')?1.2:1))} a month.`:!I.o?` Would earn about 🪙${Math.round(R.inc*(era()>=2?1.3:1))} a month.`:''}</small></div>${!I.o?`<button class="btn" data-act="colony" data-arg="${k}" ${!H||S.navy<1||S.coins<2000?'disabled':''}>Found a colony 🪙2,000</button>`:''}</div>`}).join('')
+    :'<div class="row"><div class="grow"><small>There is no open sea around your island for outer islands.</small></div></div>';
+  return`<h2>🌊 Overseas</h2><p class="hint">Great powers beyond the sea. Sea routes need harbors, and a navy keeps pirates and tribute-hungry admirals at bay.${O.block>0?` <b>Your ports are blockaded for ${O.block} more months.</b>`:''}</p>${cards}
+    <h2>🏝️ Outer islands</h2><p class="hint">A colony needs a harbor, at least one warship and 🪙2,000, and takes a year to settle. The powers claim islands too. They are shown in the sea around your island.</p><div class="card">${isl}</div>`}
+// the islets on the map, with a flag in the owner's color
+function drawIslets(ctx,X,Y,z,c0,c1,r0,r1,P){if(!ovKnown())return;S.ov.isl.forEach(I=>{const col=I.t%W,r=I.t/W|0;if(col<c0-1||col>c1+1||r<r0-1||r>r1+1)return;
+  const x0=X(col),y0=Y(r),w=X(col+1)-x0,cx=x0+w/2,cy=y0+w/2;
+  ctx.fillStyle=P.sand;ctx.beginPath();ctx.ellipse(cx,cy+w*.05,w*.44,w*.3,0,0,7);ctx.fill();ctx.fillStyle='#7FAF62';ctx.beginPath();ctx.ellipse(cx-w*.04,cy,w*.26,w*.17,0,0,7);ctx.fill();
+  const fc=I.o==='me'||I.o==='pending'?'#E2AE2A':I.o?OVP[I.o].c:'#EEEEE8';ctx.strokeStyle='#4a3b2c';ctx.lineWidth=Math.max(1,w*.035);ctx.beginPath();ctx.moveTo(cx+w*.12,cy+w*.02);ctx.lineTo(cx+w*.12,cy-w*.36);ctx.stroke();
+  ctx.fillStyle=fc;ctx.beginPath();ctx.moveTo(cx+w*.12,cy-w*.36);ctx.lineTo(cx+w*.34,cy-w*.29);ctx.lineTo(cx+w*.12,cy-w*.22);ctx.closePath();ctx.fill();
+  if(z>=20){ctx.fillStyle='rgba(255,255,255,.9)';ctx.font=`${Math.round(Math.max(9,w*.22))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(I.n,cx,y0+w*.92)}})}
+
 /* ---------- goals ---------- */
 const GOALS=[
   {id:'pop100',d:'Reach 100 subjects',r:500,f:()=>S.pop>=100},
@@ -1570,6 +1676,7 @@ const MILESTONES=[
   {id:'g3',p:'diplomacy',n:'A decade of peace',d:'Go 10 years without a war',b:'Tension cools faster',t:()=>(S.peace||0)>=120,g:()=>`${Math.floor((S.peace||0)/12)} years so far.`},
   {id:'g4',p:'diplomacy',n:'The long peace',d:'Go 25 years without a war',b:'Approval +1',t:()=>(S.peace||0)>=300,g:()=>`${Math.floor((S.peace||0)/12)} years so far.`},
   {id:'g5',p:'diplomacy',n:'Open markets',d:'Have a trade agreement running with every remaining neighbor (at least two)',b:'Trade capacity +10%',t:()=>{const c=calc(),w=new Set(Object.values(c.tr).map(x=>x.c));return liveNations().length>=2&&liveNations().every(n=>w.has(n))},g:()=>'Needs food, energy and goods agreements spread across your neighbors.'},
+  {id:'g6',p:'diplomacy',n:'An empire of the seas',d:'Hold three colonies overseas',b:'Colonies earn 20% more',t:()=>myColonies().length>=3,g:()=>ovKnown()?`${myColonies().length} colonies so far.`:'Research Navigation to reach the outer islands.'},
   {id:'a1',p:'ages',n:'The dawn of reason',d:'Enter the Age of Enlightenment',b:'Research +3%',t:()=>era()>=1,g:()=>`${eraDone(0)} of ${ERAS[0].need} Age of Crowns technologies known.`},
   {id:'a2',p:'ages',n:'The age of steam',d:'Enter the Age of Industry',b:'Research +3%',t:()=>era()>=2,g:()=>era()<1?'Enter the Enlightenment first.':`${eraDone(1)} of ${ERAS[1].need} Enlightenment technologies known.`},
   {id:'a3',p:'ages',n:'The modern world',d:'Enter the Modern Age',b:'Legitimacy +2',t:()=>era()>=3,g:()=>era()<2?'Enter the Age of Industry first.':`${eraDone(2)} of ${ERAS[2].need} Industry technologies known.`},
@@ -1717,7 +1824,7 @@ function endMonth(silent){
     tenA(n,-(hasTech('telegraph')?4:2)-(msHas('g3')?1:0)-(hasTech('telephone')?1:0)+(S.rel[n]<30?2:0));S.tension[n]=Math.round(S.tension[n]*10)/10;
     if(S.embargo[n]){S.embargo[n]--;if(!S.embargo[n]){delete S.embargo[n];notes.push([NATIONS[n].e,`${NATIONS[n].n} lifts its embargo`,'Trade can resume.'])}}
     if(S.crisisCd[n])S.crisisCd[n]--;if(S.demandCd[n])S.demandCd[n]--});
-  neighborMonth(notes,stop);
+  neighborMonth(notes,stop);overseasMonth(notes,stop);
   // settling
   S.prov.forEach((P,i)=>{if(P.settle){P.settle--;if(P.settle<=0){P.settle=null;if(P.o==='wild'){transfer(i,'me','settled');notes.push(['🧭',`${P.name} is settled`,'The frontier is now part of your kingdom. Build roads and homes to make it useful.']);stop.push(`${P.name} is settled`)}}}});
   // yearly: neighbor situations and frontier competition
@@ -1730,7 +1837,7 @@ function endMonth(silent){
   {const tg=troopTarget();if(S.troops<tg)S.troops=Math.min(tg,S.troops+Math.max(1,Math.ceil(S.pop*.006*(1+cnt('barracks')*.25+offT('marshal')*.1+(eraB('iron')?.25:0)))));else if(!S.war)S.troops=tg}
   Object.keys(S.dev).forEach(k=>{S.dev[k]--;if(S.dev[k]<=0)delete S.dev[k]});
   if(S.war){const r=warMonth(notes);if(r){const res=autoResolve(r);queue.push({e:r==='win'?'🏆':r==='lose'?'🏳️':'🕊️',t:res.t,d:res.d,ch:[{l:'Continue',f(){return'The war is over.'}}]});const v=queue.findIndex(q=>q.e==='🎖️');if(v>=0)queue.push(queue.splice(v,1)[0])}}
-  else{const c2=calc();NIDS.forEach(n=>{if(S.war||S.embargo[n])return;if(!pact(n)&&!nwarOf(n)&&S.tension[n]>=(pers(n,'aggressive')?80:pers(n,'cautious')?95:90)&&theirStr(n)>c2.str*(pers(n,'aggressive')?1:pers(n,'cautious')?1.5:1.2)&&Math.random()<.2){const goals=borderOf('me',n).filter(i=>i!==0);if(!goals.length)return;const g=goals.find(i=>S.fclaims[i]===n)!=null?goals.find(i=>S.fclaims[i]===n):pick(goals);startWar(n,g,n);
+  else{const c2=calc();NIDS.forEach(n=>{if(S.war||S.embargo[n])return;if(!pact(n)&&!nwarOf(n)&&!(S.ov&&S.ov.prot)&&S.tension[n]>=(pers(n,'aggressive')?80:pers(n,'cautious')?95:90)&&theirStr(n)>c2.str*(pers(n,'aggressive')?1:pers(n,'cautious')?1.5:1.2)&&Math.random()<.2){const goals=borderOf('me',n).filter(i=>i!==0);if(!goals.length)return;const g=goals.find(i=>S.fclaims[i]===n)!=null?goals.find(i=>S.fclaims[i]===n):pick(goals);startWar(n,g,n);
     queue.push({e:'⚔️',t:`${NATIONS[n].n} declares war!`,d:`${NATIONS[n].n} has invaded, aiming to seize ${S.prov[g].name}. Their strength is ${theirStr(n)}, yours is ${c2.str}. Check the World tab to manage the war.`,ch:[{l:'To arms',f(){return'The kingdom mobilizes.'}}]})}})}
   NIDS.forEach(n=>{if(provsOf('me').some(i=>S.fclaims[i]===n))tenA(n,1)});
   S.envoy={};Object.keys(S.favorCd).forEach(k=>{S.favorCd[k]--;if(S.favorCd[k]<=0)delete S.favorCd[k]});
@@ -2064,6 +2171,7 @@ function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(!ctx||!vw||!vh
   ctx.strokeStyle='rgba(70,45,20,.4)';ctx.lineWidth=Math.max(1,z*.04);ctx.stroke(hillP);
   ctx.lineCap='round';ctx.strokeStyle='rgba(20,30,35,.3)';ctx.lineWidth=Math.max(.75,z*.0375);ctx.stroke(thin);
   ctx.strokeStyle='rgba(20,30,35,.75)';ctx.lineWidth=lw;ctx.stroke(thick);
+  drawIslets(ctx,X,Y,z,c0,c1,r0,r1,P);
   // pieces lean up and to the right, so include a row below and a column to the left of the view
   if(pieces)drawPieces(ctx,X,Y,r0,Math.min(H-1,r1+2),Math.max(0,c0-1),c1,z,showDep&&z>=18,dpr);
   marks.forEach(([e,mx,my,f])=>{const t=z*f,px=Math.max(8,Math.ceil(t*dpr/4)*4),g=glyph(e,px),s=t*1.3;ctx.drawImage(g,mx-s/2,my-s/2,s,s)});
@@ -2234,8 +2342,8 @@ function palaceSheet(){const H=hh();
     <div class="card">${Object.entries(PALACE).map(([k,Pl])=>{const done=H.palace[k],pr=priceOf(Pl.c,Pl.m);return`<div class="row"><span class="em">${Pl.e}</span><div class="grow"><b>${Pl.n}</b><small>${Pl.d} Upkeep 🪙${Pl.u} a month.${!done&&pr.m?' '+priceTxt(pr):''}</small></div>${done?'<span class="tag" style="color:var(--good)">Built</span>':`<button class="btn" data-act="palbuild" data-arg="${k}" ${S.coins<pr.coins?'disabled':''}>🪙${fmt(pr.coins)}</button>`}</div>`}).join('')}</div>
     <button class="btn primary wide" data-act="closeSheet">Done</button>`)}
 /* ---------- royal family screens ---------- */
-const spouseFrom=sp=>NATIONS[sp.from]?`of the ${NATIONS[sp.from].n} royal family`:'of a great local family';
-function kidRole(k){return k.role==='gov'&&S.prov[k.gov]?`Governor of ${S.prov[k.gov].name}`:k.role==='general'?'General of the army':k.role==='abroad'?`Lives at the ${NATIONS[k.spouse.from].n} court`:k.role==='office'&&OFFICES[k.office]?`${OFFICES[k.office].n} of the realm`:''}
+const spouseFrom=sp=>NATIONS[sp.from]?`of the ${NATIONS[sp.from].n} royal family`:OVP[sp.from]?`of the royal house of ${OVP[sp.from].n}`:'of a great local family';
+function kidRole(k){return k.role==='gov'&&S.prov[k.gov]?`Governor of ${S.prov[k.gov].name}`:k.role==='general'?'General of the army':k.role==='abroad'?`Lives at the ${(NATIONS[k.spouse.from]||OVP[k.spouse.from]||{n:'a foreign'}).n} court`:k.role==='office'&&OFFICES[k.office]?`${OFFICES[k.office].n} of the realm`:''}
 function kidEm(k){return k===heirOf(S)?'⭐':k.age<3?'👶':k.age<16?(k.g==='f'?'👧':'👦'):k.g==='f'?'👸':'🤴'}
 function familyHTML(){const f=S.fam,h=heirOf(S),m=S.monarch,sp=f.spouse,list=kids().slice().sort((a,b)=>b.age-a.age||a.id-b.id);
   const spRow=sp?`<div class="row"><span class="em">💑</span><div class="grow"><b>${sp.name}, the royal consort</b><small>${S.aging?`Aged ${sp.age}, `:''}${spouseFrom(sp)}.</small></div></div>`
@@ -2262,6 +2370,7 @@ function marrySheet(who){const k=who==='monarch'?'monarch':kidById(+who);if(!k)r
   openSheet(`<h3>💍 A match for ${nm}</h3><p class="hint">A foreign match improves relations, eases tension and brings a claim on one of their border provinces, sometimes as a dowry, and one day you may inherit land.${abroad?' A child who marries abroad goes to live at that court and can no longer govern or lead the army.':''}</p>
     <div class="seg" role="group" aria-label="Choose a husband or a wife">${[['m','A husband'],['f','A wife']].map(([g,l])=>`<button class="btn ${marryG===g?'on':''}" data-act="marryG" data-arg="${who}" data-n="${g}" aria-pressed="${marryG===g}">${l}</button>`).join('')}</div>
     <div class="card">${NIDS.map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>The ${NATIONS[n].n} royal family</b><small>${isFallen(n)?'':`Ruled by ${rName(n)}. `}Relations ${Math.round(S.rel[n])}.${atWarWith(n)?' At war.':''}</small></div><button class="btn" data-act="wed" data-arg="${who}" data-n="${n}" ${atWarWith(n)||isFallen(n)||S.coins<wedCost(n)?'disabled':''}>🪙${wedCost(n)}</button></div>`).join('')}
+      ${ovKnown()?OVIDS.map(p=>`<div class="row"><span class="em">${OVP[p].e}</span><div class="grow"><b>The royal house of ${OVP[p].n}</b><small>A prestigious match overseas: legitimacy +4 for two years and 🏅+40, but no land. Relations ${ovRel(p)} (needs 50).</small></div><button class="btn" data-act="wed" data-arg="${who}" data-n="${p}" ${ovRel(p)<50||S.coins<wedCost(p)?'disabled':''}>🪙${fmt(wedCost(p))}</button></div>`).join(''):''}
       <div class="row"><span class="em">🏡</span><div class="grow"><b>A great local family</b><small>Pleases the landowners and stays at home.</small></div><button class="btn" data-act="wed" data-arg="${who}" data-n="noble" ${S.coins<wedCost('noble')?'disabled':''}>🪙${wedCost('noble')}</button></div></div>
     <button class="btn wide" data-act="closeSheet">Cancel</button>`)}
 function govSheet(id){const k=kidById(id);if(!k)return;const opts=provsOf('me').filter(i=>S.prov[i].gov==null).sort((a,b)=>(S.prov[b].unrest||0)-(S.prov[a].unrest||0));
@@ -2325,7 +2434,7 @@ function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
     ${liveNations().map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b><small>Army ${theirStr(n)}${theirStr(n)>c.str*1.2?', stronger than yours':theirStr(n)*1.2<c.str?', weaker than yours':', evenly matched'}. Navy ${theirNavy(n)}.</small></div></div>`).join('')}</div>`;
   return `${war}${mil}<h2>Trade capacity</h2><p class="hint">${fmt(used)} of ${fmt(c.cap)} units used this month. Fishing docks add 30 and a harbor adds 600. Imports are filled first. Your trade law: ${law('trade').n.toLowerCase()}.</p><div class="capbar"><i style="width:${c.cap?Math.min(100,used/c.cap*100):0}%"></i></div>
   <h2>Agreements</h2><div class="card">${res}</div>
-  <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}`}
+  <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}${overseasHTML()}`}
 function techHTML(){const c=calc(),cur=S.tech.cur&&techOf(S.tech.cur);
   const avail=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&(!t.req||hasTech(t.req))),locked=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&t.req&&!hasTech(t.req)),done=TECH.filter(t=>hasTech(t.id)),future=TECH.filter(t=>!techOpen(t)),E=ERAS[era()];
   const row=(t,btn,sub)=>`<div class="row"><span class="em">${t.e}</span><div class="grow"><b>${t.n}</b><small>${t.d}${sub?' '+sub:''}</small></div>${btn||''}</div>`;
@@ -2486,7 +2595,7 @@ function whySheet(k){const w=whyData(k),n=v=>Math.round(v*10)/10;
 const monthIdx=m=>{const i=MONTHS.findIndex(x=>x.toLowerCase().startsWith(String(m).toLowerCase().slice(0,3)));return i>=0?i:clamp(num(m,1)-1,0,11)};
 function statusLines(){const c=calc();return[`${MONTHS[S.month]}, year ${S.year}. ${monarchName(S.monarch)}, aged ${S.monarch.age}.`,`Treasury ${fmt(S.coins)}, net ${c.net>=0?'+':''}${fmt(c.net)} a month.`,`Population ${fmt(S.pop)} of ${fmt(c.t.homes)} housing. Approval ${S.hap}% (to ${c.target}).`,`Legitimacy ${S.leg} (to ${c.legT}). Unrest ${Math.round(S.unrest)}.`,`Army ${c.soldiers} soldiers, strength ${c.str}. Navy ${S.navy}.`,S.war?`At war with ${S.war.foes.map(n=>NATIONS[n].n).join(', ')}: score ${S.war.score}, support ${S.war.support}%.`:'At peace.',`Provinces: ${provsOf('me').length}. Research: ${S.tech.cur?techOf(S.tech.cur).n:'none'}.${S.god?' God mode on.':''}${S.noEvents?' Random events off.':''}`]}
 const CMDS={
-  help:()=>['money N           set the treasury','add N             add to the treasury','era 0-3           jump to an era (0 Crowns, 1 Enlightenment, 2 Industry, 3 Modern)','mat N             set building materials','child [m|f] [AGE] add a royal child','gender m|f        make the monarch a king or queen','consort m|f       the consort becomes a husband or wife (new name, same age)','rulers            list neighboring rulers and their personalities','nwar A B          nation A declares war on nation B','renown N          add renown to the royal house','heirloom KEY      give the house an heirloom ('+Object.keys(HEIRLOOMS).join(', ')+')','pretender         a pretender appears, with support 70','bastard           the monarch has an acknowledged bastard','kids              list the royal children with IDs','makeheir ID       name a child heir','drama off|some|lots  family drama level','spouse            marry the monarch to a noble','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
+  help:()=>['money N           set the treasury','add N             add to the treasury','era 0-3           jump to an era (0 Crowns, 1 Enlightenment, 2 Industry, 3 Modern)','mat N             set building materials','child [m|f] [AGE] add a royal child','gender m|f        make the monarch a king or queen','consort m|f       the consort becomes a husband or wife (new name, same age)','rulers            list neighboring rulers and their personalities','overseas          reveal the overseas powers and outer islands','nwar A B          nation A declares war on nation B','renown N          add renown to the royal house','heirloom KEY      give the house an heirloom ('+Object.keys(HEIRLOOMS).join(', ')+')','pretender         a pretender appears, with support 70','bastard           the monarch has an acknowledged bastard','kids              list the royal children with IDs','makeheir ID       name a child heir','drama off|some|lots  family drama level','spouse            marry the monarch to a noble','punrest ID N      set a province’s unrest','integ ID N        set a province’s integration','revolt ID         start a revolt in a province','pop N             set population','approval N        set approval','legitimacy N      set legitimacy','unrest N          set unrest','skip N            skip N months (auto-resolves events)','build ID [N]      build on free tiles, free of charge','buildings         list building IDs','unlock            research every technology','tech ID           research one technology','techs             list technology IDs','law CAT OPT       pass a law instantly','laws              list law categories and options','mood IG N         shift an interest group\u2019s mood for a year','event ID          trigger an event','events            list event IDs','rel NATION N      set relations','tension NATION N  set tension','age N             set the monarch\u2019s age','die               the monarch dies now','aging on|off      toggle aging and succession','court 0-4         set royal household spending','provinces         list provinces with IDs','take ID           take a province','give ID NATION    give away a province','claim ID          gain a claim','army 0-4          set army size','war NATION [ID]   declare war','invade NATION     a neighbor attacks you','score N           set the war score','peace             end the war with a white peace','troops N          set current soldiers','navy N            set your warships','mobilize          toggle mobilization','support N         set war support','occupy ID         occupy a province in the current war','general [TRAIT]   appoint a general (aggressive, cautious, quartermaster, brilliant, inspiring)','status            summary of the kingdom','province ID       everything about one province','why approval|legitimacy|unrest  what\u2019s driving the number','events on|off     turn random events on or off','date MONTH [YEAR] jump to a date','next              end one month from the console','trait NAME        change the monarch\u2019s trait','heir N            set the heir\u2019s age','marry NATION      instant royal marriage','settle ID         settle a frontier province now','devastate ID [N]  devastate a province','rebuild all       clear all devastation','demolish ID       clear buildings in your province','win / lose        end the war now','enemy NATION N|off  fix a neighbor\u2019s army strength','embargo NATION N  set an embargo (0 lifts it)','situation NATION STATE  stable, indebted or troubled','god               infinite money, no rising unrest','goals             complete every objective','clear             clear this log','reset yes         start a new nation'],
   money:n=>{S.coins=num(n,0);return`Treasury set to ${fmt(S.coins)}`},
   era:n=>{const e=clamp(num(n,era()+1),0,3);S.era=e;return`The kingdom is now in the ${ERAS[e].n}`},
   mat:n=>{S.mat=Math.max(0,num(n,500));return`Building materials set to ${fmt(S.mat)}`},
@@ -2546,6 +2655,7 @@ const CMDS={
   next:()=>{endMonth(false);return['A month passes. Details are in the news.'].concat(statusLines())},
   gender:g=>{if(!['m','f'].includes(g))return E('Use gender m or gender f');S.monarch.g=g;return`Now ${monarchName(S.monarch)}`},
   consort:g=>{const sp=S.fam.spouse;if(!sp)return E('The monarch is unmarried');if(!['m','f'].includes(g))return E('Use consort m or consort f');sp.g=g;sp.name=royalName(g,new Set([S.monarch.name,...kids().map(k=>k.name)]));return`${sp.name} is now the ${g==='m'?'husband':'wife'}`},
+  overseas:()=>{const O=ov();O.known=true;genIslands();return`Overseas powers revealed, with ${O.isl.length} outer islands`},
   rulers:()=>liveNations().map(n=>`${NATIONS[n].n}: ${rName(n)}, ${ruler(n).age}, ${ruler(n).pers}${ruler(n).heir?`, heir ${ruler(n).heir.name}`:', no heir'}${pact(n)?`, ${pact(n).t}`:''}`),
   nwar:(a,b)=>{if(!NATIONS[a]||!NATIONS[b]||a===b)return E('Usage: nwar norvik solenne');if(nwarOf(a)||nwarOf(b))return E('One of them is already at war');nwars().push({a,b,m:0,sc:0});return`${NATIONS[a].n} declares war on ${NATIONS[b].n}`},
   renown:v=>{addRen(num(v,100));return`Renown ${Math.floor(house().ren)}`},
@@ -2602,6 +2712,16 @@ function act(a,arg,n){
       chron('🕊️',`Peace between ${NATIONS[w.a].n} and ${NATIONS[w.b].n}`,'Brokered by your crown.');toast('Your envoys broker a peace');render();return}
     case'joinWar':{const side=arg,foe=n,w=nwarOf(side);if(!w||S.war||S.rel[side]<50||![w.a,w.b].includes(foe)||foe===side)return;S.nwars=nwars().filter(x=>x!==w);if(pact(foe))breakPact(foe,'attack');
       startWar(foe,goalAgainst(foe),'me','ally');S.war.allies=[...new Set([...(S.war.allies||[]),side])];relA(side,10);toast(`You join ${NATIONS[side].n} against ${NATIONS[foe].n}`);render();return}
+    case'ovRoute':{const p=arg,O=ov();if(!OVP[p]||!O.known||O.routes[p]||O.block>0||harbors()-ovRoutes().length<1||S.coins<1000)return;S.coins-=1000;O.routes[p]={off:0};ovRelA(p,5);
+      chron('⛵',`A sea route to ${OVP[p].n}`,'Opened by the crown.');toast(`A trade route to ${OVP[p].n} opens`);render();return}
+    case'embassy':{const p=arg,O=ov();if(!OVP[p]||!O.known||O.cd[p]||S.coins<500)return;S.coins-=500;O.cd[p]=12;ovRelA(p,10);toast(`Your embassy is received in ${OVP[p].n}`);render();return}
+    case'ovHelp':{const p=arg,O=ov(),P=OVP[p];if(!P||!O.known)return;const r=ovRel(p);
+      if(P.help==='loan'){if(O.loan>S.turn||r<50)return;S.coins+=5000;addMod('inc',-260,24,`${P.n} loan`);O.loan=S.turn+24;chron(P.e,`A loan from ${P.n}`,'🪙5,000, repaid over two years.');toast(`🪙5,000 arrives from the bankers of ${P.n}`)}
+      else if(P.help==='advisor'){if(O.adv>S.turn||r<60||S.coins<1500)return;S.coins-=1500;O.adv=S.turn+60;chron(P.e,`Scholars from ${P.n}`,'Research +15% for five years.');toast(`Scholars from ${P.n} arrive at court`)}
+      else if(O.prot===p){O.prot=null;ovRelA(p,-10);chron(P.e,`The protection of ${P.n} ends`,'Ended by the crown.');toast(`You are no longer under the protection of ${P.n}`)}
+      else{if(O.prot||r<70)return;O.prot=p;ovRelA(p,5);chron(P.e,`Under the protection of ${P.n}`,`🪙${PROT_COST} a month.`);toast(`${P.n} takes your kingdom under its protection`)}
+      render();return}
+    case'colony':{const O=ov(),I=O.isl[+arg];if(!I||I.o||!harbors()||S.navy<1||S.coins<2000)return;S.coins-=2000;I.o='pending';I.prog=12;chron('🏝️',`Settlers sail for ${I.n}`,'A colony will be founded within a year.');toast(`Settlers sail for ${I.n}`);render();return}
     case'mgender':{if(S.turn>0||!['m','f'].includes(arg))return;const v=($('#nm')||{}).value,m=S.monarch;
       if(m.g!==arg){m.g=arg;m.name=royalName(arg,new Set(kids().map(k=>k.name)));S.fam.spouse=newSpouse(arg,S.fam.spouse?S.fam.spouse.age:m.age-2,'noble')}welcome();if(v!=null)$('#nm').value=v;render();return}
     case'sgender':{if(S.turn>0||!['m','f'].includes(arg))return;const v=($('#nm')||{}).value,sp=S.fam.spouse;
@@ -2654,7 +2774,7 @@ function act(a,arg,n){
     case'rebuild':{const i=+arg,cost=rebuildCost(i);if(!S.dev[i]||S.coins<cost)return;S.coins-=cost;delete S.dev[i];closeSheet();toast(`${S.prov[i].name} is rebuilt`);break}
     // arg: a child's id or 'monarch'; n: a nation, or 'noble' for a local match
     case'wed':{const k=arg==='monarch'?'monarch':kidById(+arg),cost=wedCost(n);if(!k||S.coins<cost)return;
-      if(k==='monarch'){if(S.fam.spouse||S.monarch.age<16)return}else if(!isAdult(k)||k.spouse||!atHome(k))return;if(n!=='noble'&&(!NATIONS[n]||atWarWith(n)||isFallen(n)))return;
+      if(k==='monarch'){if(S.fam.spouse||S.monarch.age<16)return}else if(!isAdult(k)||k.spouse||!atHome(k))return;if(OVP[n]){if(!ovKnown()||ovRel(n)<50)return}else if(n!=='noble'&&(!NATIONS[n]||atWarWith(n)||isFallen(n)))return;
       S.coins-=cost;const msg=marryKid(k,n,marryG);closeSheet();openSheet(`<div class="event"><div class="pic" aria-hidden="true">💍</div><h3>A royal wedding</h3><p>${msg}</p></div><button class="btn primary wide" data-act="closeSheet">Done</button>`);checkGoals();render();return}
     case'kid':kidSheet(+arg);return;
     case'chronicle':chronicleSheet();return;
