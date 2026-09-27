@@ -638,7 +638,7 @@ function addKid(age,g){const f=S.fam;g=g||(Math.random()<.5?'m':'f');const k={id
 // every nation your family has married into
 const marriedTo=()=>{const s=new Set(),f=S.fam;if(f&&f.spouse&&NATIONS[f.spouse.from])s.add(f.spouse.from);kids().forEach(k=>{if(k.spouse&&NATIONS[k.spouse.from])s.add(k.spouse.from)});return[...s]};
 // a child leaving the family (death or exile) gives up any post
-function removeKid(k){const f=S.fam;if(k.role==='office')clearRole(k);if(k.role==='gov'&&S.prov[k.gov])delete S.prov[k.gov].gov;if(S.general&&S.general.kid===k.id)S.general=null;if(f.heirId===k.id)f.heirId=null;f.kids=f.kids.filter(x=>x!==k)}
+function removeKid(k,how){const f=S.fam;if(how){f.gone=(f.gone||[]).concat({name:kidName(k),age:k.age,y:S.year,how}).slice(-6)}if(k.role==='office')clearRole(k);if(k.role==='gov'&&S.prov[k.gov])delete S.prov[k.gov].gov;if(S.general&&S.general.kid===k.id)S.general=null;if(f.heirId===k.id)f.heirId=null;f.kids=f.kids.filter(x=>x!==k)}
 function clearRole(k){if(k.role==='office'){const o=hh().offices[k.office];if(o&&o.kid===k.id)delete hh().offices[k.office];delete k.office}if(k.role==='gov'&&S.prov[k.gov])delete S.prov[k.gov].gov;if(k.role==='general'&&S.general&&S.general.kid===k.id)S.general=null;k.role=null;delete k.gov}
 // older saves had a single heir: they become the first child, with a noble spouse for the monarch
 function famFromOld(d){const m=d.monarch||S.monarch,f={spouse:m.spouse?newSpouse(m.g,m.age,m.spouse):newSpouse(m.g,m.age-2,'noble'),kids:[],heirId:null,next:2,tryMore:false};
@@ -778,7 +778,7 @@ function houseMonth(notes,stop){const H=house(),r=renownRate();H.ren+=r;H.total+
   const fa=altS('chancellor');if(fa)liveNations().forEach(n=>{relA(n,fa*.1);tenA(n,-fa*.1)});
   tutored().forEach(k=>{const T=tutorInfo(k.tutor);if(T&&T.ok&&k.age>=6)k.tm=(k.tm||0)+1});
   // coming of age: lessons may shape the child's trait
-  kids().forEach(k=>{if(k.age<16||!k.tutor)return;const T=tutorInfo(k.tutor),ch=T&&T.teach.length?tutorChance(T,k.tm||0):0,was=k.trait;
+  kids().forEach(k=>{if(k.age<16||!k.tutor)return;stop.push(`${kidName(k)} comes of age`);const T=tutorInfo(k.tutor),ch=T&&T.teach.length?tutorChance(T,k.tm||0):0,was=k.trait;
     if(Math.random()<ch){const opts=T.teach.filter(x=>x!==was);k.trait=opts.length?pick(opts):was;k.edu=1;addRen(5);
       notes.push(['🎓',`${kidName(k)} comes of age`,`Taught by ${T.n.replace(/^The /,'the ')}, ${k.name} is now ${TRAITS[k.trait].n.toLowerCase()} and well educated.`])}
     else{k.edu=0;notes.push(['🎓',`${kidName(k)} comes of age`,`The lessons never quite took: ${k.name} remains ${TRAITS[was].n.toLowerCase()}.`])}
@@ -879,8 +879,8 @@ function familyMonth(notes,stop){const f=S.fam,m=S.monarch,sp=f.spouse;if(!S.agi
   const bearer=!sp?null:m.g!==sp.g?(m.g==='f'?m:sp):(m.age<=sp.age?m:sp);
   if(sp&&bearer.age>=18&&bearer.age<=44&&m.age>=18&&sp.age>=18){const n=f.kids.length,p=(n<2?.035:n<4?.02:f.tryMore?.015:.003)*(lg('blood',1)?1.33:1);
     if(Math.random()<p){const a=addKid(0),twins=Math.random()<.03,b=twins?addKid(0):null;const msg=b?`Twins: ${kidName(a)} and ${kidName(b)} are born`:`${kidName(a)} is born`;
-      notes.push(['👶',msg,'The kingdom celebrates a royal birth.']);addMod('leg',1,12,'Royal birth');addRen(3);stop.push(msg)}}
-  if(sp&&sp.age>50&&Math.random()<Math.pow(sp.age-50,2)/60000){notes.push(['🕯️',`${sp.name}, the royal consort, has died`,`${monarchName(m)} is widowed. The crown can remarry from the Court tab.`]);f.spouse=null;stop.push('The royal consort has died')}
+      notes.push(['👶',msg,'The kingdom celebrates a royal birth.']);royalNews('👶',msg,`${b?"The royal twins join":`${kidName(a)} joins`} the family of ${monarchName(m)}${sp?` and ${sp.name}`:''}. Bells ring across the kingdom.`);addMod('leg',1,12,'Royal birth');addRen(3);stop.push(msg)}}
+  if(sp&&sp.age>50&&Math.random()<Math.pow(sp.age-50,2)/60000){notes.push(['🕯️',`${sp.name}, the royal consort, has died`,`${monarchName(m)} is widowed. The crown can remarry from the Court tab.`]);royalNews('🕯️',`${sp.name}, the royal consort, has died`,`${monarchName(m)} is widowed. The crown can remarry from the Court tab.`);f.spouse=null;stop.push('The royal consort has died')}
   // allowances: a modest one can sour grown children, a generous one wins back the resentful
   if(dramaOn()){const al=hh().allow;kids().forEach(k=>{if(!isAdult(k)||!atHome(k))return;
     if(al==='modest'&&!k.rival&&Math.random()<.01){k.rival=true;notes.push(['👛',`${kidName(k)} complains about their allowance`,'Grown children on a modest allowance can become resentful.'])}
@@ -899,12 +899,12 @@ const FAMEV=[
       {l:'Refuse',f(){k.rival=true;return`${kidName(k)} bows, but resents the refusal.`}}]}},
   ()=>{if(S.drama!=='lots'||(hasPal('guard')&&Math.random()<.5))return null;const r=kids().filter(k=>k.rival&&isAdult(k)&&atHome(k));if(!r.length)return null;const k=pick(r);
     return{e:'🗡️',t:'A plot at court',d:`Your guards have uncovered a plot to put ${kidName(k)} on the throne.`,ch:[
-      {l:'Exile them',f(){removeKid(k);addPret(k.name,k.g,k.age,25,'exiled for plotting against the crown');addMod('leg',2,12,'Plot crushed');igM('landowners',-4,12,'Royal exile');return`${kidName(k)} is sent into exile.`}},
+      {l:'Exile them',f(){removeKid(k,'exiled for plotting');addPret(k.name,k.g,k.age,25,'exiled for plotting against the crown');addMod('leg',2,12,'Plot crushed');igM('landowners',-4,12,'Royal exile');return`${kidName(k)} is sent into exile.`}},
       {l:'Forgive them',f(){k.rival=false;addMod('leg',-2,12,'Leniency to plotters');return`${kidName(k)} swears loyalty, tearfully.`}}]}},
   ()=>{const c=kids().filter(atHome);if(!c.length)return null;const k=pick(c),heir=k===heirOf(S);
     return{e:'🤒',t:`${kidName(k)} falls ill`,d:`The royal physicians are worried about ${kidName(k)}, aged ${k.age}.`,ch:[
-      {l:'Summon the best physicians',c:400,f(){if(Math.random()<.95)return`${kidName(k)} recovers fully.`;removeKid(k);addMod('leg',heir?-6:-2,12,'Royal death');return`Despite everything, ${kidName(k)} dies. The kingdom mourns.`}},
-      {l:'Trust in prayer',f(){igM('clergy',3,6,'Royal piety');if(Math.random()<(trait('pious')?.85:.7))return`${kidName(k)} recovers, and the clergy call it a miracle.`;removeKid(k);addMod('leg',heir?-6:-2,12,'Royal death');return`${kidName(k)} dies. The kingdom mourns.`}}]}},
+      {l:'Summon the best physicians',c:400,f(){if(Math.random()<.95)return`${kidName(k)} recovers fully.`;removeKid(k,'died of illness');addMod('leg',heir?-6:-2,12,'Royal death');return`Despite everything, ${kidName(k)} dies. The kingdom mourns.`}},
+      {l:'Trust in prayer',f(){igM('clergy',3,6,'Royal piety');if(Math.random()<(trait('pious')?.85:.7))return`${kidName(k)} recovers, and the clergy call it a miracle.`;removeKid(k,'died of illness');addMod('leg',heir?-6:-2,12,'Royal death');return`${kidName(k)} dies. The kingdom mourns.`}}]}},
   ()=>{const c=kids().filter(k=>isAdult(k)&&atHome(k)&&!k.spouse);if(!c.length)return null;const k=pick(c),love=Math.random()<.1?k.g:(k.g==='f'?'m':'f');
     return{e:'💘',t:`${kidName(k)} has fallen in love`,d:`${kidName(k)} wants to marry ${love===k.g?(k.g==='f'?'a young noblewoman':'a young nobleman'):(k.g==='f'?'a young nobleman':'a young noblewoman')} of the court, for love rather than politics.`,ch:[
       {l:'Allow the match',f(){return marryKid(k,'noble',love)}},
@@ -1364,7 +1364,7 @@ function warMonth(notes){const W_=S.war;W_.months++;const w=warStr();
   let sd=(d>0?2:-3)-1-(loss>w.c.soldiers*.05?2:0);if(sd<0&&gen('inspiring'))sd/=2;W_.support=clamp(Math.round(W_.support+sd),0,100);
   W_.lowSup=W_.support<20?W_.lowSup+1:0;
   if(S.general&&Math.random()<(S.general.kid!=null?.015:.01)){const k=S.general.kid!=null&&kidById(S.general.kid);
-    if(k){const wasHeir=k===heirOf(S);ev+=` Tragedy: ${kidName(k)}${wasHeir?', the heir,':''} has fallen in battle.`;removeKid(k);addMod('leg',wasHeir?-8:-4,24,'Royal child killed in battle')}
+    if(k){const wasHeir=k===heirOf(S);ev+=` Tragedy: ${kidName(k)}${wasHeir?', the heir,':''} has fallen in battle.`;royalNews('⚔️',`${kidName(k)} has fallen in battle`,`${kidName(k)}${wasHeir?', heir to the throne,':''} was killed leading the army. The kingdom mourns.`);removeKid(k,'fell in battle');addMod('leg',wasHeir?-8:-4,24,'Royal child killed in battle')}
     else ev+=` General ${S.general.name} has been killed.`;S.general=null}
   notes.push(['⚔️',`War with ${W_.foes.map(n=>NATIONS[n].n).join(' and ')}: ${W_.score>0?'+':''}${W_.score}`,`The front ${d>=0?'moved in your favor':'turned against you'}. You lost ${loss} soldiers.${ev} War support ${W_.support}%.${w.theirN>w.ourNavy?' Enemy ships are blockading your coast.':w.ourNavy>w.theirN?' Your navy is blockading their coast.':''}`]);
   if(W_.score>=60)return'win';if(W_.score<=-60)return'lose';if(W_.lowSup>=2)return'support';if(W_.months>=24)return'exhausted';return null}
@@ -1492,7 +1492,7 @@ function succeed(reason){const old=S.monarch,f=S.fam;let h=heirOf(S),cousin=fals
   if(!h){const c=newRoyal(20,40);h={name:c.name,g:c.g,age:c.age,trait:pick(Object.keys(TRAITS)),spouse:Math.random()<.6?newSpouse(c.g,c.age,'noble'):null};cousin=true}
   kids().forEach(k=>{if(k!==h)clearRole(k)});houseSucceed(h,cousin,passed);if(S.general&&S.general.kid!=null)S.general=null;
   S.monarch={name:h.name,g:h.g,age:h.age,trait:h.trait||pick(Object.keys(TRAITS)),num:regnal(h.name),since:S.year};
-  S.fam={spouse:h.spouse||null,kids:[],heirId:null,next:f.next,tryMore:false};
+  S.fam={spouse:h.spouse||null,kids:[],heirId:null,next:f.next,tryMore:false,gone:f.gone||[],sibs:cousin?[]:kids().filter(k=>k!==h).map(k=>({name:k.name,g:k.g,age:k.age,abroad:k.role==='abroad'&&k.spouse?k.spouse.from:null}))};
   if(S.fam.spouse&&h.age>=22)for(let n=rnd(3),age=Math.min(14,h.age-20);n>0&&age>=0;n--){addKid(age);age-=2+rnd(3)}
   addMod('leg',lg('blood',3)?-6:-12,24,'A new reign');if(cousin)addMod('leg',-15,36,'A distant cousin inherits');
   if(S.monarch.age<16)addMod('leg',-6,(16-S.monarch.age)*12,'Regency council');
@@ -1634,7 +1634,10 @@ function afterMonths(rs){const last=rs[rs.length-1],net=rs.reduce((a,r)=>a+r.net
   const head=rs.length>1?`⏩ ${rs.length} months passed`:`${MONTHS[(S.news[0]||{}).m]} is over`;
   if(S.showReport)reportSheet();else if(queue.length)showNext();
   toast(`${head}: 🪙 ${net>=0?'+':''}${fmt(net)}, 👥 ${dp>=0?'+':''}${dp}${why?'. '+why+'.':''}`)}
+// royal news that needs no decision, but should never be missed: it pauses ⏩ and waits for a tap
+function royalNews(e,t,d){queue.push({info:1,e,t,d})}
 function showNext(){curEvent=queue.shift();if(!curEvent){closeSheet();return}
+  if(curEvent.info){const x=curEvent;curEvent=null;openSheet(`<div class="event"><div class="pic" aria-hidden="true">${x.e}</div><h3>${x.t}</h3><p>${x.d}</p></div><button class="btn primary wide" data-act="nextEvent">${queue.length?'Continue':'Return to the map'}</button>`);return}
   openSheet(`<div class="event"><div class="pic" aria-hidden="true">${curEvent.e}</div><h3>${curEvent.t}</h3><p>${curEvent.d}</p></div>${curEvent.ch.map((ch,i)=>`<button class="btn choice" data-act="choose" data-arg="${i}">${ch.l}<small>${ch.s?ch.s:ch.c?`Costs 🪙${fmt(ch.c)}`:'No upfront cost'}</small></button>`).join('')}`)}
 
 /* ---------- views ---------- */
@@ -2084,7 +2087,7 @@ function familyHTML(){const f=S.fam,h=heirOf(S),m=S.monarch,sp=f.spouse,list=kid
     :`<div class="row"><span class="em">💍</span><div class="grow"><b>${monarchName(m)} is unmarried</b><small>Without a consort there will be no more children.</small></div>${m.age>=16?`<button class="btn" data-act="marrySheet" data-arg="monarch">Marry</button>`:''}</div>`;
   const rows=list.map(k=>{const tags=[k===h?'<span class="tag" style="color:var(--good)">Heir</span>':'',k.rival&&dramaOn()?'<span class="tag" style="color:var(--warn)">Resentful</span>':''].join(' ');
     return`<div class="row"><span class="em">${kidEm(k)}</span><div class="grow"><b>${kidName(k)}</b> ${tags}<small>${S.aging?`Aged ${k.age}. `:''}${TRAITS[k.trait].n}${k.age<16?' by nature':''}.${k.age>=6&&k.age<16?(k.tutor&&tutorInfo(k.tutor)?` Tutor: ${tutorInfo(k.tutor).n}.`:' No tutor yet.'):''}${k.edu?' Well educated.':''}${kidRole(k)?' '+kidRole(k)+'.':''}${k.spouse&&k.role!=='abroad'?` Married to ${k.spouse.name}.`:''}</small></div><button class="btn" data-act="kid" data-arg="${k.id}">Options</button></div>`}).join('');
-  return`<div class="card">${spRow}${rows||'<div class="row"><span class="em">🕊️</span><div class="grow"><b>No children</b><small>If the monarch dies without children, a distant cousin inherits and legitimacy suffers badly.</small></div></div>'}
+  return`<div class="card">${spRow}${rows||'<div class="row"><span class="em">🕊️</span><div class="grow"><b>No children</b><small>If the monarch dies without children, a distant cousin inherits and legitimacy suffers badly.</small></div></div>'}${(f.sibs||[]).length?`<div class="row"><span class="em">👥</span><div class="grow"><b>The ${title(m).toLowerCase()}’s brothers and sisters</b><small>${f.sibs.map(s=>s.name+(s.abroad&&NATIONS[s.abroad]?` (at the ${NATIONS[s.abroad].n} court)`:'')).join(', ')}. They stepped back from their posts when the new reign began.</small></div></div>`:''}${(f.gone||[]).length?`<div class="row"><span class="em">🕯️</span><div class="grow"><b>Remembered</b><small>${f.gone.slice().reverse().map(g=>`${g.name}, ${g.how}, year ${g.y}${S.aging?` (aged ${g.age})`:''}`).join('. ')}.</small></div></div>`:''}
     ${sp&&S.aging?`<div class="row"><div class="grow"><b>Hope for more children</b><small>Most royal couples have two to four children. Turn this on to make more children likely.</small></div><button class="sw" data-act="tryMore" aria-pressed="${!!f.tryMore}" aria-label="Hope for more children"></button></div>`:''}</div>
     <p class="hint">You choose the heir. Until you do, the eldest child is heir. Passing over the eldest adult child costs a little legitimacy and may leave them resentful.</p>`}
 function kidSheet(id){const k=kidById(id);if(!k){closeSheet();return}const h=heirOf(S),free=provsOf('me').filter(i=>S.prov[i].gov==null).length;
