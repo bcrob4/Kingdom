@@ -139,6 +139,8 @@ body.on-isle .mappane{display:block}
 body.v3 #mapcv,body.v3 .minimap,body.v3 #modeSel,body.v3 #legBtn,body.v3 .mapover .legend{display:none!important}
 body.v3 .mapwrap canvas.v3cv{display:block}
 #lifeBtn{display:none}body.v3 #lifeBtn{display:inline-block}
+#v3Q{display:none}body.v3 #v3Q{display:inline-block}
+.v3fps{position:absolute;right:54px;top:8px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:2px 8px;font:600 12px system-ui,sans-serif;pointer-events:none}
 .v3lab{position:absolute;inset:0;pointer-events:none;overflow:hidden;display:none}
 body.v3 .v3lab{display:block}
 .v3lab span{position:absolute;left:0;top:0;white-space:nowrap;font:600 12px/1.1 system-ui,sans-serif;color:#FFFFFF;text-shadow:0 0 3px rgba(20,25,30,.95),0 0 2px rgba(20,25,30,.95)}
@@ -242,8 +244,8 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
     <section class="mappane" aria-label="Map">
       <div class="mapwrap" id="mapwrap">
         <canvas class="cv" id="mapcv" tabindex="0" role="img" aria-label="Map of your kingdom and its neighbors. Arrow keys move the cursor, Enter selects, plus and minus zoom."></canvas>
-        <canvas class="cv v3cv" id="cv3d" tabindex="0" role="img" aria-label="3D view of your kingdom. Drag to move, pinch to zoom, and twist or drag with two fingers to turn and tilt. Arrow keys move, Q and E turn."></canvas><div class="v3lab" id="v3lab" aria-hidden="true"></div><div class="v3msg" id="v3msg" role="status" hidden></div>
-        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button><button class="pill" id="v3Btn" data-act="view3d" aria-pressed="false" title="Switch between the flat map and the 3D view">3D</button><button class="pill" id="lifeBtn" data-act="life" aria-pressed="true" title="Turn the living world on or off: people, carts, animals, boats and smoke">Life</button></div><div class="legend" id="legend"></div></div>
+        <canvas class="cv v3cv" id="cv3d" tabindex="0" role="img" aria-label="3D view of your kingdom. Drag to move, pinch to zoom, and twist or drag with two fingers to turn and tilt. Arrow keys move, Q and E turn."></canvas><div class="v3lab" id="v3lab" aria-hidden="true"></div><div class="v3msg" id="v3msg" role="status" hidden></div><div class="v3fps" id="v3fps" hidden></div>
+        <div class="mapover"><div class="mapbar"><select id="modeSel" aria-label="Map mode"></select><button class="pill" id="legBtn" data-act="legend" aria-pressed="true">Key</button><button class="pill" id="v3Btn" data-act="view3d" aria-pressed="false" title="Switch between the flat map and the 3D view">3D</button><button class="pill" id="lifeBtn" data-act="life" aria-pressed="true" title="Turn the living world on or off: people, carts, animals, boats and smoke">Life</button><select id="v3Q" class="pill" aria-label="3D detail"><option value="low">Detail: low</option><option value="med">Detail: medium</option><option value="high">Detail: high</option><option value="fps">Frame rate on or off</option></select></div><div class="legend" id="legend"></div></div>
         <div class="maptip" id="maptip" aria-live="polite"></div>
         <div class="mapctl"><button data-act="zoom" data-arg="in" aria-label="Zoom in">+</button><button data-act="zoom" data-arg="out" aria-label="Zoom out">−</button><button data-act="zoom" data-arg="home" aria-label="Center on the capital">⌂</button><button data-act="maphelp" aria-label="How the map works">?</button><button class="wideonly" data-act="panel" id="panelBtn" aria-label="Hide the side panel" title="Hide or show the side panel">⤢</button></div>
         <canvas class="minimap" id="minimap" aria-hidden="true"></canvas>
@@ -2991,11 +2993,11 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
 const V3FACE=['dock','ferry','harbor','shipyard'];
 function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels:[],pastures:[],farm:[],ships:[],homes:[]},m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
   // lay one recipe on tile i at a sub-position and scale, turned by ry
-  const lay=(i,rec,ox,oz,sc,ry)=>{const cx=i%W+.5,cz=(i/W|0)+.5,co=Math.cos(ry),si=Math.sin(ry);
+  const lay=(i,rec,ox,oz,sc,ry,lod=false)=>{const cx=i%W+.5,cz=(i/W|0)+.5,co=Math.cos(ry),si=Math.sin(ry),chk=lod?v3Chunk(i):-1;
     // a building stands on one base height, with foundations reaching down into any slope; flat things like crop rows follow the ground
     const g0=v3G(cx+ox,cz+oz);
     rec.forEach(([sh,x,z,y,w,h,d,c,pry,rz,tx])=>{const lx=x*sc,lz=z*sc,u=cx+ox+lx*co+lz*si,v=cz+oz-lx*si+lz*co,t2=v3TexOf(sh,c,tx,w*sc,h*sc,d*sc);
-      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,t2]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);if(tx===-2){const p2=parts[parts.length-1];L.smoke.push([p2[1],p2[2],p2[3]+p2[5]])}})};
+      if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,t2]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);parts[parts.length-1][11]=chk;if(tx===-2){const p2=parts[parts.length-1];L.smoke.push([p2[1],p2[2],p2[3]+p2[5]])}})};
   const RURALB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine'],dev=x=>x&&x.t!=='w'&&(x.hs||(x.b&&!RURALB.includes(x.b))),patches=[];
   // a flat patch on the ground (fields, roads), given by its four corners in tile units
   const patch=(a,b,c,d,col,n=3,tx=-1,rot=0)=>patches.push([a,b,c,d,col,n,tx,rot]);
@@ -3015,12 +3017,12 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     const both=x.b&&x.hs;
     if(x.hs||(x.b&&x.b!=='farm'))L.homes.push(i);
     // buildings are kept small against the land, as in Civilization IV
-    if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.2:0,both?-.2:0,both?.58:.8,ry);
+    if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.2:0,both?-.2:0,both?.58:.8,ry,v3KitCivic(x.b));
     if(x.b==='wind'||x.b==='mill'){const sc=both?.58:.8,o=both?-.2:0,co=Math.cos(ry),si=Math.sin(ry),cx=c+.5+o,cz=r+.5+o,g0=v3G(cx,cz);
       if(x.b==='wind')L.mills.push([cx+.1*sc*si,cz+.1*sc*co,g0+.3*sc,ry,sc]);else L.wheels.push([cx+.14*sc*co,cz-.14*sc*si,g0+.1*sc,ry,sc])}
     if(['dock','harbor','shipyard','ferry','tradeco'].includes(x.b)){const w=NB(i).find(j=>S.map[j].t==='w');if(w!=null){const dx=w%W-c,dz=(w/W|0)-r;L.ships.push([w%W+.5+dx*.25,(w/W|0)+.5+dz*.25,rnd(),x.b==='ferry'||x.b==='dock'?0:1])}}
     // with a building on the tile, the homes wrap round it in the other three corners
-    if(x.hs){if(both)[[.25,-.25],[-.25,.25],[.25,.25]].forEach(([ox,oz])=>lay(i,v3Recipe(x.hs,rnd),ox,oz,.48,0));else lay(i,v3Recipe(x.hs,rnd),0,0,.92,ry)}
+    if(x.hs){if(both)[[.25,-.25],[-.25,.25],[.25,.25]].forEach(([ox,oz])=>lay(i,v3Recipe(x.hs,rnd),ox,oz,.48,0,true));else lay(i,v3Recipe(x.hs,rnd),0,0,.92,ry,true)}
     if(x.sm)lay(i,v3Recipe(x.sm,rnd),.3,-.3,.38,0);
     // fields: a farm is a patchwork of crops, and open land beside a town is farmed too
     const town=!x.b&&!x.hs&&x.t!=='f'&&!x.hl&&[-1,0,1].some(dr=>[-1,0,1].some(dc=>{const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)return false;const y=S.map[rr*W+cc];return y.hs&&y.o===x.o}))&&rnd()<.75;
@@ -3040,7 +3042,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     if(x.hs&&x.t!=='w'){if(x.hs==='cottage'&&!x.b)parcel(c+.4,r+.885,c+.6,r+.975,1,false,.95);const ny=x.b?1:2;for(let k=0;k<ny;k++){const a=rnd()<.5;trees.push([c+(a?.05:.95)+(rnd()-.5)*.04,r+(k?.05:.95)+(rnd()-.5)*.04,.55+rnd()*.3,false,rnd()])}}
     else if(dev(x)&&!['hall','fort','park','garden','fair'].includes(x.b)){// a civic building sits among small houses, so the town reads as one neighbourhood
       const sm=(px,pz,rot)=>[['box',px,pz,0,.13,.08,.11,rnd()<.5?V3C.wall:V3C.timber,rot,0,-1],['gable',px,pz,.08,.14,.055,.12,era()<1&&rnd()<.5?V3C.thatch:V3C.roof,rot,0,-1]];
-      const cs=[[-.38,-.38],[.38,-.38],[-.38,.38],[.38,.38]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([px,pz])=>lay(i,sm(0,0,rnd()<.5?0:Math.PI/2),px,pz,1,0));trees.push([c+.5+cs[3][0],r+.5+cs[3][1],.6+rnd()*.3,false,rnd()])}});
+      const cs=[[-.38,-.38],[.38,-.38],[-.38,.38],[.38,.38]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([px,pz])=>lay(i,sm(0,0,rnd()<.5?0:Math.PI/2),px,pz,1,0,true));trees.push([c+.5+cs[3][0],r+.5+cs[3][1],.6+rnd()*.3,false,rnd()])}});
   // roads join the built-up tiles of each kingdom, and link each settlement to its nearest neighbor across the countryside
   const roadCol=era()<2?'#A08F6E':'#88857E',edges=new Set(),road=(i,j)=>{const k=i<j?i+','+j:j+','+i;if(edges.has(k))return;edges.add(k);
     const a=[i%W+.5,(i/W|0)+.5],b=[j%W+.5,(j/W|0)+.5],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,dx=(b[0]-a[0])/L,dy=(b[1]-a[1])/L,w=.026,e=.026;
@@ -3054,14 +3056,14 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
       for(const j of NB(t)){if(par.has(j))continue;const y=S.map[j];if(y.t==='w'||y.o!==own)continue;par.set(j,t);if(y.sid!=null&&y.sid!==s.id&&st[y.sid]){hit=j;break}q2.push(j)}}
     for(let t=hit;t>=0&&par.get(t)>=0;t=par.get(t))road(t,par.get(t))});
   L.edges=[...edges].map(k=>k.split(',').map(Number));V3.L=L;
-  const by={};parts.forEach(pt=>{(by[pt[0]]=by[pt[0]]||[]).push(pt)});
+  const by={};parts.forEach(pt=>{const k=pt[0]+'|'+(pt[11]>=0?pt[11]:-1);(by[k]=by[k]||[]).push(pt)});V3.codeCh=new Map();
   const meshes=[],protos=V3.protos,col=new T.Color();
   const inst=(geo,list,fill)=>{const mesh=new T.InstancedMesh(geo,new T.MeshLambertMaterial({color:0xffffff}),list.length);list.forEach((it,k)=>{fill(it,k,mesh)});
     mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;meshes.push(mesh)};
   // buildings share one textured material; each instance carries which surface it shows
-  Object.entries(by).forEach(([sh,list])=>{const geo=protos[sh].clone(),tex=new Float32Array(list.length),mesh=new T.InstancedMesh(geo,V3.bmat,list.length);
+  Object.entries(by).forEach(([key,list])=>{const sh=key.split('|')[0],chk=+key.split('|')[1],geo=protos[sh].clone(),tex=new Float32Array(list.length),mesh=new T.InstancedMesh(geo,V3.bmat,list.length);
     list.forEach(([,u,v,y,w,h,d,c,ry,rz,t2],k)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(u),y-.012,v3Z(v));s.set(w,h,d);m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.set(c));tex[k]=t2});
-    geo.setAttribute('aTex',new T.InstancedBufferAttribute(tex,1));mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.castShadow=mesh.receiveShadow=true;mesh.userData.shared=true;meshes.push(mesh)});
+    geo.setAttribute('aTex',new T.InstancedBufferAttribute(tex,1));mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.castShadow=mesh.receiveShadow=true;mesh.userData.shared=true;if(chk>=0){mesh.frustumCulled=false;(V3.codeCh.get(chk)||V3.codeCh.set(chk,[]).get(chk)).push(mesh)}meshes.push(mesh)});
   const pines=trees.filter(t=>t[3]),leafy=trees.filter(t=>!t[3]),put=(mesh,k,u,v,dy,sx,sy,r)=>{e.set(0,r*6,0);q.setFromEuler(e);p.set(v3X(u),v3G(u,v)+dy,v3Z(v));s.set(sx,sy,sx);m4.compose(p,q,s);mesh.setMatrixAt(k,m4)};
   if(trees.length)inst(protos.trunk,trees,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,-.01,.018*sc,.07*sc,r);mesh.setColorAt(k,col.set('#5A4430'))});
   if(pines.length){inst(protos.pine,pines,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.03*sc,.12*sc,.15*sc,r);mesh.setColorAt(k,col.setHSL(.3+r*.06,.28+r*.12,.17+r*.06))});
@@ -3146,6 +3148,59 @@ function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.
 function v3Loop(now){V3.loop=0;if(!v3LifeOn())return;V3.loop=requestAnimationFrame(v3Loop);if(now-(V3.last||0)<33)return;
   const dt=V3.last?Math.min(.1,(now-V3.last)/1000):0;V3.last=now;v3LifeTick(now/1000,dt);v3Render()}
 function v3LifeToggle(){UI.life=UI.life===false;saveUI();const b=$('#lifeBtn');if(b)b.setAttribute('aria-pressed',UI.life!==false?'true':'false');v3Draw()}
+/* ---------- detailed buildings (Anno-style) ---------- */
+// Near the camera, homes and some civic buildings are drawn with detailed models built from the Quaternius Medieval Village kit (CC0),
+// loaded from the site's kit folder. Further away, or on Low detail, the lighter code-drawn buildings stay. The map is split into
+// chunks of V3CS×V3CS tiles, and each chunk switches between the two on its own. The Drive copy cannot load the kit and keeps the light look.
+const V3CS=4,KIT={url:'kit/',state:0,designs:{},mats:{}};
+const v3CW=()=>Math.ceil(W/V3CS),v3Chunk=i=>Math.floor((i%W)/V3CS)+Math.floor((i/W|0)/V3CS)*v3CW();
+const v3Q=()=>UI.v3q||'high';
+// civic buildings that have a detailed model
+const KIT_CIVIC={church:'church',inn:'manor',tavern:'manor',coffeehouse:'manor',bank:'manor',library:'manor',fcap:'hall',tradeco:'hall',school:'hall',watch:'tower',printhouse:'town3'};
+const v3KitCivic=b=>!!KIT_CIVIC[b];
+// how a tile is filled with detailed houses: rows along a lane, three corners round a building, or none
+const v3KitMode=x=>{if(!x||x.t==='w')return null;if(x.hs)return x.b?'corners':'rows';const RB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine','hall','fort','park','garden','fair'];return x.b&&!RB.includes(x.b)?'lone':null};
+function v3KitLoad(){if(KIT.state)return;KIT.state=1;const T=THREE,tl=new T.TextureLoader(),tex={};
+  const texOf=f=>tex[f]||(tex[f]=(()=>{const t=tl.load(KIT.url+f,()=>v3Draw());t.flipY=false;t.anisotropy=Math.min(8,V3.r.capabilities.getMaxAnisotropy());return t})());
+  fetch(KIT.url+'kitmedieval.json').then(r=>{if(!r.ok)throw 0;return r.json()}).then(man=>fetch(KIT.url+'kitmedieval.bin').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(buf=>{
+    Object.entries(man.mats).forEach(([n,e])=>{const m=new T.MeshStandardMaterial({color:e.color||'#ffffff',roughness:.9,metalness:0,side:T.DoubleSide});
+      if(e.map)m.map=texOf(e.map);if(e.nor){m.normalMap=texOf(e.nor);m.normalScale.set(1,-1)}
+      if(n==='MI_WindowGlass'){m.color.set('#6E8594');m.roughness=.25;m.metalness=.1}if(e.alphaTest){m.alphaTest=e.alphaTest;m.color.set('#ffffff')}KIT.mats[n]=m});
+    man.designs.forEach(d=>{KIT.designs[d.name]={h:d.h,parts:d.parts.map(p=>{let o=p.off;const g=new T.BufferGeometry();
+      g.setAttribute('position',new T.BufferAttribute(new Float32Array(buf,o,p.v*3),3));o+=p.v*12;
+      g.setAttribute('normal',new T.BufferAttribute(new Int8Array(buf,o,p.v*4),4,true));o+=p.v*4;
+      g.setAttribute('uv',new T.BufferAttribute(new Float32Array(buf,o,p.v*2),2));o+=p.v*8;
+      g.setIndex(new T.BufferAttribute(new Uint32Array(buf,o,p.i),1));g.computeBoundingSphere();return{mat:p.mat,geo:g}})}});
+    KIT.scale=.03;KIT.state=2;v3KitBuild();v3Draw()})).catch(()=>{KIT.state=-1})}
+// place the detailed models, chunk by chunk
+function v3KitBuild(){const T=THREE;if(V3.kitCh)V3.kitCh.forEach(ms=>ms.forEach(m=>{V3.scene.remove(m);m.dispose&&m.dispose()}));V3.kitCh=new Map();
+  if(V3.codeCh)V3.codeCh.forEach(ms=>ms.forEach(m=>{m.visible=true}));if(KIT.state!==2||v3Q()==='low'||era()>=2||!V3.on)return;
+  const D=KIT.designs,s=KIT.scale,TINT=['#FFFFFF','#E4D2C6','#C9B2A0','#BBA89A','#D8C0B0'],place=new Map(),M4=()=>new T.Matrix4(),col=new T.Color();
+  const add=(ch,dn,u,v,rot,sc,tint)=>{if(!D[dn])return;let byD=place.get(ch);if(!byD)place.set(ch,byD=new Map());let l=byD.get(dn);if(!l)byD.set(dn,l=[]);
+    l.push([M4().makeTranslation(v3X(u),v3G(u,v)-.004,v3Z(v)).multiply(M4().makeRotationY(rot)).multiply(M4().makeScale(sc,sc,sc)),tint])};
+  S.map.forEach((x,i)=>{const mode=v3KitMode(x);if(!mode)return;let seed=i*7919+17;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+    const c=i%W,r=i/W|0,u0=c+.5,v0=r+.5,ch=v3Chunk(i),tint=()=>TINT[Math.floor(rnd()*TINT.length)];
+    const kinds=x.hs==='townhouse'?['town1','town2','cottage1']:x.hs==='tenement'||x.hs==='apartments'?['town3','manor','town1']:['cottage1','cottage2','cottage3'];
+    if(mode==='rows'){const turn=rnd()<.5;let k=0;for(const rz of[-.25,.25])for(const rx of[-.36,-.12,.12,.36]){const a=turn?rz:rx,b=turn?rx:rz;add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,(rz<0?0:Math.PI)+(turn?Math.PI/2:0),s,tint());k++}}
+    else if(mode==='corners'){// two houses side by side in each of the three corners the building leaves free
+      [[.25,-.25],[-.25,.25],[.25,.25]].forEach(([a,b])=>{const side=rnd()<.5,rot=(b<0?0:Math.PI)+(side?Math.PI/2:0);for(const o of[-.12,.12])add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a+(side?0:o),v0+b+(side?o:0),rot,s*.92,tint())})}
+    else{[[-.36,-.36],[.36,-.36],[-.36,.36],[.36,.36]].sort(()=>rnd()-.5).slice(0,3).forEach(([a,b])=>add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,Math.floor(rnd()*4)*Math.PI/2,s*.85,tint()))}
+    const civ=KIT_CIVIC[x.b];if(civ){const bu=u0+(x.hs?-.2:0),bv=v0+(x.hs?-.2:0),rot=Math.floor(rnd()*4)*Math.PI/2,sc=s*(x.hs?.8:1.05);
+      if(civ==='church'){add(ch,'hall',bu,bv,rot,sc,'#FFFFFF');add(ch,'tower',bu+Math.sin(rot)*-.2*sc/s,bv+Math.cos(rot)*-.2*sc/s,rot,sc,'#FFFFFF')}else add(ch,civ,bu,bv,rot,sc,tint())}});
+  place.forEach((byD,ch)=>{const ms=[];byD.forEach((list,dn)=>D[dn].parts.forEach(pt=>{const m=new T.InstancedMesh(pt.geo,KIT.mats[pt.mat],list.length),roof=pt.mat==='MI_RoundTiles';
+      list.forEach(([mx,t],k)=>{m.setMatrixAt(k,mx);if(roof)m.setColorAt(k,col.set(t))});m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;
+      m.castShadow=m.receiveShadow=true;m.frustumCulled=false;m.visible=false;V3.scene.add(m);ms.push(m)}));ms.near=false;V3.kitCh.set(ch,ms)});
+  v3LOD(true)}
+// each chunk near the camera shows its detailed models and hides its light ones
+function v3LOD(force){if(!V3.kitCh||!V3.kitCh.size)return;const T=THREE,q=v3Q(),R=q==='high'?3.6:2.2,Z=q==='high'?7.5:5.5,tu=V3.tx+W/2,tv=V3.tz+H/2,cw=v3CW();let changed=false;
+  // only chunks inside the camera's view are drawn in detail
+  const fr=V3.fr||(V3.fr=new T.Frustum()),sp=V3.sp||(V3.sp=new T.Sphere()),pm=V3.pm||(V3.pm=new T.Matrix4());V3.cam.updateMatrixWorld();pm.multiplyMatrices(V3.cam.projectionMatrix,V3.cam.matrixWorldInverse);fr.setFromProjectionMatrix(pm);
+  V3.kitCh.forEach((ms,c)=>{const x0=(c%cw)*V3CS,z0=Math.floor(c/cw)*V3CS,dx=Math.max(x0-tu,0,tu-x0-V3CS),dz=Math.max(z0-tv,0,tv-z0-V3CS);sp.center.set(v3X(x0+V3CS/2),.2,v3Z(z0+V3CS/2));sp.radius=V3CS*.75;
+    const near=V3.dist<Z&&Math.hypot(dx,dz)<R&&fr.intersectsSphere(sp);
+    if(force||ms.near!==near){ms.near=near;changed=true;ms.forEach(m=>{m.visible=near});(V3.codeCh&&V3.codeCh.get(c)||[]).forEach(m=>{m.visible=!near})}});
+  if(changed)V3.r.shadowMap.needsUpdate=true}
+function v3SetQ(v){if(v==='fps'){UI.v3fps=!UI.v3fps;saveUI();const f=$('#v3fps');if(f)f.hidden=!UI.v3fps;$('#v3Q').value=v3Q();return}
+  UI.v3q=v;saveUI();if(v!=='low'&&!KIT.state)v3KitLoad();else v3KitBuild();v3Draw()}
 /* setup, syncing with the game, and drawing */
 function v3Init(){const T=THREE,cv=$('#cv3d');
   if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;V3.r.shadowMap.autoUpdate=false;document.addEventListener('visibilitychange',()=>{if(!document.hidden)v3Draw()});
@@ -3156,7 +3211,7 @@ function v3Init(){const T=THREE,cv=$('#cv3d');
     V3.wave=v3WaveTex();V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x3b6878,transparent:true,opacity:.8,shininess:40,specular:0x55656b,normalMap:V3.wave,normalScale:new T.Vector2(.3,.3)}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
     V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x27454e}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
     v3Controls(cv)}
-  V3.on=true;v3Msg('');document.body.classList.add('v3');$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
+  V3.on=true;v3Msg('');document.body.classList.add('v3');const qs=$('#v3Q');if(qs){qs.value=v3Q();if(!qs.dataset.on){qs.dataset.on=1;qs.addEventListener('change',e=>v3SetQ(e.target.value))}}$('#v3fps').hidden=!UI.v3fps;if(v3Q()!=='low')v3KitLoad();$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
   V3.tSig='';V3.oSig='';v3Resize();v3Sync()}
 function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map;
   const th=palette().grass+(document.documentElement.dataset.theme||''),tS=th+'|'+S.map.map(x=>x.t+(x.o||'')+(x.hs||x.b?1:0)+(x.p)).join(''),oS=S.map.map(x=>(x.b||'')+','+(x.hs||'')+','+(x.sm||'')).join(';');
@@ -3166,7 +3221,7 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
     V3.sky=new T.Color(K.dark?'#1A262C':'#AFC3CB');V3.scene.background=V3.sky;V3.scene.fog=new T.Fog(V3.sky,20,60);V3.hemi.intensity=K.dark?.34:.5;V3.sun.intensity=K.dark?.75:1.1;
     V3.sun.position.set(-big*.5,big*.5,big*.32);V3.sun.target.position.set(0,0,0);Object.assign(V3.sun.shadow.camera,{left:-big*.8,right:big*.8,top:big*.8,bottom:-big*.8,near:1,far:big*3});V3.sun.shadow.camera.updateProjectionMatrix();
     V3.oSig=''}
-  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m));v3LifeBuild();V3.r.shadowMap.needsUpdate=true}
+  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m));v3LifeBuild();v3KitBuild();V3.r.shadowMap.needsUpdate=true}
   // the selected tile gets a gold outline
   if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
   if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
@@ -3175,8 +3230,8 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
 function v3Resize(){if(!V3.r)return;const w=$('#mapwrap'),vw=w.clientWidth,vh=w.clientHeight;if(!vw||!vh)return;V3.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));V3.r.setSize(vw,vh,false);V3.cam.aspect=vw/vh;V3.cam.updateProjectionMatrix();v3Draw()}
 function v3Draw(){if(!V3.on)return;if(v3LifeOn()){if(!V3.loop){V3.last=0;V3.loop=requestAnimationFrame(v3Loop)}return}if(V3.raf)return;V3.raf=requestAnimationFrame(()=>{V3.raf=0;v3Render()})}
 function v3Clamp(){V3.dist=clamp(V3.dist,2.2,Math.max(W,H)*1.1);V3.pitch=clamp(V3.pitch,.38,1.45);V3.tx=clamp(V3.tx,-W/2,W/2);V3.tz=clamp(V3.tz,-H/2,H/2)}
-function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();if(V3.life){const vis=UI.life!==false&&V3.dist<LIFE_DIST;V3.life.meshes.forEach(m=>{m.visible=vis})}const c=V3.cam,cp=Math.cos(V3.pitch);
-  c.position.set(V3.tx+Math.sin(V3.yaw)*cp*V3.dist,.1+Math.sin(V3.pitch)*V3.dist,V3.tz+Math.cos(V3.yaw)*cp*V3.dist);c.lookAt(V3.tx,.1,V3.tz);
+function v3Render(){if(!V3.on||!V3.r)return;const w=$('#mapwrap');if(!w.clientWidth||!w.clientHeight)return;v3Clamp();if(UI.v3fps){const n=performance.now();V3.fc=(V3.fc||0)+1;if(!V3.ft)V3.ft=n;if(n-V3.ft>1000){$('#v3fps').textContent=Math.round(V3.fc*1000/(n-V3.ft))+' fps';V3.fc=0;V3.ft=n}}if(V3.life){const vis=UI.life!==false&&V3.dist<LIFE_DIST;V3.life.meshes.forEach(m=>{m.visible=vis})}const c=V3.cam,cp=Math.cos(V3.pitch);
+  c.position.set(V3.tx+Math.sin(V3.yaw)*cp*V3.dist,.1+Math.sin(V3.pitch)*V3.dist,V3.tz+Math.cos(V3.yaw)*cp*V3.dist);c.lookAt(V3.tx,.1,V3.tz);v3LOD();
   if(V3.scene.fog){V3.scene.fog.near=V3.dist*1.3;V3.scene.fog.far=V3.dist*3.6}V3.r.render(V3.scene,c);v3Labels()}
 // settlement names float above their towns; small places only when you are close
 function v3Labels(){const box=$('#v3lab'),vw=box.clientWidth,vh=box.clientHeight,st=setlStats(),Sx=setls(),seen=new Set(),v=new THREE.Vector3();
