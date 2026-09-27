@@ -2818,7 +2818,7 @@ function v3Terrain(){const T=THREE,K=v3Colors(),m=3,k=W<=36?5:W<=52?4:3,gw=W+m*2
     const hw=h>0?v3field(V3.th.hl,u,v,0):0,sandW=h<-.015?1:1-v3sm(clamp((h-.055)/.035,0,1)),rockW=clamp(hw*.55+(h-.45)*2,0,1)*(1-sandW);
     if(h<-.015){col.copy(K.wet);mix('deep',-h/.4)}
     else{col.copy(K.grass);mix('fert',v3field(V3.th.fe,u,v,0)*.75);mix('forest',v3field(V3.th.fo,u,v,0)*.9);mix('hill',hw*.85);mix('rock',(h-.55)/.3);
-      mix('town',v3field(V3.th.tw,u,v,0)*.35);if(x&&NATIONS[x.o])mix(x.o,.12);if(sandW>0)col.lerp(K.sand,sandW)}
+      mix('town',v3field(V3.th.tw,u,v,0)*.6);if(x&&NATIONS[x.o])mix(x.o,.12);if(sandW>0)col.lerp(K.sand,sandW)}
     col.multiplyScalar(.9+nz*.2);cols.set([col.r,col.g,col.b],n*3);mats.set([Math.max(0,1-rockW-sandW),rockW,sandW],n*3)}
   geo.setAttribute('color',new T.BufferAttribute(cols,3));geo.setAttribute('aMat',new T.BufferAttribute(mats,3));geo.computeVertexNormals();
   // the ground's texture: grass, rock and sand detail blended by where each is, sampled at two scales so it never looks tiled
@@ -2919,7 +2919,8 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
     fcap:()=>{house(0,.04,.4,.18,.28,C.stone,C.slate);tower(.2,-.16,.08,.34,C.stone,C.slate)},
     // homes are little clusters, like a Civilization IV town: thatch and timber early on, then tiled terraces, then brick and concrete blocks
     cottage:()=>{const th=era()<1,ws=[C.wall,C.timber,'#C4B596'],rs=th?[C.thatch,'#978152','#A89363']:[C.roof,'#83493A','#6E5E4C'];
-      for(let k=0;k<5;k++){const gx=k%3,gz=k/3|0,w=.14+rnd()*.04,hx=(gz?-.14+gx*.28:-.28+gx*.28)+(rnd()-.5)*.05,hz=-.16+gz*.32+(rnd()-.5)*.05;house(hx,hz,w,.085,.11,ws[k%3],rs[(k+gz)%3],rnd()<.5?0:Math.PI/2);if(rnd()<.4)add('box',hx+w*.22,hz,.07,.018,.06,.018,C.brick,0,0,-2)}add('box',.3,.3,0,.07,.03,.03,C.timber,0,0,10)},
+      for(let k=0;k<9;k++){if(k===4)continue;const gx=k%3,gz=k/3|0,w=.17+rnd()*.04,hx=-.3+gx*.3+(rnd()-.5)*.03,hz=-.3+gz*.3+(rnd()-.5)*.03;house(hx,hz,w,.095,.14,ws[k%3],rs[(k+gz)%3],rnd()<.5?0:Math.PI/2);if(rnd()<.4)add('box',hx+w*.22,hz,.066,.016,.055,.016,C.brick,0,0,-2)}
+      add('cyl',0,0,0,.06,.04,.06,C.stone,0,0,7);add('box',.06,.05,0,.06,.028,.028,C.timber,0,0,10)},
     townhouse:()=>{const ws=['#D0C5AC','#B3BDBE','#C7AFA0','#C2BA97','#BFB3A0'];for(const z of[-.17,.17])for(let k=0;k<5;k++){const h=.12+rnd()*.04;house(-.28+k*.14,z,.13,h,.13,ws[(k+(z>0?2:0))%5],k%2?C.slate:C.roof);if(rnd()<.5)add('box',-.28+k*.14+.03,z,h+.02,.02,.06,.02,C.brick,0,0,-2)}},
     tenement:()=>{[[-.2,-.15,.22,.2,.18,C.brick],[.15,-.12,.2,.24,.18,'#865040'],[0,.2,.36,.18,.16,'#9A6450']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);})},
     apartments:()=>{[[-.18,-.14,.18,.42,.18,'#CFC8B8'],[.18,-.1,.16,.34,.16,'#B2B8BA'],[0,.2,.3,.24,.16,'#C4BCA9']].forEach(([x,z,w,h,d,c])=>{add('box',x,z,0,w,h,d,c);add('box',x,z,h,w+.01,.015,d+.01,C.dark);})},
@@ -3000,7 +3001,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
   const patch=(a,b,c,d,col,n=3,tx=-1,rot=0)=>patches.push([a,b,c,d,col,n,tx,rot]);
   // a field: one of the crop surfaces, its rows turned one way or the other
   const parcel=(u0,v0,u1,v1,tx,rot,f)=>patch([u0,v0],[u1,v0],[u1,v1],[u0,v1],new T.Color(f,f,f),3,tx,rot);
-  const dens=W<=36?26:W<=52?18:14,bushes=[];
+  const dens=W<=36?26:W<=52?18:14,bushes=[],tufts=[],flowers=[],rocks=[];
   // small things set straight onto the ground: fence rails and posts, haystacks, street lamps
   const prop=(sh,u,v,y,w,h,d,c,ry,tx)=>parts.push([sh,u,v,v3G(u,v)+y-.004,w,h,d,c,ry,0,tx]);
   const fence=(u0,v0,u1,v1)=>[[u0,v0,u1,v0],[u1,v0,u1,v1],[u1,v1,u0,v1],[u0,v1,u0,v0]].forEach(([a1,b1,a2,b2])=>{const L2=Math.hypot(a2-a1,b2-b1),n=Math.max(1,Math.ceil(L2/.1)),ry=Math.abs(a2-a1)>Math.abs(b2-b1)?0:Math.PI/2;
@@ -3014,20 +3015,32 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     const both=x.b&&x.hs;
     if(x.hs||(x.b&&x.b!=='farm'))L.homes.push(i);
     // buildings are kept small against the land, as in Civilization IV
-    if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.14:0,both?-.14:0,both?.6:.8,ry);
-    if(x.b==='wind'||x.b==='mill'){const sc=both?.6:.8,o=both?-.14:0,co=Math.cos(ry),si=Math.sin(ry),cx=c+.5+o,cz=r+.5+o,g0=v3G(cx,cz);
+    if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.2:0,both?-.2:0,both?.58:.8,ry);
+    if(x.b==='wind'||x.b==='mill'){const sc=both?.58:.8,o=both?-.2:0,co=Math.cos(ry),si=Math.sin(ry),cx=c+.5+o,cz=r+.5+o,g0=v3G(cx,cz);
       if(x.b==='wind')L.mills.push([cx+.1*sc*si,cz+.1*sc*co,g0+.3*sc,ry,sc]);else L.wheels.push([cx+.14*sc*co,cz-.14*sc*si,g0+.1*sc,ry,sc])}
     if(['dock','harbor','shipyard','ferry','tradeco'].includes(x.b)){const w=NB(i).find(j=>S.map[j].t==='w');if(w!=null){const dx=w%W-c,dz=(w/W|0)-r;L.ships.push([w%W+.5+dx*.25,(w/W|0)+.5+dz*.25,rnd(),x.b==='ferry'||x.b==='dock'?0:1])}}
-    if(x.hs)lay(i,v3Recipe(x.hs,rnd),both?.22:0,both?.22:0,both?.5:.92,both?0:ry);
+    // with a building on the tile, the homes wrap round it in the other three corners
+    if(x.hs){if(both)[[.25,-.25],[-.25,.25],[.25,.25]].forEach(([ox,oz])=>lay(i,v3Recipe(x.hs,rnd),ox,oz,.48,0));else lay(i,v3Recipe(x.hs,rnd),0,0,.92,ry)}
     if(x.sm)lay(i,v3Recipe(x.sm,rnd),.3,-.3,.38,0);
     // fields: a farm is a patchwork of crops, and open land beside a town is farmed too
     const town=!x.b&&!x.hs&&x.t!=='f'&&!x.hl&&[-1,0,1].some(dr=>[-1,0,1].some(dc=>{const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)return false;const y=S.map[rr*W+cc];return y.hs&&y.o===x.o}))&&rnd()<.75;
     if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++){const u0=c+a/nx+g,v0=r+b*z1/nz+g,u1=c+(a+1)/nx-g,v1=r+(b+1)*z1/nz-g,tf=Math.floor(rnd()*4);parcel(u0,v0,u1,v1,tf,rnd()<.5,.88+rnd()*.2);fieldLife(u0,v0,u1,v1,tf,rnd)}}
     // trees: forests are thick with them, open country has a few; pines in the north and on hills
-    const n=x.t==='f'?(x.b||x.hs?5:dens):(!x.b&&!x.hs&&!town&&rnd()<.18?1+Math.floor(rnd()*3):0);
+    const n=x.t==='f'?(x.b||x.hs?5:dens):(!x.b&&!x.hs&&!town&&rnd()<(x.hl?.5:.35)?1+Math.floor(rnd()*3):0);
     for(let k=0;k<n;k++){const u=c+.06+rnd()*.88,v=r+.06+rnd()*.88;if((x.b||x.hs)&&Math.abs(u-c-.5)<.34&&Math.abs(v-r-.5)<.34)continue;if(v3river(u,v)<.22)continue;
       trees.push([u,v,.7+rnd()*.6,r<H*.38||x.hl||rnd()<.3,rnd()])}
-    if(x.t==='f'&&!x.b&&!x.hs)for(let k=0;k<(dens>>2);k++){const u=c+.05+rnd()*.9,v=r+.05+rnd()*.9;if(v3river(u,v)>.22)bushes.push([u,v,.6+rnd()*.6,0,rnd()])}});
+    if(x.t==='f'&&!x.b&&!x.hs)for(let k=0;k<(dens>>2);k++){const u=c+.05+rnd()*.9,v=r+.05+rnd()*.9;if(v3river(u,v)>.22)bushes.push([u,v,.6+rnd()*.6,0,rnd()])}
+    // open country is never bare: bushes, grass tufts, wildflowers, and rocks on the hills (fewer on big maps, to spare the phone)
+    if(x.t!=='f'&&!x.b&&!x.hs&&!town){const m=W<=36?1:W<=52?.7:.5,nb=Math.round((x.hl?3:2)*m+rnd()),nt=Math.round(7*m),nf=Math.round((x.fr?5:3)*m),nr=x.hl?Math.round(3*m+rnd()*2):(rnd()<.15?1:0);
+      for(let k=0;k<nb;k++){const u=c+.05+rnd()*.9,v=r+.05+rnd()*.9;if(v3river(u,v)>.2)bushes.push([u,v,.7+rnd()*.7,0,rnd()])}
+      for(let k=0;k<nt;k++){const u=c+rnd(),v=r+rnd();if(v3river(u,v)>.18)tufts.push([u,v,.6+rnd()*.8,rnd()])}
+      for(let k=0;k<nf;k++){const u=c+rnd(),v=r+rnd();if(v3river(u,v)>.18)flowers.push([u,v,rnd()])}
+      for(let k=0;k<nr;k++)rocks.push([c+.1+rnd()*.8,r+.1+rnd()*.8,.6+rnd()*.9,rnd()])}
+    // homes get a vegetable garden and trees in the yard; a lone building gets a shed and a tree
+    if(x.hs&&x.t!=='w'){if(x.hs==='cottage'&&!x.b)parcel(c+.4,r+.885,c+.6,r+.975,1,false,.95);const ny=x.b?1:2;for(let k=0;k<ny;k++){const a=rnd()<.5;trees.push([c+(a?.05:.95)+(rnd()-.5)*.04,r+(k?.05:.95)+(rnd()-.5)*.04,.55+rnd()*.3,false,rnd()])}}
+    else if(dev(x)&&!['hall','fort','park','garden','fair'].includes(x.b)){// a civic building sits among small houses, so the town reads as one neighbourhood
+      const sm=(px,pz,rot)=>[['box',px,pz,0,.13,.08,.11,rnd()<.5?V3C.wall:V3C.timber,rot,0,-1],['gable',px,pz,.08,.14,.055,.12,era()<1&&rnd()<.5?V3C.thatch:V3C.roof,rot,0,-1]];
+      const cs=[[-.38,-.38],[.38,-.38],[-.38,.38],[.38,.38]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([px,pz])=>lay(i,sm(0,0,rnd()<.5?0:Math.PI/2),px,pz,1,0));trees.push([c+.5+cs[3][0],r+.5+cs[3][1],.6+rnd()*.3,false,rnd()])}});
   // roads join the built-up tiles of each kingdom, and link each settlement to its nearest neighbor across the countryside
   const roadCol=era()<2?'#A08F6E':'#88857E',edges=new Set(),road=(i,j)=>{const k=i<j?i+','+j:j+','+i;if(edges.has(k))return;edges.add(k);
     const a=[i%W+.5,(i/W|0)+.5],b=[j%W+.5,(j/W|0)+.5],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,dx=(b[0]-a[0])/L,dy=(b[1]-a[1])/L,w=.026,e=.026;
@@ -3054,6 +3067,9 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
   if(pines.length){inst(protos.pine,pines,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.03*sc,.12*sc,.15*sc,r);mesh.setColorAt(k,col.setHSL(.3+r*.06,.28+r*.12,.17+r*.06))});
     inst(protos.pine,pines,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.12*sc,.085*sc,.12*sc,r+.3);mesh.setColorAt(k,col.setHSL(.3+r*.06,.3+r*.12,.2+r*.06))})}
   if(bushes.length)inst(protos.ball,bushes,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,-.01,.07*sc,.05*sc,r);mesh.setColorAt(k,col.setHSL(.24+r*.06,.3+r*.1,.15+r*.05))});
+  if(tufts.length)inst(protos.pine,tufts,([u,v,sc,r],k,mesh)=>{put(mesh,k,u,v,-.005,.05*sc,.07*sc,r);mesh.setColorAt(k,col.setHSL(.22+r*.08,.35+r*.15,.2+r*.1))});
+  if(flowers.length)inst(protos.box,flowers,([u,v,r],k,mesh)=>{put(mesh,k,u,v,0,.02,.018,r);mesh.setColorAt(k,col.set(['#E8E4D0','#D8C44A','#B85A8A','#C9563C','#8A7AC4'][Math.floor(r*5)]))});
+  if(rocks.length)inst(protos.ball,rocks,([u,v,sc,r],k,mesh)=>{put(mesh,k,u,v,-.01,.06*sc,.035*sc,r);mesh.setColorAt(k,col.setHSL(.1,.05+r*.05,.42+r*.12))});
   if(leafy.length)inst(protos.ball,leafy,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.05*sc,.15*sc,.13*sc,r);mesh.setColorAt(k,col.setHSL(.2+r*.08,.34+r*.12,.22+r*.08))});
   // the ground patches: one mesh that follows the terrain
   if(patches.length){const pos=[],cols=[],uvs=[],txs=[],cc=new T.Color();patches.forEach(([a,b,c2,d,cl,n,tx,rot])=>{cc.set(cl);const Ls=Math.hypot(b[0]-a[0],b[1]-a[1])*3,Lt=Math.hypot(d[0]-a[0],d[1]-a[1])*3;const f=v3fbm(a[0]*2,a[1]*2)*.14+.93;
