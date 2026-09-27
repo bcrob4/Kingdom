@@ -2988,7 +2988,7 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
     };
   (R[id]||(()=>house(0,0,.34,.16,.26,C.wall,C.roof)))();return P}
 const V3FACE=['dock','ferry','harbor','shipyard'];
-function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels:[],pastures:[],farm:[],ships:[]},m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
+function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels:[],pastures:[],farm:[],ships:[],homes:[]},m4=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(0,0,0,'YZX'),p=new T.Vector3(),s=new T.Vector3();
   // lay one recipe on tile i at a sub-position and scale, turned by ry
   const lay=(i,rec,ox,oz,sc,ry)=>{const cx=i%W+.5,cz=(i/W|0)+.5,co=Math.cos(ry),si=Math.sin(ry);
     // a building stands on one base height, with foundations reaching down into any slope; flat things like crop rows follow the ground
@@ -3012,6 +3012,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     let ry=Math.floor(rnd()*4)*Math.PI/2;
     if(x.b&&V3FACE.includes(x.b)){const w=NB(i).find(j=>S.map[j].t==='w');if(w!=null){const dx=w%W-c,dz=(w/W|0)-r;ry=Math.atan2(dx,dz)}}
     const both=x.b&&x.hs;
+    if(x.hs||(x.b&&x.b!=='farm'))L.homes.push(i);
     // buildings are kept small against the land, as in Civilization IV
     if(x.b)lay(i,v3Recipe(x.b,rnd),both?-.14:0,both?-.14:0,both?.6:.8,ry);
     if(x.b==='wind'||x.b==='mill'){const sc=both?.6:.8,o=both?-.14:0,co=Math.cos(ry),si=Math.sin(ry),cx=c+.5+o,cz=r+.5+o,g0=v3G(cx,cz);
@@ -3034,7 +3035,8 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     if(era()>=2){const mu=(a[0]+b[0])/2-dy*.05,mv=(a[1]+b[1])/2+dx*.05;prop('cyl',mu,mv,0,.007,.07,.007,'#2E2E2E',0,15);prop('ball',mu,mv,.066,.016,.016,.016,'#F2D38A',0,14)}};
   const st=setlStats();Object.values(st).forEach(s=>{const own=s.o,home=s.t.reduce((b,t)=>Math.hypot(t%W-s.cx,(t/W|0)-s.cy)<Math.hypot(b%W-s.cx,(b/W|0)-s.cy)?t:b,s.t[0]);
     // streets branch out from the town's centre to each of its built-up tiles
-    const inT=new Set(s.t.filter(t=>dev(S.map[t])));s.t.forEach(t=>NB(t).forEach(j=>{const y=S.map[j];if(dev(y)&&y.o===own&&(y.sid==null||y.sid===s.id))inT.add(j)}));const seen=new Set([home]),qq=[home];for(let k=0;k<qq.length;k++){const t=qq[k];for(const j of NB(t))if(inT.has(j)&&!seen.has(j)){seen.add(j);qq.push(j);road(t,j)}}
+    const inT=new Set(s.t.filter(t=>dev(S.map[t])));s.t.forEach(t=>NB(t).forEach(j=>{const y=S.map[j];if(dev(y)&&y.o===own&&(y.sid==null||y.sid===s.id))inT.add(j)}));const seen=new Set([home]),qq=[home],NB8=t=>{const o=NB(t),r=t/W|0,c=t%W;[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([a,b])=>{const rr=r+a,cc=c+b;if(rr>=0&&cc>=0&&rr<H&&cc<W)o.push(rr*W+cc)});return o};
+    for(let k=0;k<qq.length;k++){const t=qq[k];for(const j of NB8(t))if(inT.has(j)&&!seen.has(j)){seen.add(j);qq.push(j);road(t,j)}}
     const par=new Map([[home,-1]]),q2=[home];let hit=-1;for(let k=0;k<q2.length&&hit<0;k++){const t=q2[k];if(k>600)break;
       for(const j of NB(t)){if(par.has(j))continue;const y=S.map[j];if(y.t==='w'||y.o!==own)continue;par.set(j,t);if(y.sid!=null&&y.sid!==s.id&&st[y.sid]){hit=j;break}q2.push(j)}}
     for(let t=hit;t>=0&&par.get(t)>=0;t=par.get(t))road(t,par.get(t))});
@@ -3074,8 +3076,8 @@ function v3LifeBuild(){const T=THREE,L=V3.L;if(!L)return;if(V3.life)V3.life.mesh
   // the road network as a graph, with the ground's height sampled along each road
   const E=L.edges,adj=new Map(),ctr=i=>[i%W+.5,(i/W|0)+.5];E.forEach(([i,j],k)=>[i,j].forEach(n=>{if(!adj.has(n))adj.set(n,[]);adj.get(n).push(k)}));
   lf.E=E.map(([i,j])=>{const a=ctr(i),b=ctr(j),hs=[];for(let s=0;s<=6;s++){const t=s/6;hs.push(v3G(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t))}return{i,j,a,b,hs}});lf.adj=adj;
-  const cap=W<=36?220:180,nW=Math.min(cap,E.length*4),nC=Math.min(30,Math.round(E.length*.5));
-  if(E.length){for(let k=0;k<nW;k++)lf.walkers.push({e:rnd()*E.length|0,t:rnd(),dir:rnd()<.5?1:-1,sp:.08+rnd()*.06,side:rnd()<.5?1:-1,ph:rnd()*6});
+  const cap=W<=36?220:180,nW=Math.min(cap,Math.max(E.length*4,(L.homes||[]).length*3)),nC=Math.min(30,Math.round(E.length*.5));
+  lf.homes=L.homes||[];{for(let k=0;k<nW;k++)lf.walkers.push({e:E.length?rnd()*E.length|0:0,t:rnd(),dir:rnd()<.5?1:-1,sp:.08+rnd()*.06,side:rnd()<.5?1:-1,ph:rnd()*6});
     for(let k=0;k<nC;k++)lf.carts.push({e:rnd()*E.length|0,t:rnd(),dir:rnd()<.5?1:-1,sp:.05+rnd()*.03,side:rnd()<.5?1:-1})}
   lf.farm=L.farm.filter((f,k)=>k%Math.max(1,Math.ceil(L.farm.length/(W<=36?120:90)))===0).map(([u,v,r])=>({u,v,ph:r*6,ry:r*6}));
   L.pastures.forEach(([u0,v0,u1,v1])=>{const n=2+(rnd()*3|0);for(let k=0;k<n;k++)lf.sheep.push({cu:u0+(u1-u0)*(.3+rnd()*.4),cv:v0+(v1-v0)*(.3+rnd()*.4),r:Math.min(u1-u0,v1-v0)*.22,ph:rnd()*6,w:.05+rnd()*.08,cow:rnd()<.3})});
@@ -3105,9 +3107,15 @@ function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.
     const ed=E[o.e],tt=clamp(o.t,0,1),dx=ed.b[0]-ed.a[0],dz=ed.b[1]-ed.a[1],L=Math.hypot(dx,dz)||1,nx=-dz/L,nz=dx/L,hi=tt*6,f=Math.floor(hi),h0=ed.hs[f],h1=ed.hs[Math.min(6,f+1)];
     return[ed.a[0]+dx*tt+nx*o.side*.014,ed.a[1]+dz*tt+nz*o.side*.014,h0+(h1-h0)*(hi-f),Math.atan2(dx*o.dir,dz*o.dir)]};
   // people and carts gather where you are looking: anyone who wanders far off reappears on a street near the view
-  const tu=V3.tx+W/2,tv=V3.tz+H/2,R=V3.dist*.8+1;if(lf.E.length&&(!lf.nearT||Math.abs(t-lf.nearT)>.5)){lf.nearT=t;lf.near=[];lf.E.forEach((ed,k)=>{if(Math.hypot((ed.a[0]+ed.b[0])/2-tu,(ed.a[1]+ed.b[1])/2-tv)<R)lf.near.push(k)})}
+  const tu=V3.tx+W/2,tv=V3.tz+H/2,R=V3.dist*.8+1;if(!lf.nearT||Math.abs(t-lf.nearT)>.5){lf.nearT=t;lf.near=[];lf.E.forEach((ed,k)=>{if(Math.hypot((ed.a[0]+ed.b[0])/2-tu,(ed.a[1]+ed.b[1])/2-tv)<R)lf.near.push(k)});
+    lf.nearH=lf.homes.filter(i=>Math.hypot(i%W+.5-tu,(i/W|0)+.5-tv)<R)}
+  // figures grow a little as you zoom out, so a crowd still reads as people; with no streets in view, people wander among the houses instead
+  const fs=clamp(V3.dist/4,1,1.8),wander=!lf.near.length,active=wander?lf.nearH.length*3:Math.round(lf.near.length*2.2+lf.nearH.length*.8);
   const home=o=>{const ed=lf.E[o.e];if(lf.near&&lf.near.length&&Math.hypot((ed.a[0]+ed.b[0])/2-tu,(ed.a[1]+ed.b[1])/2-tv)>R+.6){o.e=lf.near[Math.random()*lf.near.length|0];o.t=Math.random()}};
-  if(lf.E.length){lf.walkers.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),b=Math.abs(Math.sin(t*9+o.ph))*.004;set(lf.body,k,u,h+b,v,ry,.016,.034,.016);set(lf.head,k,u,h+.034+b,v,ry,.016,.016,.016)});
+  lf.walkers.forEach((o,k)=>{let u,v,h,ry;if(k>=active){set(lf.body,k,0,-1,0,0,0,0,0);set(lf.head,k,0,-1,0,0,0,0,0);return}if(wander){if(!lf.nearH.length){set(lf.body,k,0,-1,0,0,0,0,0);set(lf.head,k,0,-1,0,0,0,0,0);return}
+      const i=lf.nearH[k%lf.nearH.length],a=t*o.sp*4*o.dir+o.ph,rr=.2+.14*Math.abs(Math.sin(o.ph*3));u=i%W+.5+Math.cos(a)*rr;v=(i/W|0)+.5+Math.sin(a)*rr;h=v3G(u,v);ry=Math.atan2(-Math.sin(a)*o.dir,Math.cos(a)*o.dir)}
+    else{home(o);[u,v,h,ry]=move(o)}const b=Math.abs(Math.sin(t*9+o.ph))*.004*fs;set(lf.body,k,u,h+b,v,ry,.016*fs,.034*fs,.016*fs);set(lf.head,k,u,h+.034*fs+b,v,ry,.016*fs,.016*fs,.016*fs)});
+  if(lf.E.length&&!wander){
     lf.carts.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),fx=Math.sin(ry)*.032,fz=Math.cos(ry)*.032;set(lf.cart,k,u,h,v,ry,.03,.022,.045);
       if(era()>=3)set(lf.horse,k,u,h,v,ry,0,0,0);else set(lf.horse,k,u+fx,h+.004,v+fz,ry,.012,.022,.032)})}
   const n0=lf.walkers.length;lf.farm.forEach((f,k)=>{const h=v3G(f.u,f.v),bend=.75+Math.abs(Math.sin(t*2+f.ph))*.25;set(lf.body,n0+k,f.u,h,f.v,f.ry,.016,.034*bend,.016);set(lf.head,n0+k,f.u,h+.034*bend,f.v,f.ry,.016,.016,.016)});
