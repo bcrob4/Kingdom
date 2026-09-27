@@ -371,7 +371,7 @@ function placeWhy(id,i,free){const d=B[id],x=S.map[i];if(isHousing(id)){if(x.hs)
 // Larger buildings (🪙800 and up) need building materials; whatever isn't in stock is imported.
 const matCost=d=>d&&d.c>=800?Math.round(d.c/250*(hasTech('masonry')?.8:1))*10:0;
 const matPrice=()=>5*(S.laws.trade==='protect'?1.2:S.laws.trade==='free'?.9:1);
-function priceOf(c,m){const use=Math.min(Math.max(0,S.mat||0),m),imp=m-use,ic=Math.round(imp*matPrice());return{coins:c+ic,use,imp,ic,m}}
+function priceOf(c,m){c=Math.round(c*(campOn('build')?.75:1));const use=Math.min(Math.max(0,S.mat||0),m),imp=m-use,ic=Math.round(imp*matPrice());return{coins:c+ic,use,imp,ic,m}}
 const priceTxt=k=>!k.m?'':k.imp?`Needs 🧱${k.m}: ${k.use} from stock, ${k.imp} imported for 🪙${fmt(k.ic)}.`:`Uses 🧱${k.m} from stock.`;
 // [radius in tiles, strength]: polluters make nearby homes less pleasant, parks and gardens make them nicer.
 const POLL={charcoal:[1,1],factory:[2,3],steelworks:[2,4],powerstation:[2,3],textile:[1,2],gasworks:[1,2],diesel:[2,4],mine:[1,2],coalmine:[1,3],workshop:[1,1],quarry:[1,1],brickworks:[1,1]},AMEN={park:[2,2],garden:[2,2],lighthouse:[2,1]};
@@ -413,6 +413,7 @@ const LAWS={
   tax:{n:'Taxation',e:'🧾',o:{percapita:{n:'Per-capita tax',d:'Everyone pays the same amount. Hard on the poor, easy on the rich. Tax income +10%.',inc:1.1},proportional:{n:'Proportional tax',d:'Everyone pays the same share of income.'},progressive:{n:'Progressive tax',d:'The wealthy pay a higher share. Tax income -5%.',inc:.95}}},
   church:{n:'Religion',e:'⛪',o:{state:{n:'State religion',d:'The church is part of the state. Legitimacy +5.',leg:5},tolerance:{n:'Freedom of conscience',d:'Other faiths are tolerated.'},secular:{n:'Secularism',d:'Church and state are separate. Education +10.',learn:10}}},
   minorities:{n:'Treatment of minorities',e:'🗣️',o:{tolerance:{n:'Tolerance',d:'Other cultures and faiths are left in peace. They adopt your ways slowly, but stay content.'},assimilation:{n:'Assimilation',d:'Your language and faith are taught and favored. Minorities adopt your ways steadily, with some resentment.'},suppression:{n:'Suppression',d:'Other languages and faiths are forbidden. Minorities adopt your ways fast, but they are angry, and their homelands are furious.'}}},
+  immigration:{n:"Immigration",e:"🧳",o:{open:{n:"Open borders",d:"Anyone may settle. Many newcomers arrive when life here is better, though fewer of them can read."},selective:{n:"Selective entry",d:"Skilled and educated newcomers are welcomed, others far less so."},closed:{n:"Closed borders",d:"Almost no one may settle, and fewer of your own people leave."}}},
   trade:{n:'Trade policy',e:'⚖️',o:{protect:{n:'Protectionism',d:'Tariffs shield local business. Business revenue +15%, imports cost 20% more.'},mercantile:{n:'Mercantilism',d:'A balanced approach to trade.'},free:{n:'Free trade',d:'Exports earn 15% more and imports cost 10% less.'}}},
   welfare:{n:'Welfare',e:'🤲',o:{none:{n:'No welfare',d:'Families fend for themselves.'},relief:{n:'Poor relief',d:'Basic support for the poor. Lower class +8. Costs 1 per three lower-class citizens a month.',cls:{lower:8}},public:{n:'Public welfare',d:'Broad support. Lower class +12, middle class +6, healthcare +5. Costs 7 per ten citizens a month. The landowners grumble a little, and object strongly only if it runs the treasury into deficit or the wealthy pay for it through a progressive tax.',cls:{lower:12,middle:6},health:5},
     insurance:{n:'National insurance',era:3,d:'Pensions, sickness and unemployment cover. Lower class +14, middle class +8, healthcare +10. Costs about 1 per citizen a month, and more as the population ages. The landowners object only if it runs a deficit or the wealthy pay through a progressive tax.',cls:{lower:14,middle:8},health:10}}},
@@ -447,21 +448,21 @@ const GNAMES=['Harrow','Vance','Albrecht','Montclair','Reyes','Oakley','Dunmore'
 const STRAT={attack:{n:'Attack',d:'Strength +15%, but losses are 50% higher.'},hold:{n:'Hold the line',d:'Losses 40% lower, but the front moves slowly.'},raid:{n:'Raid supplies',d:'Weakens the enemy a little more each month, up to 15%. The front moves more slowly, and raids can go wrong.'}};
 const gen=k=>S.general&&S.general.trait===k;
 const troopTarget=()=>Math.round(S.pop*ARMY[S.army].r*(S.mob?1.6:1)*(law('army').troops||1));
-const DEFAULT_LAWS={labor:'tenant',minorities:'assimilation',tax:'percapita',church:'state',trade:'mercantile',welfare:'none',press:'censor',government:'absolute',education:'church',army:'levies',suffrage:'landed'};
+const DEFAULT_LAWS={labor:'tenant',minorities:'assimilation',immigration:'selective',tax:'percapita',church:'state',trade:'mercantile',welfare:'none',press:'censor',government:'absolute',education:'church',army:'levies',suffrage:'landed'};
 // the era in which each newer law category opens
 const LAW_ERA={government:1,education:1,army:1,suffrage:3};
 
 /* ---------- interest groups ---------- */
 const IGS={
-  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{minorities:{tolerance:-3,assimilation:3,suppression:3},labor:{serfdom:20,tenant:5,free:-15,factory:-5,rights:-10},tax:{percapita:10,proportional:0,progressive:-15},trade:{protect:10,mercantile:0,free:-5},
+  landowners:{n:'Landowners',e:'🏡',cls:'upper',d:'Old aristocratic families who own most of the land.',likes:{immigration:{open:-3,selective:0,closed:3},minorities:{tolerance:-3,assimilation:3,suppression:3},labor:{serfdom:20,tenant:5,free:-15,factory:-5,rights:-10},tax:{percapita:10,proportional:0,progressive:-15},trade:{protect:10,mercantile:0,free:-5},
     government:{absolute:5,council:10,parliament:0,constitutional:-10},army:{levies:10,professional:0,conscription:5},suffrage:{landed:15,property:0,universal:-20}}},
-  clergy:{n:'Clergy',e:'⛪',d:'The established church and its faithful.',likes:{minorities:{tolerance:-5,assimilation:5,suppression:8},church:{state:20,tolerance:0,secular:-25},press:{censor:8,limited:0,free:-5},welfare:{none:-5,relief:10,public:0,insurance:0},
+  clergy:{n:'Clergy',e:'⛪',d:'The established church and its faithful.',likes:{immigration:{open:-5,selective:0,closed:5},minorities:{tolerance:-5,assimilation:5,suppression:8},church:{state:20,tolerance:0,secular:-25},press:{censor:8,limited:0,free:-5},welfare:{none:-5,relief:10,public:0,insurance:0},
     government:{absolute:10,council:5,parliament:-5,constitutional:-5},education:{church:15,state:-10,universal:-10}}},
-  merchants:{n:'Merchants',e:'💼',cls:'middle',d:'Traders, bankers and business owners.',likes:{labor:{serfdom:-15,tenant:0,free:15,factory:-5,rights:-15},trade:{protect:-5,mercantile:5,free:15},tax:{percapita:5,proportional:5,progressive:-10},
+  merchants:{n:'Merchants',e:'💼',cls:'middle',d:'Traders, bankers and business owners.',likes:{immigration:{open:10,selective:5,closed:-10},labor:{serfdom:-15,tenant:0,free:15,factory:-5,rights:-15},trade:{protect:-5,mercantile:5,free:15},tax:{percapita:5,proportional:5,progressive:-10},
     government:{absolute:-3,council:0,parliament:15,constitutional:10},army:{levies:0,professional:5,conscription:-10},suffrage:{landed:-3,property:15,universal:-5}}},
-  intelligentsia:{n:'Intelligentsia',e:'🎓',cls:'middle',d:'Writers, scholars and professionals.',likes:{minorities:{tolerance:10,assimilation:0,suppression:-15},church:{state:-10,tolerance:5,secular:15},press:{censor:-20,limited:0,free:15},welfare:{none:-5,relief:0,public:10,insurance:15},
+  intelligentsia:{n:'Intelligentsia',e:'🎓',cls:'middle',d:'Writers, scholars and professionals.',likes:{immigration:{open:10,selective:5,closed:-10},minorities:{tolerance:10,assimilation:0,suppression:-15},church:{state:-10,tolerance:5,secular:15},press:{censor:-20,limited:0,free:15},welfare:{none:-5,relief:0,public:10,insurance:15},
     government:{absolute:-5,council:0,parliament:10,constitutional:20},education:{church:-3,state:10,universal:15},suffrage:{landed:-3,property:5,universal:15}}},
-  workers:{n:'Workers',e:'🔨',cls:'lower',d:'Factory hands, dockers and laborers.',likes:{labor:{serfdom:-25,tenant:0,free:10,factory:15,rights:25},tax:{percapita:-15,proportional:0,progressive:10},welfare:{none:-10,relief:5,public:15,insurance:20},
+  workers:{n:'Workers',e:'🔨',cls:'lower',d:'Factory hands, dockers and laborers.',likes:{immigration:{open:-10,selective:0,closed:5},labor:{serfdom:-25,tenant:0,free:10,factory:15,rights:25},tax:{percapita:-15,proportional:0,progressive:10},welfare:{none:-10,relief:5,public:15,insurance:20},
     government:{absolute:0,council:-3,parliament:0,constitutional:15},education:{church:0,state:5,universal:10},army:{levies:-2,professional:0,conscription:-15},suffrage:{landed:-5,property:-3,universal:20}}}
 };
 const IGIDS=Object.keys(IGS);
@@ -1211,7 +1212,7 @@ function calc(){
     if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs&&!c.b?RESB:1):d[k]*f})})});
   // smallholdings: open land feeds some people without any farm, and fishing and sugar colonies send food home
   S.map.forEach((c,i)=>{t.food+=smallFood(i)});t.food+=colFood();
-  t.trade+=S.navy*40+setlCount(2)*20;if(msHas('g5'))t.trade*=1.1;if(msHas('p8'))t.trade*=1.1;if(gp('canals'))t.trade*=1.25;if(heritage('mariners'))t.trade*=1.2;if(gp('railnet'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
+  t.trade+=S.navy*40+setlCount(2)*20;if(msHas('g5'))t.trade*=1.1;if(msHas('p8'))t.trade*=1.1;if(gp('canals'))t.trade*=1.25;if(heritage('mariners'))t.trade*=1.2;if(campOn('fair'))t.trade*=1.3;if(gp('railnet'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
   const upRaw=t.up||1;t.up*=ECON.up[era()];if(trait('frugal'))t.up*=.9;if(lg('stew',3))t.up*=.92;t.up*=1-altS('treasurer')*.02;
   { const f=t.up/upRaw,h=t.upH*f,e=t.upE*f;const xtra=(k,r)=>Math.max(0,FUNDM[fund(k)]-1)*S.pop*r;t.upH=h*FUNDM[fund('health')]+xtra('health',.08);t.upE=e*FUNDM[fund('edu')]+xtra('edu',.06);t.upI=(t.up-h-e)*FUNDM[fund('infra')]+xtra('infra',.06);t.up=t.upH+t.upE+t.upI}
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
@@ -1318,7 +1319,7 @@ function calc(){
   // provinces pay half their taxes at first and the full amount once integrated
   const taxEmp=own.reduce((a,i)=>a+pv[i].emp*(.5+.5*(S.prov[i].integ??100)/100),0);
   const tmul=(1+offT('treasurer')*.02+msTax()+(lg('stew',1)?.03:0))*ECON.tax/100*(D('fourday')?.85:1)*(law('tax').inc||1)*(trait('diligent')?1.1:1)*(heritage('merchants')?1.08:1)*(1+Math.min(.1,charters()*.02)),Tc=taxc(),tW=TAXK.reduce((a,k)=>a+share[k]*TAXW[k],0)||1,taxBy={};TAXK.forEach(k=>{taxBy[k]=taxEmp*tmul*share[k]*TAXW[k]*Tc[k]/tW});const tax=TAXK.reduce((a,k)=>a+taxBy[k],0);
-  const biz=t.inc*fill*(heritage('merchants')?1.15:1)*(L.trade==='protect'?1.15:1)*(hasTech('charter')?1.1:1)*(law('labor').biz||1)*(hasTech('massprod')?1.1:1)*(eraB('commerce')?1.1:1)*(eraB('workshop')?1.1:1);
+  const biz=t.inc*fill*(heritage('merchants')?1.15:1)*(campOn('fair')?1.2:1)*(L.trade==='protect'?1.15:1)*(hasTech('charter')?1.1:1)*(law('labor').biz||1)*(hasTech('massprod')?1.1:1)*(eraB('commerce')?1.1:1)*(eraB('workshop')?1.1:1);
   const tour=t.tour*(.4+(sc.fun+sc.nature)/250)*(D('ads')?1.4:1)*(gp('crystal')?1.5:1)*(gp('fair')?2:1)*(1+modSum('tour')/100);
   const extra=modSum('inc');
   const decCost=(D('freebus')?pop:0)+(D('lunches')?pop:0)+(D('festival')?150:0)+(D('green')?120:0)+(D('ads')?100:0);
@@ -1628,7 +1629,7 @@ function courtRow(n){const r=ruler(n),p=pact(n),w=nwarOf(n),other=liveNations().
   const acts=p?`<button class="btn" data-act="endPact" data-arg="${n}">End the ${p.t==='ally'?'alliance':'pact'}</button>`
     :`<button class="btn" data-act="pact" data-arg="${n}" data-n="ally" ${atWarWith(n)||S.coins<300||S.rel[n]<(pers(n,'aggressive')?75:65)?'disabled':''}>Propose alliance 🪙300</button><button class="btn" data-act="pact" data-arg="${n}" data-n="nonagg" ${atWarWith(n)||S.coins<150||S.rel[n]<45?'disabled':''}>Non-aggression pact 🪙150</button>`;
   return`<div class="row"><span class="em">👑</span><div class="grow"><b>${rName(n)}</b> <span class="tag">${PERS[r.pers].e} ${PERS[r.pers].n}</span> ${treaty}<small>${S.aging?`Aged ${r.age}. `:''}Reigning since year ${r.since}. ${PERS[r.pers].d} ${r.heir?`Heir: ${r.heir.g==='f'?'Princess':'Prince'} ${r.heir.name}${S.aging?`, ${r.heir.age}`:''}.`:'No heir: a succession crisis looms.'}</small>
-    ${other.length?`<small>Their relations with ${other.map(o=>`${NATIONS[o].n} ${Math.round(nrel(n,o))}`).join(', ')}.</small>`:''}</div></div>${wr}
+    ${other.length?`<small>Their relations with ${other.map(o=>`${NATIONS[o].n} ${Math.round(nrel(n,o))}`).join(', ')}.</small>`:''}<small>🧳 ${migLine(n)}</small></div></div>${wr}
     <div class="row"><div class="grow btns" style="margin-top:0">${acts}</div><small>${p?(p.t==='ally'?'Allies join each other’s wars, and neither side attacks the other.':'Neither side will declare war on the other.'):`An alliance needs relations of ${pers(n,'aggressive')?75:65}, and a non-aggression pact 45. Breaking a treaty by attacking is a grave dishonor.`}</small></div>`}
 
 /* ---------- overseas powers ---------- */
@@ -1855,7 +1856,7 @@ function socMonth(c,notes,stop){const s=soc(),own=provsOf('me');
       const bt=provTiles(i).filter(t=>{const x=S.map[t];return x.b&&B[x.b]&&!B[x.b].fixed&&x.b!=='hall'});let bn='';if(bt.length&&Math.random()<.3){const t=pick(bt);bn=B[S.map[t].b].n;S.map[t].b=null}
       lost=Math.min(Pr.pop,Math.ceil(Pr.pop*.01));Pr.pop-=lost;Pr.incCd=S.turn+12;const t=`Fire in ${Pr.name}`;
       notes.push(['🔥',t,`${homes} block${homes===1?'':'s'} of homes${bn?` and a ${bn.toLowerCase()}`:''} burned down, and ${lost} people died. Watch houses and fire stations make fires rarer.`]);stop.push(t);return}
-    const pE=Math.min(.05,d/400*.02)*(1-Math.min(100,p.sc.health)/100)*(1-Math.min(100,p.sc.water)/200);
+    const pE=Math.min(.05,d/400*.02)*(1-Math.min(100,p.sc.health)/100)*(1-Math.min(100,p.sc.water)/200)*(campOn('health')?.5:1);
     if(Math.random()<pE){const lost=Math.min(Pr.pop,Math.ceil(Pr.pop*(.04+Math.random()*.06)));Pr.pop-=lost;Pr.incCd=S.turn+12;
       adjProvs(i).filter(j=>S.prov[j].o==='me'&&S.prov[j].pop).forEach(j=>{S.prov[j].pop-=Math.ceil(S.prov[j].pop*.02)});addMod('health',-10,3,'Epidemic');
       const t=`Epidemic in ${Pr.name}`;notes.push(['🦠',t,`${lost} people died, and the sickness spread to neighboring provinces. Clean water, healthcare and hospitals keep epidemics away.`]);stop.push(t)}});
@@ -1872,7 +1873,7 @@ function societyHTML(c){const s=soc(),ar=v=>v>.002?' ↑':v<-.002?' ↓':'';
       <small style="margin-top:6px">Only those of working age can work. Births swell the young, peace brings baby booms, and better health lets people live longer, which in the modern age makes pensions dearer.</small></div></div></div>`}
 function luxHTML(){const h=luxHave();return`<h2>💎 Luxuries</h2><p class="hint">The middle and upper classes prize variety: each different luxury raises their mood. You have ${h.size} of ${Object.keys(LUX).length}.</p><div class="card">${Object.entries(LUX).map(([k,L])=>`<div class="row"><span class="em" ${h.has(k)?'':'style="opacity:.4"'}>${L.e}</span><div class="grow"><b>${L.n}</b><small>${h.has(k)?'Available.':L.src+'.'}</small></div>${h.has(k)?'<span class="tag" style="color:var(--good)">Have</span>':''}</div>`).join('')}</div>`}
 function peopleRow(i){const P=S.prov[i];if(!P.cul)return'';const cu=Math.round(P.cult??0),fa=Math.round(P.fth??0);
-  return`<div class="row"><span class="em">🗣️</span><div class="grow"><b>A ${CULN[P.cul]} province</b><small>${cu}% share your culture, ${100-cu}% are ${CULN[P.cul]}. ${fa}% follow ${FAITH.me}${fa<100?`, ${100-fa}% ${FAITH[P.cul]}`:''}. Under ${law('minorities').n.toLowerCase()}, minorities cost ${Math.round(minPen(P))} mood here. Schools, a governor, a church and integration speed their adoption of your ways.</small>${bar(cu,'var(--deep)')}</div></div>`}
+  return`<div class="row"><span class="em">🗣️</span><div class="grow"><b>A ${CULN[P.cul]} ${cu>=50?'minority':'province'}</b><small>${cu}% share your culture, ${100-cu}% are ${CULN[P.cul]}. ${fa}% follow ${FAITH.me}${fa<100?`, ${100-fa}% ${FAITH[P.cul]}`:''}. Under ${law('minorities').n.toLowerCase()}, minorities cost ${Math.round(minPen(P))} mood here. Schools, a governor, a church and integration speed their adoption of your ways.</small>${bar(cu,'var(--deep)')}</div></div>`}
 
 /* ---------- settlements ---------- */
 // Groups of touching homes (corners count) inside one province form a settlement. S.setl = {id:{name,f,q:[quarter names],ch,r}}; tiles with homes carry x.sid.
@@ -1951,6 +1952,54 @@ function smallCard(i){const x=S.map[i];
   return`<h2>🏪 Add a corner building</h2><p class="hint">In ${esc(setls()[T.id].name)}, this tile has room for a small building too. Corner buildings count toward the services a settlement needs.</p><div class="card">${SMALL.map(id=>{const d=B[id],why=placeWhy(id,i),k=priceOf(d.c,matCost(d));
     return`<div class="row"><span class="em" ${why?'style="opacity:.45"':''}>${d.e}</span><div class="grow"><b>${d.n}</b><small>${effStr(d,i)}${k.m&&!why?' '+priceTxt(k):''}</small></div><button class="btn" data-act="buildSm" data-arg="${i}" data-n="${id}" ${why||S.coins<k.coins?'disabled':''}>${why||'🪙'+fmt(k.coins)}</button></div>`}).join('')}</div>`}
 
+/* ---------- royal campaigns ---------- */
+// short, active pushes: each costs money, lasts a few months and then needs time before it can be run again. S.camp = {act:{k:until}, cd:{k:until}}
+const CAMP={
+  harvest:{n:'Harvest drive',e:'🌾',m:6,cd:24,c:p=>200+p*.2,d:'Food +20% for 6 months.',go(){addMod('foodprod',20,6,'Harvest drive')}},
+  build:{n:'Building drive',e:'🏗️',m:6,cd:36,c:p=>400+p*.2,d:'Every building and upgrade costs 25% less for 6 months.',go(){}},
+  recruit:{n:'Recruiting drive',e:'🪖',m:1,cd:24,c:p=>300+p*.15,d:'Refills a third of the army at once.',go(){const tg=troopTarget();S.troops=Math.min(Math.round(tg*1.2),S.troops+Math.round(tg*.33))}},
+  charity:{n:'Charity drive',e:'🤲',m:6,cd:24,c:p=>200+p*.4,d:'Approval +4 for 6 months, and the workers and clergy approve.',go(){addMod('hap',4,6,'Charity drive');igM('workers',5,12,'Royal charity');igM('clergy',3,12,'Royal charity')}},
+  taxes:{n:'Tax collection drive',e:'🧾',m:6,cd:36,c:()=>0,d:'Collects two months of taxes at once, but approval −4 for 6 months.',go(){S.coins+=Math.round(calc().tax*2);addMod('hap',-4,6,'Tax collection drive');igM('merchants',-3,12,'Tax collectors')}},
+  literacy:{get n(){return era()<1?'Parish reading schools':'Literacy campaign'},e:'📖',m:12,cd:48,c:p=>300+p*.4,d:'Literacy +4 at once, and education +10 for a year.',go(){const s=soc();s.lit=Math.min(99,s.lit+4);addMod('learn',10,12,'Literacy campaign')}},
+  health:{get n(){return era()<2?'Plague ordinances':'Public health campaign'},e:'🧼',m:12,cd:36,c:p=>300+p*.4,d:'Healthcare +15 for a year, and epidemics are half as likely.',go(){addMod('health',15,12,'Public health campaign')}},
+  fair:{get n(){return era()<2?'Great fair':'Trade exhibition'},e:'🎪',m:6,cd:36,c:p=>400+p*.25,d:'Trade capacity +30% and business revenue +20% for 6 months, and the merchants +5.',go(){igM('merchants',5,12,'A royal fair')}}};
+const campS=()=>{S.camp=S.camp||{};S.camp.act=S.camp.act||{};S.camp.cd=S.camp.cd||{};return S.camp};
+const campOn=k=>!!(S.camp&&S.camp.act&&S.camp.act[k]>S.turn);
+const campCost=k=>Math.round(CAMP[k].c(S.pop)/10)*10;
+function campHTML(){const C=campS();
+  return`<h2>📣 Royal campaigns</h2><p class="hint">Short pushes you can launch when the kingdom needs them. Each has a cost and a wait before it can be run again.</p><div class="card">${Object.entries(CAMP).map(([k,P])=>{const on=campOn(k)&&P.m>1,cd=C.cd[k]>S.turn?C.cd[k]-S.turn:0,cost=campCost(k);
+    return`<div class="row"><span class="em">${P.e}</span><div class="grow"><b>${P.n}</b><small>${P.d}${on?` Running: ${C.act[k]-S.turn} month${C.act[k]-S.turn===1?'':'s'} left.`:''}</small></div>${cd?`<span class="tag">Again in ${cd} mo</span>`:`<button class="btn" data-act="campaign" data-arg="${k}" ${S.coins<cost?'disabled':''}>${cost?'🪙'+fmt(cost):'Launch'}</button>`}</div>`}).join('')}</div>`}
+
+/* ---------- migration ---------- */
+// people move between you and your neighbors toward the better life. S.mig = {n: net flow last month (+ to you)}, S.migY = {in,out} this year
+const MIGL=()=>({open:1.5,selective:.6,closed:.1}[S.laws.immigration]??.6);
+const nPop=n=>provsOf(n).reduce((a,i)=>a+(S.prov[i].pop||0),0);
+const sRound=v=>Math.floor(v)+(Math.random()<v%1?1:0);
+const takeFrom=(n,k)=>{provsOf(n).sort((a,b)=>(S.prov[b].pop||0)-(S.prov[a].pop||0)).forEach(i=>{const t=Math.min(k,S.prov[i].pop||0);S.prov[i].pop=(S.prov[i].pop||0)-t;k-=t})};
+// how appealing life is: approval, work and homes at home; peace, stability and their ruler abroad
+function attrMe(c){const room=c.t.homes-S.pop;return S.hap+(c.sc.jobs>=90?5:c.sc.jobs<60?-10:0)+(room>0?5:-10)+(S.war?-15:0)+(c.sc.food<30?-25:0)}
+function attrN(n){return 50+{stable:0,indebted:-10,troubled:-20}[S.nsit[n]||'stable']+(nwarOf(n)||atWarWith(n)?-25:0)+(pers(n,'cautious')?5:pers(n,'greedy')?-5:0)+era()*2}
+// newcomers settle where there is room, as a minority of their own culture and faith
+function settleIn(n,count,lit){count=Math.round(count);if(count<=0)return 0;const own=provsOf('me').map(i=>[i,homesIn(i)*1.1-(S.prov[i].pop||0)]).filter(([,r])=>r>0).sort((a,b)=>b[1]-a[1]);let left=count;
+  own.forEach(([i,room])=>{if(left<=0)return;const k=Math.min(left,Math.ceil(room));const P=S.prov[i],old=P.pop||0;P.pop=old+k;left-=k;
+    if(!P.cul){P.cul=n;P.cult=100;P.fth=100}P.cult=(P.cult*old)/(old+k);P.fth=((P.fth??100)*old+(FAITH[n]===FAITH.me?100:0)*k)/(old+k)});
+  const got=count-left;if(got>0){const s=soc(),pop=Math.max(1,S.pop);s.lit=Math.min(99,(s.lit*pop+(lit??35)*got)/(pop+got));s.mM+=got}syncPop();return got}
+function migMonth(c,notes,stop){S.mig={};S.migY=S.migY||{in:0,out:0};const me=attrMe(c),L=MIGL(),pop=Math.max(1,S.pop);
+  liveNations().forEach(n=>{const d=me-attrN(n),np=nPop(n);let net=0;
+    if(d>5&&np>20){const want=sRound(Math.min(np*.0015*(d-5)/20*L,np*.02));const got=settleIn(n,want,S.laws.immigration==='selective'?75:35);
+      if(got){const tl=provsOf(n);let left=got;tl.forEach(i=>{if(left<=0)return;const k=Math.min(left,Math.ceil((S.prov[i].pop||0)*got/np));S.prov[i].pop=Math.max(0,(S.prov[i].pop||0)-k);left-=k});net=got}}
+    else if(d<-5){const out=Math.min(sRound(pop*.001*(-d-5)/20*(S.laws.immigration==='closed'?.4:1)),Math.max(0,S.pop-10));if(out>0){removePop(out);const tl=provsOf(n);if(tl.length){const i=tl.sort((a,b)=>(S.prov[b].pop||0)-(S.prov[a].pop||0))[0];S.prov[i].pop=(S.prov[i].pop||0)+out}net=-out}}
+    S.mig[n]=net;if(net>0)S.migY.in+=net;else S.migY.out-=net;
+    // refugees flee wars and troubles
+    if(!(S.refCd&&S.refCd[n]>S.turn)&&(nwarOf(n)||S.nsit[n]==='troubled')&&np>40&&Math.random()<.02&&!queue.some(e=>e.id==='refugees')){S.refCd=S.refCd||{};S.refCd[n]=S.turn+24;queue.push(refugeeEvent(n));stop.push(`Refugees from ${NATIONS[n].n}`)}});
+  if(S.month===0&&(S.migY.in||S.migY.out)){notes.push(['🧳','Migration last year',`${fmt(S.migY.in)} people came from neighboring kingdoms, and ${fmt(S.migY.out)} left for them. Under ${law('immigration').n.toLowerCase()}, newcomers settle as minorities of their own culture.`]);S.migY={in:0,out:0}}}
+function refugeeEvent(n){const np=nPop(n),size=Math.max(10,Math.round(np*.04)),why=nwarOf(n)?'war':'turmoil';
+  return{id:'refugees',e:'🧳',t:`Refugees from ${NATIONS[n].n}`,d:`Fleeing ${why}, about ${fmt(size)} people from ${NATIONS[n].n} are at your borders, asking to be taken in.`,ch:[
+    {l:'Take them all in',f(){const got=settleIn(n,size,30);takeFrom(n,got);
+      relA(n,5);igM('workers',-5,12,'Refugees competing for work');igM('clergy',3,12,'Christian charity');igM('intelligentsia',4,12,'A humane welcome');return`${fmt(got)} refugees settle in your provinces, keeping their own language and faith.`}},
+    {l:'Take only the skilled',f(){const got=settleIn(n,Math.round(size*.3),85);takeFrom(n,got);relA(n,-2);igM('merchants',3,12,'Skilled newcomers');return`${fmt(got)} craftsmen, clerks and physicians are admitted. The rest are turned away.`}},
+    {l:'Turn them away',f(){relA(n,-8);igM('intelligentsia',-5,12,'Refugees turned away');igM('workers',3,12,'Borders kept closed');return'The border stays shut, and the refugees go elsewhere.'}}]}}
+const migLine=n=>{const v=(S.mig||{})[n]||0;return v>0?`${fmt(v)} people moved here from ${NATIONS[n].n} last month.`:v<0?`${fmt(-v)} of your people moved to ${NATIONS[n].n} last month.`:'No one moved between you last month.'};
 /* ---------- goals ---------- */
 const GOALS=[
   {id:'pop100',d:'Reach 100 subjects',r:500,f:()=>S.pop>=100},
@@ -2202,7 +2251,7 @@ function endMonth(silent){
   const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
   let du=unrestBase(c).reduce((a,r)=>a+r[1],0);if(du>0)du*=unrestMult();if(du>0&&hasPal('guard'))du=Math.max(0,du-.5);
   S.unrest=clamp(Math.round((S.unrest+(S.god?Math.min(0,du):du))*10)/10,0,100);if(S.god)S.coins=Math.max(S.coins,999999);S.calm=S.unrest<20?S.calm+1:0;
-  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);foodMonth(c,notes,stop);builderMonth(c,notes);socMonth(c,notes,stop);setlUpdate(notes,stop);S.best=Math.max(S.best,S.pop);
+  const room=c.t.homes-S.pop;provinceMonth(c,notes,stop);foodMonth(c,notes,stop);builderMonth(c,notes);socMonth(c,notes,stop);migMonth(c,notes,stop);setlUpdate(notes,stop);S.best=Math.max(S.best,S.pop);
   researchMonth(c.rp,notes,stop);eraCheck(stop);
   if(S.enact){S.enact.left--;if(S.enact.left<=0){const L=LAWS[S.enact.cat];S.laws[S.enact.cat]=S.enact.opt;S.lawsPassed++;notes.push([L.e,`${L.o[S.enact.opt].n} is now law`,L.o[S.enact.opt].d]);stop.push(`${L.o[S.enact.opt].n} is now law`);S.enact=null}}
   pressureMonth(notes,stop);
@@ -2708,6 +2757,7 @@ function courtHTML(){const c=calc(),m=S.monarch,h=S.heir;
     ${S.herit?`<div class="row"><span class="em">${HERIT[S.herit].e}</span><div class="grow"><b>Heritage: ${HERIT[S.herit].n}</b><small>${HERIT[S.herit].d}</small></div></div>`:`<div class="row"><span class="em">🏺</span><div class="grow"><b>Choose your people's heritage</b><small>A lasting mark on your people, chosen once.</small><div class="seg">${Object.entries(HERIT).map(([k,Hh])=>`<button class="btn" data-act="herit" data-arg="${k}">${Hh.e} ${Hh.n}</button>`).join('')}</div></div></div>`}
     <div class="row"><span class="em">⚖️</span><div class="grow"><b>Legitimacy ${S.leg}</b><small>How accepted your rule is. It follows the mood of powerful interest groups and public approval. Trending toward ${c.legT}.</small>${bar(S.leg)}</div><button class="btn" data-act="why" data-arg="legitimacy">Why?</button></div>
     <div class="row"><span class="em">🔥</span><div class="grow"><b>Unrest ${Math.round(S.unrest)}</b><small>Builds when legitimacy falls below 40 or powerful groups turn radical. At 100, revolution breaks out.</small>${bar(100-S.unrest)}</div><button class="btn" data-act="why" data-arg="unrest">Why?</button></div></div>
+  ${campHTML()}
   <h2>The royal house</h2>${houseHTML()}
   <h2>The royal family</h2>${familyHTML()}
   <h2>Royal household</h2>${householdHTML()}
@@ -3262,6 +3312,8 @@ function act(a,arg,n){
     case'herit':{if(!HERIT[arg]||(S.herit&&S.turn>0))return;S.herit=arg;if(S.turn===0&&$('#nm')){const v=$('#nm').value;welcome();$('#nm').value=v;render();return}chron(HERIT[arg].e,`A people of ${HERIT[arg].n.toLowerCase()}`,HERIT[arg].d);toast(`${HERIT[arg].e} Your people are ${HERIT[arg].n.toLowerCase()}`);render();return}
     case'moveStart':{const i=+arg,x=S.map[i],kind=n==='hs'?'hs':'b',id=x[kind];if(!id||!B[id]||(kind==='b'&&B[id].fixed))return;MOVE={from:i,kind,id};closeSheet();toast(`Tap a tile to move the ${B[id].n.toLowerCase()} there (🪙${fmt(moveCost(id))}). Tap it again to cancel.`);return}
     case'charter':{const X=setls()[arg],s=setlStats()[arg];if(!X||!s||s.r<2||X.ch||S.coins<CHARTER)return;S.coins-=CHARTER;X.ch=true;chron('📜',`${X.name} receives a royal charter`,'The town may now govern itself.');toast(`📜 ${X.name} receives a royal charter`);render();return}
+    case'campaign':{const P=CAMP[arg],C=campS();if(!P||C.cd[arg]>S.turn)return;const cost=campCost(arg);if(S.coins<cost)return;S.coins-=cost;C.act[arg]=S.turn+P.m;C.cd[arg]=S.turn+P.cd;P.go();
+      chron(P.e,`${P.n} launched`,P.d);toast(`${P.e} ${P.n} launched`);render();return}
     case'evFreq':if(!['few','normal','many'].includes(arg))return;S.evFreq=arg;settings();return;
     case'enact':{if(S.enact||!LAWS[arg]||!LAWS[arg].o[n])return;{const O=LAWS[arg].o[n];if((O.era||0)>era()||(LAW_ERA[arg]||0)>era()||(LAWS[arg].needs&&!LAWS[arg].needs.includes(S.laws.government)))return}const mo=lawMonths();S.enact={cat:arg,opt:n,left:mo};
       IGIDS.forEach(g=>{const v=(IGS[g].likes[arg]||{})[n]||0,cv=(IGS[g].likes[arg]||{})[S.laws[arg]]||0;if(v<cv)igM(g,-5,mo,`Opposes ${LAWS[arg].o[n].n.toLowerCase()}`)});
