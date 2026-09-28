@@ -107,6 +107,18 @@ textarea{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;min-height:70px}
 .log{font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#0A0F11;border-radius:10px;padding:10px;height:240px;overflow:auto;white-space:pre-wrap;margin:0}
 .log .e{color:#F29C8F}.log .c{color:#8FC3F2}
 .conin{display:flex;gap:8px;margin-top:10px}
+.con .log{height:110px;margin-top:8px}
+.devstat{font-size:13px;color:#9FB8C0;margin:-4px 0 8px}
+.devtabs{margin-bottom:8px;flex-wrap:wrap}
+#devBody{max-height:52vh;overflow:auto;overscroll-behavior:contain}
+.dv{background:#1A2327;border-radius:12px;padding:10px;margin-bottom:8px}
+.dv>b{display:block;color:#fff;font-size:14px}
+.dv .r{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.dv .r>span{font-size:13px;color:#B8CCD3;min-width:84px}
+.dv input,.dv select{background:#0A0F11;color:#E6F1F5;border:1px solid #33434A;border-radius:8px;padding:8px;font:14px system-ui,sans-serif;min-width:0}
+.dv input[type=number]{width:92px}
+.dv select{flex:1 1 150px;max-width:100%}
+.dv small{display:block;color:#8FA6AE;margin-top:6px;font-size:12px}
 .conin input{flex:1;min-width:0;font:15px ui-monospace,Menlo,Consolas,monospace;background:#0A0F11;color:#E6F1F5;border:1px solid #33434A;border-radius:10px;padding:10px}
 .con .btn{background:#1E282D;color:#CFE0E6;border-color:#33434A}
 .con .btn.primary{background:#6FA8C0;color:#0B1417}
@@ -267,18 +279,13 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
 </div></nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="overlay" id="sheetWrap"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
-<div class="overlay" id="conWrap"><div class="sheet con" role="dialog" aria-modal="true" aria-label="Developer console">
-  <h3>Developer console</h3>
+<div class="overlay" id="conWrap"><div class="sheet con" role="dialog" aria-modal="true" aria-label="Developer tools">
+  <h3>🧪 Developer tools</h3>
+  <div class="devstat" id="devStat"></div>
+  <div class="seg devtabs" id="devTabs" role="tablist"></div>
+  <div id="devBody"></div>
   <pre class="log" id="log"></pre>
-  <div class="btns">
-    <button class="btn" data-act="cmd" data-arg="help">help</button>
-    <button class="btn" data-act="cmd" data-arg="add 10000">add 10000</button>
-    <button class="btn" data-act="cmd" data-arg="skip 12">skip 12</button>
-    <button class="btn" data-act="cmd" data-arg="unlock">unlock</button>
-    <button class="btn" data-act="cmd" data-arg="status">status</button>
-    <button class="btn" data-act="lastCmd" aria-label="Repeat last command">↑ last</button>
-  </div>
-  <div class="conin"><input id="conIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a command"><button class="btn primary" data-act="runCon">Run</button></div>
+  <div class="conin"><input id="conIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Or type a command (help lists them)"><button class="btn" data-act="lastCmd" aria-label="Repeat last command">↑</button><button class="btn primary" data-act="runCon">Run</button></div>
   <div class="btns" id="conSug" aria-label="Suggestions"></div>
   <button class="btn wide" data-act="closeCon">Close</button>
 </div></div>
@@ -648,6 +655,19 @@ const DEC={
 };
 const RES=[{k:'food',n:'Food',e:'🌾'},{k:'energy',n:'Energy',e:'⚡'},{k:'goods',n:'Goods',e:'📦'}];
 const PRICE={food:3,energy:2,goods:6};
+// products your buildings make, which can be sold abroad: the building, units a month from each, and the base price per unit
+const PRODS={wine:{n:'Wine',e:'🍷',b:'vineyard',u:20,p:4},timber:{n:'Timber',e:'🪵',b:'lumber',u:15,p:2.5},stone:{n:'Stone',e:'🪨',b:'quarry',u:30,p:1.6},bricks:{n:'Bricks',e:'🧱',b:'brickworks',u:30,p:1.9},
+  iron:{n:'Iron',e:'⛓️',b:'mine',u:20,p:5},coal:{n:'Coal',e:'⚫',b:'coalmine',u:25,p:3},cloth:{n:'Cloth',e:'🧵',b:'textile',u:40,p:4},steel:{n:'Steel',e:'🔩',b:'steelworks',u:30,p:7},
+  finery:{n:'Fine goods',e:'💎',b:'atelier',u:12,p:8},machines:{n:'Machinery',e:'⚙️',b:'factory',u:20,p:9}};
+const PSRC={};Object.entries(PRODS).forEach(([k,p])=>PSRC[p.b]=k);
+// what each kingdom pays over the base price: Norvik wants wine and fine things, Solenne metal and machines, Aurelia timber and stone
+const PPREF={norvik:{wine:1.3,cloth:1.1,finery:1.2,timber:.9,stone:.9,bricks:.9,iron:.8,coal:.8,steel:.9,machines:.9},solenne:{iron:1.2,steel:1.3,machines:1.35,cloth:1.2,coal:1.1,wine:.8},
+  aurelia:{timber:1.3,stone:1.25,bricks:1.3,wine:1.15,finery:1.2,coal:.7,cloth:.9,machines:1.1}};
+// how much to sell abroad: for food, energy and goods, the surplus (the default) or a share of everything you make, even if that leaves your people short
+const EXPSH=[['','Surplus'],['.25','25%'],['.5','50%'],['.75','75%'],['1','All']],PEXSH=[['0','None'],['.25','25%'],['.5','50%'],['.75','75%'],['1','All']];
+const pexp=()=>S.pexp||(S.pexp={}),expSh=r=>{const v=(S.expS||{})[r];return v==null||v===''?null:+v};
+const prodP=(k,n)=>PRODS[k].p*((PPREF[n]||{})[k]||1)*((S.pd&&S.pd[k]&&S.pd[k][n])||1)*(.8+.4*S.rel[n]/100)*tradeMult('pay');
+const expAll=k=>{const E=pexp()[k];return!!(E&&E.s>=1&&tradeOK(E.c))};
 const NATIONS={
   norvik:{n:'Norvik',e:'🏔️',d:'An industrial power to the north. Pays well for food, and sells goods cheaply.',pay:{food:1.3,energy:1,goods:.9},sell:{food:1.3,energy:1.1,goods:.8}},
   solenne:{n:'Solenne',e:'🌻',d:'A farming kingdom to the south. Sells food cheaply, and pays well for goods.',pay:{food:.7,energy:1.1,goods:1.3},sell:{food:.8,energy:1.2,goods:1.2}},
@@ -1232,14 +1252,17 @@ function calc(){
   // A province in revolt produces nothing, and one with riots (unrest 60+) three quarters.
   const own=provsOf('me'),pv={},LOC=['homes','jobs','health','learn','fun','move','water'];
   own.forEach(i=>{const P=S.prov[i];pv[i]={pop:P.pop||0,homes:0,jobs:0,health:0,learn:0,fun:0,move:i===0?100:40,water:i===0?50:20,hw:0,ha:0,hp:0,f:P.revolt?0:(P.unrest||0)>=60?.75:1}});
-  const skill=skillCalc();
+  const skill=skillCalc(),po={};Object.keys(PRODS).forEach(k=>po[k]={u:0,inc:0,goods:0,mat:0});
   S.map.forEach((c,i)=>{if(c.o!=='me')return;[c.b,c.hs,c.sm].forEach(bid=>{if(!bid)return;const d=B[bid];if(!d)return;const p=pv[c.p],f=(S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1)*(p?p.f:1)*(fund('infra')===0?.9:1)*(SKILLED.includes(bid)?skill.f:1);
-    const tm=bid==='farm'?farmMult(i):bid==='wind'&&c.hl?1.5:1;
+    const tm=bid==='farm'?farmMult(i):bid==='wind'&&c.hl?1.5:1;if(PSRC[bid]){const o=po[PSRC[bid]];o.u+=PRODS[PSRC[bid]].u*f;o.inc+=(d.inc||0)*f;o.goods+=(d.goods||0)*f;o.mat+=(d.mat||0)*f}
     for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs&&!c.b?RESB:1):d[k]*f*(k==='food'||k==='power'?tm:1);{const uu=bid===c.hs&&c.hp?0:(d.u||0);t.up+=uu;if(d.health)t.upH+=uu;else if(d.learn)t.upE+=uu}
     if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs&&!c.b?RESB:1):d[k]*f})})});
   // smallholdings: open land feeds some people without any farm, and fishing and sugar colonies send food home
   S.map.forEach((c,i)=>{t.food+=smallFood(i)});t.food+=colFood();
   t.trade+=S.navy*40+setlCount(2)*20;if(msHas('g5'))t.trade*=1.1;if(msHas('p8'))t.trade*=1.1;if(gp('canals'))t.trade*=1.25;if(heritage('mariners'))t.trade*=1.2;if(campOn('fair'))t.trade*=1.3;if(gp('railnet'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
+  // products sold abroad leave home: their buildings' home sales (and, for timber, stone and bricks, the materials) shrink by the share exported. They use trade capacity first.
+  const pex={};let pexV=0,pUsed=0;Object.keys(PRODS).forEach(k=>{const o=po[k],E=pexp()[k];if(!o.u||!E||!(E.s>0)||!tradeOK(E.c))return;const amt=Math.min(o.u*E.s,Math.max(0,t.trade-pUsed));if(amt<=0)return;
+    pUsed+=amt;const sh=amt/o.u,v=amt*prodP(k,E.c);t.inc-=o.inc*sh;t.mat-=o.mat*sh;pexV+=v;pex[k]={amt,v,c:E.c,sh}});
   const upRaw=t.up||1;t.up*=ECON.up[era()];if(trait('frugal'))t.up*=.9;if(lg('stew',3))t.up*=.92;t.up*=1-altS('treasurer')*.02;
   { const f=t.up/upRaw,h=t.upH*f,e=t.upE*f;const xtra=(k,r)=>Math.max(0,FUNDM[fund(k)]-1)*S.pop*r;t.upH=h*FUNDM[fund('health')]+xtra('health',.08);t.upE=e*FUNDM[fund('edu')]+xtra('edu',.06);t.upI=(t.up-h-e)*FUNDM[fund('infra')]+xtra('infra',.06);t.up=t.upH+t.upE+t.upI}
   // a lumber camp keeps its forest, but logging halves what it's worth to the environment
@@ -1264,9 +1287,9 @@ function calc(){
   const foodMult=[1,1.3,2,3][era()]*(1+(hasTech('rotation')?.15:0)+(hasTech('watermill')?.05:0)+(hasTech('agronomy')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100+(gp('canals')?.1:0)+(heritage('farmers')?.15:0)),goodsMult=1+(gp('railnet')?.15:0)+(hasTech('workshops')?.25:0)+(hasTech('coke')?.1:0)+(hasTech('massprod')?.25:0)+(eraB('workshop')?.2:0);
   const prod={food:t.food*foodMult+(S.granRel||0),energy:t.power,goods:t.goods*goodsMult};
   const rat=D('ration')?.8:1;const dem={food:Math.round(pop*rat),energy:Math.round(pop*rat),goods:Math.round(pop*share.middle+pop*share.upper*3)};
-  let cap=t.trade;const tr={};let expV=0,impV=0;
-  RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r];if(diff<0&&tradeOK(c)){const amt=Math.min(-diff,cap);cap-=amt;const v=amt*buyP(c,r);impV+=v;tr[r]={dir:'import',amt,v,c}}});
-  RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r];if(diff>0&&tradeOK(c)){const amt=Math.min(diff,cap);cap-=amt;const v=amt*payP(c,r);expV+=v;tr[r]={dir:'export',amt,v,c}}});
+  let cap=t.trade-pUsed;const tr={};let expV=0,impV=0;
+  RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r];if(diff<0&&tradeOK(c)&&expSh(r)==null){const amt=Math.min(-diff,cap);cap-=amt;const v=amt*buyP(c,r);impV+=v;tr[r]={dir:'import',amt,v,c}}});
+  RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r],sh=expSh(r),want=sh==null?diff:prod[r]*sh;if(want>0&&tradeOK(c)){const amt=Math.min(want,cap);cap-=amt;const v=amt*payP(c,r);expV+=v;tr[r]={dir:'export',amt,v,c}}});
   const sup={};RES.forEach(({k:r})=>{const T=tr[r];sup[r]=prod[r]+(T&&T.dir==='import'?T.amt:0)-(T&&T.dir==='export'?T.amt:0)});
   const price={};RES.forEach(({k:r})=>{price[r]=dem[r]<=0?PRICE[r]*.5:PRICE[r]*clamp(Math.pow(dem[r]/Math.max(1,sup[r]),.8),.5,2.5)});
   const occ=pop/Math.max(1,t.homes);let rentIdx=1+clamp((occ-.8)/.2,0,1)*1.2;if(D('rentcap'))rentIdx=Math.min(rentIdx,1.2);
@@ -1353,11 +1376,11 @@ function calc(){
   const welfare=Math.round(L.welfare==='relief'?pop*share.lower*.35:L.welfare==='public'?pop*.7:L.welfare==='insurance'?pop*(.4+soc().old*3):0);
   const schools=Math.round(pop*(law('education').cost||0)*FUNDM[fund('edu')]),stipends=IGIDS.reduce((a,g)=>a+STIP[stipend(g)],0),cooptCost=IGIDS.filter(coopted).length*COOPT_MONTHLY;
   const interest=S.coins<0?Math.ceil(Math.min(-S.coins*.015*(hasTech('banking')?.5:1)*(1-offT('treasurer')*.1),Math.max(50,(tax+biz)*.4))):0;const hc=hhCosts();
-  const income=[['Taxes',tax],['Business revenue',biz],['Tourism',tour],['Exports',expV],['Surplus materials sold',matSale],['Royal estates',hc.estates],['Overseas trade',ovTradeInc()],['Colonies',colInc()]];if(extra>0)income.push(['Agreements and grants',extra]);
+  const income=[['Taxes',tax],['Business revenue',biz],['Tourism',tour],['Exports',expV],['Product exports',pexV],['Surplus materials sold',matSale],['Royal estates',hc.estates],['Overseas trade',ovTradeInc()],['Colonies',colInc()]];if(extra>0)income.push(['Agreements and grants',extra]);
   const army=Math.round(((soldiers*4+(S.war?soldiers*8:0))*(law('army').armyCost||1)+S.navy*20+(S.general?30:0))*FUNDM[fund('def')]);
   const costs=[['Health services',t.upH],['Schools and learning',t.upE],['Infrastructure and upkeep',t.upI],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest],['Foreign protection',S.ov&&S.ov.prot?PROT_COST:0],['Appanages',appanages().length*APP_COST]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
   const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
-  return{skill,needBonus:bonus,taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
+  return{skill,needBonus:bonus,taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,pex,pexV,po,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
 
 /* ---------- events ---------- */
 const summer=()=>S.month>=5&&S.month<=7,winter=()=>S.month===11||S.month<=1;
@@ -1845,7 +1868,7 @@ const LUX={spices:{n:'Spices',e:'🌶️',src:'A trade route to Carthen, or a sp
 function luxHave(){const h=new Set(),O=S.ov;
   if(O&&O.known){if(routeLive('serenth')){h.add('silk');h.add('tea');if(era()>=1)h.add('porcelain')}if(routeLive('carthen')){h.add('spices');h.add('sugar')}if(routeLive('valdor'))h.add('furs');
     O.isl.forEach(I=>{if(I.o==='me'){if(I.res==='spice')h.add('spices');if(I.res==='sugar')h.add('sugar')}})}
-  if(has('vineyard'))h.add('wine');if(has('atelier'))h.add('finery');return h}
+  if(has('vineyard')&&!expAll('wine'))h.add('wine');if(has('atelier')&&!expAll('finery'))h.add('finery');return h}
 const luxCount=()=>luxHave().size;
 // culture and faith: provinces won from a neighbor keep that neighbor's people, who adopt your ways over time
 const FAITH={me:'the Island Church',norvik:'the Northern Rite',solenne:'the Island Church',aurelia:'the Sun Creed'};
@@ -2329,6 +2352,8 @@ function endMonth(silent){
   // stop collects reasons for the ⏩ button to pause; endedM/endedY label this month's news
   const stop=[],endedM=S.month,endedY=S.year,oldCoins=S.coins,oldUnrest=S.unrest;chronAt={m:endedM,y:endedY};
   S.coins+=c.net;S.lastNet=c.net;S.mat=Math.min(c.matCap,(S.mat||0)+c.t.mat);
+  // foreign demand for each product drifts a little every month
+  S.pd=S.pd||{};Object.keys(PRODS).forEach(k=>{const d=S.pd[k]=S.pd[k]||{};NIDS.forEach(n=>{const v=d[n]||1;d[n]=Math.round(clamp(v+(Math.random()-.5)*.1+(1-v)*.06,.7,1.4)*100)/100})});
   S.hap=Math.round(S.hap+(c.target-S.hap)*.35);
   S.leg=Math.round(S.leg+(c.legT-S.leg)*.2);
   const angry=IGIDS.reduce((a,k)=>a+(c.mood[k]<25?c.clout[k]:0),0);
@@ -3620,12 +3645,24 @@ function econHTML(){const c=calc();
   <h2>Spending</h2><div class="card">${rows(c.costs,'neg')}</div>
   <h2>Royal decrees</h2><div class="card">${decs}</div>${gpHTML()}`}
 function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
-  const res=RES.map(r=>{const diff=Math.round(c.prod[r.k]-c.dem[r.k]),T=c.tr[r.k],cur=S.trade[r.k];
-    const status=diff>=0?`Surplus of ${fmt(diff)} a month available to export.`:`Shortfall of ${fmt(-diff)} a month. Importing lowers prices at home.`;
-    const dir=diff>0?'export':diff<0?'import':null;
+  const res=RES.map(r=>{const diff=Math.round(c.prod[r.k]-c.dem[r.k]),T=c.tr[r.k],cur=S.trade[r.k],sh=expSh(r.k);
+    const status=diff>=0?`You make ${fmt(diff)} a month more than your people need.`:`You make ${fmt(-diff)} a month less than your people need.`;
+    const dir=sh==null&&diff<0?'import':'export';
     const opts=NIDS.map(n=>{const p=dir==='import'?buyP(n,r.k):payP(n,r.k);return `<button class="btn ${cur===n?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="${n}" ${tradeOK(n)?'':'disabled'} aria-pressed="${cur===n}">${NATIONS[n].e} ${NATIONS[n].n} ${p.toFixed(1)}</button>`}).join('');
-    const now=T?`${T.dir==='import'?'Importing':'Exporting'} ${fmt(T.amt)} with ${NATIONS[T.c].n} for 🪙${fmt(T.v)} a month.`:cur&&!tradeOK(cur)?`${NATIONS[cur].n} isn\u2019t trading with you right now.`:'';
-    return `<div class="row"><span class="em">${r.e}</span><div class="grow"><b>${r.n}</b><small>${status}</small>${dir?`<small>${dir==='import'?'Price you pay':'Price they pay'} per unit:</small><div class="seg">${opts}<button class="btn ${!cur?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="">None</button></div>`:''}${now?`<small><b>${now}</b></small>`:''}</div></div>`}).join('');
+    const shs=EXPSH.map(([v,l])=>`<button class="btn ${(v===''?sh==null:+v===sh)?'on':''}" data-act="expShare" data-arg="${r.k}" data-n="${v}">${l}</button>`).join('');
+    const short=c.dem[r.k]-c.sup[r.k],warn=sh!=null&&short>.5?`<small style="color:var(--bad)">Selling this much leaves your people ${fmt(short)} a month short, so prices at home rise${r.k==='food'?' and hunger can follow':''}.</small>`:'';
+    const now=T?`${T.dir==='import'?'Importing':'Exporting'} ${fmt(T.amt)} with ${NATIONS[T.c].n} for 🪙${fmt(T.v)} a month.`:cur&&!tradeOK(cur)?`${NATIONS[cur].n} isn’t trading with you right now.`:'';
+    return `<div class="row"><span class="em">${r.e}</span><div class="grow"><b>${r.n}</b><small>${status}</small><small>${dir==='import'?'Partner, and the price you pay per unit':'Buyer, and the price they pay per unit'}:</small><div class="seg">${opts}<button class="btn ${!cur?'on':''}" data-act="setTrade" data-arg="${r.k}" data-n="">None</button></div>
+      <small>How much to sell abroad${sh==null?': only what you don’t need (a shortfall is imported instead)':': a share of everything you make, even if your people go short'}.</small><div class="seg">${shs}</div>${warn}${now?`<small><b>${now}</b></small>`:''}</div></div>`}).join('');
+  // products: each one comes from its buildings, and you choose a buyer and how much of it to sell
+  const pk=Object.keys(PRODS).filter(k=>c.po[k].u>0);
+  const prods=pk.length?pk.map(k=>{const P=PRODS[k],o=c.po[k],E=pexp()[k]||{},X=c.pex[k];
+    const opts=NIDS.map(n=>`<button class="btn ${E.c===n?'on':''}" data-act="pexpC" data-arg="${k}" data-n="${n}" ${tradeOK(n)?'':'disabled'} aria-pressed="${E.c===n}">${NATIONS[n].e} ${NATIONS[n].n} ${prodP(k,n).toFixed(1)}</button>`).join('');
+    const shs=PEXSH.map(([v,l])=>`<button class="btn ${+v===(E.s||0)?'on':''}" data-act="pexpS" data-arg="${k}" data-n="${v}">${l}</button>`).join('');
+    const home=k==='wine'||k==='finery'?'business income and a luxury your middle and upper classes enjoy (selling all of it loses the luxury)':['timber','stone','bricks'].includes(k)?'building materials':'business income';
+    const now=X?`Selling ${fmt(X.amt)} to ${NATIONS[X.c].n} for 🪙${fmt(X.v)} a month.`:E.s>0&&!E.c?'Choose a buyer.':E.s>0&&!tradeOK(E.c)?`${NATIONS[E.c].n} isn’t trading with you right now.`:E.s>0?'No trade capacity left this month.':'';
+    return `<div class="row"><span class="em">${P.e}</span><div class="grow"><b>${P.n}</b><small>You make ${fmt(o.u)} a month. What stays at home becomes ${home}.</small><small>Buyer, and the price they pay per unit:</small><div class="seg">${opts}</div>
+      <small>How much to sell abroad:</small><div class="seg">${shs}</div>${now?`<small><b>${now}</b></small>`:''}</div></div>`}).join(''):`<div class="row"><div class="grow"><small>You don’t make any products to sell yet.</small></div></div>`;
   const nats=NIDS.map(n=>{if(isFallen(n))return`<div class="card" style="margin-bottom:10px"><div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b> <span class="tag">Fallen</span><small>It holds no land any more, so it can\u2019t trade or negotiate. A revolt in one of its old provinces could bring it back.</small></div></div></div>`;const Nn=NATIONS[n],r=Math.round(S.rel[n]),tn=Math.round(S.tension[n]);
     return `<div class="card" style="margin-bottom:10px"><div class="row"><span class="em">${Nn.e}</span><div class="grow"><b>${Nn.n}</b> <span class="tag">${relWord(r)}</span>${atWarWith(n)?' <span class="tag" style="color:var(--bad)">At war</span>':''}${S.nsit[n]!=='stable'?` <span class="tag">${S.nsit[n][0].toUpperCase()+S.nsit[n].slice(1)}</span>`:''}${S.embargo[n]?` <span class="tag" style="color:var(--bad)">Embargo, ${S.embargo[n]} mo</span>`:''}<small>${Nn.d} They hold ${provsOf(n).length} province${provsOf(n).length===1?'':'s'} on the map${provsOf(n).filter(i=>S.claims[i]).length?`, and you have claims on ${provsOf(n).filter(i=>S.claims[i]).map(i=>S.prov[i].name).join(', ')}`:''}.</small></div></div>${courtRow(n)}
     <div class="row"><div class="grow"><small>Relations ${r}/100. Better relations mean better prices, and below 20 they stop trading.</small>${bar(r)}<small style="margin-top:6px">Tension ${tn}/100, ${tenWord(tn).toLowerCase()}. At 60 they may issue ultimatums, and at 100 they impose an embargo.</small>${bar(tn,tn>=60?'var(--bad)':tn>=35?'var(--warn)':'var(--good)')}</div></div>
@@ -3647,7 +3684,8 @@ function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
     <div class="row"><span class="em">🚢</span><div class="grow"><b>Navy: ${S.navy} warship${S.navy===1?'':'s'}</b><small>${has('shipyard')?'Each ship costs 🪙400 and 🪙20 a month, and adds 40 trade capacity in peacetime.':'Build a shipyard on the coast to build warships.'}</small></div><button class="btn" data-act="ship" ${!has('shipyard')||S.coins<400?'disabled':''}>Build 🪙400</button></div>
     ${liveNations().map(n=>`<div class="row"><span class="em">${NATIONS[n].e}</span><div class="grow"><b>${NATIONS[n].n}</b><small>Army ${theirStr(n)}${theirStr(n)>c.str*1.2?', stronger than yours':theirStr(n)*1.2<c.str?', weaker than yours':', evenly matched'}. Navy ${theirNavy(n)}.</small></div></div>`).join('')}</div>`;
   return `${war}${mil}<h2>Trade capacity</h2><p class="hint">${fmt(used)} of ${fmt(c.cap)} units used this month. Fishing docks add 30 and a harbor adds 600. Imports are filled first. Your trade law: ${law('trade').n.toLowerCase()}.</p><div class="capbar"><i style="width:${c.cap?Math.min(100,used/c.cap*100):0}%"></i></div>
-  <h2>Agreements</h2><div class="card">${res}</div>
+  <h2>Food, energy and goods</h2><p class="hint">Choose a partner for each. By default you sell only what you don’t need and import any shortfall, but you can sell a fixed share of everything you make.</p><div class="card">${res}</div>
+  <h2>📦 Export products</h2><p class="hint">Products come from vineyards (wine), lumber camps (timber), quarries (stone), brickworks (bricks), iron mines, coal mines, textile mills (cloth), steelworks, luxury workshops (fine goods) and factories (machinery). What you sell leaves home. Each kingdom pays its own price, demand drifts every month, and better relations pay more. Product exports use trade capacity first.${c.pexV?` Now earning 🪙${fmt(c.pexV)} a month.`:''}</p><div class="card">${prods}</div>
   <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}${overseasHTML()}`}
 function techHTML(){const c=calc(),cur=S.tech.cur&&techOf(S.tech.cur);
   const avail=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&(!t.req||hasTech(t.req))),locked=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&t.req&&!hasTech(t.req)),done=TECH.filter(t=>hasTech(t.id)),future=TECH.filter(t=>!techOpen(t)),E=ERAS[era()];
@@ -3778,7 +3816,7 @@ function welcome(){const m=S.monarch;openSheet(`<div class="event"><div class="p
 /* ---------- console ---------- */
 const LOG=[{t:'Developer console. Type help to see commands.'}];
 function out(t,c){(Array.isArray(t)?t:[t]).forEach(x=>LOG.push({t:x,c}));if(LOG.length>200)LOG.splice(0,LOG.length-200)}
-function renderLog(){const l=$('#log');l.innerHTML=LOG.map(x=>`<span class="${x.c||''}">${String(x.t).replace(/</g,'&lt;')}</span>`).join('\n');l.scrollTop=l.scrollHeight}
+function renderLog(){const l=$('#log');l.innerHTML=LOG.map(x=>`<span class="${x.c||''}">${String(x.t).replace(/</g,'&lt;')}</span>`).join('\n');l.scrollTop=l.scrollHeight;if($('#conWrap').classList.contains('open'))devRender()}
 const num=(v,d)=>{const n=parseInt(v,10);return isNaN(n)?d:n};
 const E=m=>({err:m});
 function freeTile(id){return S.map.findIndex((x,i)=>x.o==='me'&&x.t!=='w'&&(isHousing(id)?!x.hs:!x.b)&&!placeWhy(id,i,true))}
@@ -3909,8 +3947,52 @@ function suggest(){const v=$('#conIn').value.trim().toLowerCase(),box=$('#conSug
   const m=Object.keys(CMDS).filter(k=>k.startsWith(v)&&k!==v).slice(0,6);box.innerHTML=m.map(k=>`<button class="btn" data-act="sug" data-arg="${k}">${k}</button>`).join('')}
 function runCmd(line){line=line.trim();if(!line)return;if(CHIST[CHIST.length-1]!==line)CHIST.push(line);chIdx=-1;if($('#conSug'))$('#conSug').innerHTML='';out('> '+line,'c');const [c,...a]=line.split(/\s+/);const f=CMDS[c.toLowerCase()];
   if(!f)out('Unknown command. Type help.','e');else{const r=f(...a);if(r&&r.err)out(r.err,'e');else out(r)}render();renderLog()}
-function openCon(){$('#sheetWrap').classList.remove('open');$('#conWrap').classList.add('open');renderLog();setTimeout(()=>$('#conIn').focus(),50)}
+function openCon(){$('#sheetWrap').classList.remove('open');$('#conWrap').classList.add('open');renderLog()}
 
+/* ---------- developer tools: the console's commands as tap-friendly panels ---------- */
+// every control runs one of the console commands below, so the log shows what happened and typing still works
+const DEVTABS=[['quick','⚡ Quick'],['kingdom','👑 Kingdom'],['royal','👪 Royal'],['world','🌍 World'],['war','⚔️ War'],['build','🏗️ Build']];
+function devHTML(tab){const opt=(l,cur)=>l.map(([v,t])=>`<option value="${esc(String(v))}"${String(v)===String(cur)?' selected':''}>${esc(t)}</option>`).join('');
+  const sel=(id,l,cur)=>`<select id="${id}">${opt(l,cur)}</select>`,num=(id,v,min='')=>`<input type="number" id="${id}" value="${v}" ${min!==''?`min="${min}"`:''} inputmode="numeric">`;
+  const b=(l,c,p)=>`<button class="btn${p?' primary':''}" data-act="cmd" data-arg="${esc(c)}">${l}</button>`,go=(l,c,ids)=>`<button class="btn primary" data-act="devGo" data-arg="${esc(c)}" data-n="${ids.join(',')}">${l}</button>`;
+  const box=(t,inner,note)=>`<div class="dv"><b>${t}</b>${inner}${note?`<small>${note}</small>`:''}</div>`,row=(...x)=>`<div class="r">${x.join('')}</div>`,lab=t=>`<span>${t}</span>`;
+  const nats=NIDS.map(n=>[n,`${NATIONS[n].e} ${NATIONS[n].n}`]),provs=S.prov.map((P,i)=>[i,`${P.name} (${ownName(P.o)})`]),mine=S.prov.map((P,i)=>[i,P]).filter(([,P])=>P.o==='me').map(([i,P])=>[i,P.name]);
+  if(tab==='quick')return box(`Treasury: 🪙${fmt(S.coins)}`,row(b('+1,000','add 1000'),b('+10,000','add 10000'),b('+100,000','add 100000'))+row(lab('Set to'),num('dv-money',Math.round(S.coins)),go('Set','money',['dv-money'])))
+    +box(`Building materials: ${fmt(S.mat||0)}`,row(num('dv-mat',Math.max(500,Math.round(S.mat||0))),go('Set','mat',['dv-mat'])))
+    +box(`Time: ${MONTHS[S.month]}, year ${S.year}`,row(b('Next month','next',1),b('Skip 6 months','skip 6'),b('Skip 1 year','skip 12'),b('Skip 5 years','skip 60'))+row(lab('Jump to'),sel('dv-mon',MONTHS.map(m=>[m,m]),MONTHS[S.month]),num('dv-year',S.year,1),go('Go','date',['dv-mon','dv-year'])),'Skipping plays the months quietly; events are resolved automatically.')
+    +box('Research',row(b('Research everything','unlock'))+row(sel('dv-tech',TECH.filter(t=>!hasTech(t.id)).map(t=>[t.id,t.n])),go('Research','tech',['dv-tech'])))
+    +box('Game switches',row(lab('Random events'),b('On','events on'),b('Off','events off'))+row(lab('Aging'),b('On','aging on'),b('Off','aging off'))+row(b('Complete all objectives','goals')))
+    +box('Reports',row(b('Status','status'),b('Why approval','why approval'),b('Why legitimacy','why legitimacy'),b('Why unrest','why unrest')));
+  if(tab==='kingdom')return box(`Era: ${ERAS[era()].n}`,row(...ERAS.map((E,i)=>b(`${E.e} ${E.n.replace('Age of ','')}`,'era '+i,i===era()))))
+    +box('Numbers',[['approval','Approval',S.hap],['legitimacy','Legitimacy',S.leg],['unrest','Unrest',Math.round(S.unrest)],['pop','Population',S.pop]].map(([c,l,v])=>row(lab(l),num('dv-'+c,v,0),go('Set',c,['dv-'+c]))).join(''))
+    +box('Interest group mood',row(sel('dv-ig',IGIDS.map(k=>[k,IGS[k].n])),num('dv-ign',20),go('Shift','mood',['dv-ig','dv-ign'])),'Positive or negative; it fades over 12 months.')
+    +box('Laws',row(sel('dv-law',Object.entries(LAWS).flatMap(([c,L])=>Object.entries(L.o).map(([o,O])=>[`${c} ${o}`,`${L.n}: ${O.n}${S.laws[c]===o?' ✓':''}`]))),go('Enact','law',['dv-law'])))
+    +box('Heritage',row(sel('dv-her',Object.entries(HERIT).map(([k,h])=>[k,`${h.e} ${h.n}`]),S.herit),go('Set','heritage',['dv-her'])))
+    +(mine.length?box('Your provinces',row(sel('dv-pv',mine))+row(lab('Unrest'),num('dv-pvu',50,0),go('Set','punrest',['dv-pv','dv-pvu']))+row(lab('Integration %'),num('dv-pvi',100,0),go('Set','integ',['dv-pv','dv-pvi']))+row(go('Start a revolt','revolt',['dv-pv']),go('Demolish buildings','demolish',['dv-pv']))):'');
+  if(tab==='royal'){const ks=kids(),h=heirOf(S);return box(`${monarchName(S.monarch)}, aged ${S.monarch.age}`,row(lab('Age'),num('dv-age',S.monarch.age,0),go('Set','age',['dv-age']))+row(lab('Gender'),b('King','gender m'),b('Queen','gender f'))
+      +row(sel('dv-tr',Object.entries(TRAITS).map(([k,t])=>[k,t.n]),S.monarch.trait),go('Set trait','trait',['dv-tr']))+row(b(S.fam.spouse?'Married':'Find a spouse','spouse'),b('💀 Monarch dies','die')))
+    +box(`Children (${ks.length})`,row(lab('Age'),num('dv-kage',8,0),go('Add a son','child m',['dv-kage']),go('Add a daughter','child f',['dv-kage']))
+      +(ks.length?row(sel('dv-kid',ks.map(k=>[k.id,`${kidName(k)}, ${k.age}${k===h?' (heir)':''}`])),go('Make heir','makeheir',['dv-kid']))+row(lab('Heir’s age'),num('dv-hage',h?h.age:18,0),go('Set','heir',['dv-hage']))
+        +row(lab('Marry the heir to'),sel('dv-mar',[['noble','a noble family'],...nats]),go('Marry','marry',['dv-mar'])):''))
+    +box('The royal house',row(b('+100 renown','renown 100'),b('+1,000 renown','renown 1000'))+row(sel('dv-hl',Object.entries(HEIRLOOMS).map(([k,x])=>[k,x.n])),go('Add heirloom','heirloom',['dv-hl']))+row(b('A pretender appears','pretender'),b('Acknowledge a bastard','bastard'))
+      +row(lab('Family drama'),...['off','some','lots'].map(v=>b(v[0].toUpperCase()+v.slice(1),'drama '+v,S.drama===v))))}
+  if(tab==='world')return NIDS.filter(n=>!isFallen(n)).map(n=>box(`${NATIONS[n].e} ${NATIONS[n].n}`,row(lab('Relations'),num('dv-rel-'+n,Math.round(S.rel[n]),0),go('Set','rel '+n,['dv-rel-'+n]))+row(lab('Tension'),num('dv-ten-'+n,Math.round(S.tension[n]),0),go('Set','tension '+n,['dv-ten-'+n]))
+      +row(lab('Embargo months'),num('dv-emb-'+n,S.embargo[n]||0,0),go('Set','embargo '+n,['dv-emb-'+n])))).join('')
+    +box('Provinces',row(sel('dv-prov',provs))+row(go('Take it','take',['dv-prov']),go('Claim it','claim',['dv-prov']),go('Settle (frontier)','settle',['dv-prov']))+row(lab('Give to'),sel('dv-giveto',[...nats,['wild','the frontier']]),go('Give','give',['dv-prov','dv-giveto']))
+      +row(lab('Devastate months'),num('dv-dev',12,1),go('Devastate','devastate',['dv-prov','dv-dev']),b('Rebuild all','rebuild all')))
+    +box('Neighbors and the wider world',row(sel('dv-na',nats),lab('declares war on'),sel('dv-nb',nats,NIDS[1]),go('Start','nwar',['dv-na','dv-nb']))+row(b('Reveal overseas powers','overseas'),b('Proclaim an empire','empire'),b('Rulers','rulers')));
+  if(tab==='war'){const W_=S.war;return box(W_?`At war with ${W_.foes.map(n=>NATIONS[n].n).join(' and ')}, score ${W_.score}`:'At peace',W_?row(lab('War score'),num('dv-score',W_.score),go('Set','score',['dv-score']))+row(lab('War support %'),num('dv-sup',W_.support,0),go('Set','support',['dv-sup']))
+        +row(b('Win','win',1),b('Lose','lose'),b('Make peace','peace'))+row(sel('dv-occ',provs),go('Occupy','occupy',['dv-occ'])):row(sel('dv-war',nats),go('Declare war on','war',['dv-war']),go('Be invaded by','invade',['dv-war'])))
+    +box(`Army: ${ARMY[S.army].n}`,row(...ARMY.map((A,i)=>b(A.n,'army '+i,i===S.army)))+row(lab('Soldiers'),num('dv-troops',S.troops||0,0),go('Set','troops',['dv-troops']))+row(lab('Warships'),num('dv-navy',S.navy,0),go('Set','navy',['dv-navy']))
+      +row(b(S.mob?'Stand down reserves':'Mobilize reserves','mobilize'))+row(sel('dv-gen',Object.entries(GTRAITS).map(([k,g])=>[k,g.n])),go('Appoint a general','general',['dv-gen'])))
+    +box('Enemy strength',row(sel('dv-en',nats),num('dv-env',100,0),go('Set','enemy',['dv-en','dv-env']))+row(go('Back to normal','enemy',['dv-en'])),'Useful for testing wars: set a nation’s army strength by hand.')}
+  if(tab==='build')return box('Build for free',row(sel('dv-b',Object.keys(B).filter(k=>!B[k].fixed).map(k=>[k,`${B[k].e} ${B[k].n}`])),num('dv-bn',1,1),go('Build','build',['dv-b','dv-bn'])),'Placed on the first free tiles that fit, ignoring cost and technology.')
+    +box('Events',row(sel('dv-ev',EVENTS.map(e=>[e.id,`${e.e} ${e.t}`])),go('Show','event',['dv-ev']))+row(b('A crisis with a neighbor','event crisis')))
+    +box('Lists',row(b('Buildings','buildings'),b('Technologies','techs'),b('Laws','laws'),b('Provinces','provinces'),b('Children','kids')));
+  return''}
+function devRender(){const tb=$('#devTabs');if(!tb)return;const tab=UI.devTab||'quick';tb.innerHTML=DEVTABS.map(([k,l])=>`<button class="btn ${k===tab?'on':''}" data-act="devTab" data-arg="${k}" role="tab" aria-selected="${k===tab}">${l}</button>`).join('');
+  const body=$('#devBody'),top=body.scrollTop;body.innerHTML=devHTML(tab);body.scrollTop=top;
+  $('#devStat').textContent=`${MONTHS[S.month]}, year ${S.year} · ${ERAS[era()].n} · 🪙${fmt(S.coins)} · 👥${fmt(S.pop)} · 😊${S.hap}% · 👑${S.leg}`}
 /* ---------- actions ---------- */
 function act(a,arg,n){
   switch(a){
@@ -4101,6 +4183,10 @@ function act(a,arg,n){
       for(let k=q.length-1;k>=0;k--){const x=techOf(q[k]);if(x.req&&!hasTech(x.req)&&S.tech.cur!==x.req&&!q.slice(0,k).includes(x.req))q.splice(k,1)}break}
     case'qup':{const q=techQ(),i=q.indexOf(arg);if(i<=0)return;const x=techOf(arg);if(x.req&&q[i-1]===x.req)return;[q[i-1],q[i]]=[q[i],q[i-1]];break}
     case'setTrade':{S.trade[arg]=n||null;toast(n?`${RES.find(r=>r.k===arg).n} agreement signed with ${NATIONS[n].n}`:'Agreement ended');checkGoals();break}
+    case'expShare':{S.expS=S.expS||{};S.expS[arg]=n;const R=RES.find(r=>r.k===arg);toast(n===''?`${R.n}: selling only the surplus`:`${R.n}: selling ${Math.round(+n*100)}% of what you make`);break}
+    case'pexpC':{const E=pexp()[arg]=pexp()[arg]||{s:0};E.c=n;if(!E.s)E.s=.5;toast(`${PRODS[arg].n} buyer: ${NATIONS[n].n}`);break}
+    case'pexpS':{const E=pexp()[arg]=pexp()[arg]||{};E.s=+n;if(E.s>0&&!E.c){const best=NIDS.filter(tradeOK).sort((a,b)=>prodP(arg,b)-prodP(arg,a))[0];if(best)E.c=best}
+      toast(E.s>0?`Selling ${Math.round(E.s*100)}% of your ${PRODS[arg].n.toLowerCase()}${E.c?` to ${NATIONS[E.c].n}`:''}`:`${PRODS[arg].n} stays at home`);break}
     case'envoy':{if(S.envoy[arg]||S.coins<300||isFallen(arg))return;S.coins-=300;S.envoy[arg]=1;const tg=hasTech('telegraph'),eb=(msHas('g1')?1.2:1)*(lg('kin',2)?1.2:1);relA(arg,(tg?12:8)*eb);tenA(arg,-(tg?12:8)*eb);toast(`Envoy sent to ${NATIONS[arg].n}. Relations improve and tension eases.`);break}
     case'demand':{if(S.demandCd[arg]||isFallen(arg))return;S.demandCd[arg]=6;tenA(arg,25);const ok=S.rel[arg]>=40&&Math.random()<S.rel[arg]/100;let msg;
       if(ok){const pay=300+Math.round(S.rel[arg]*5);S.coins+=pay;addMod('leg',3,6,`Tribute from ${NATIONS[arg].n}`);relA(arg,-4);msg=`${NATIONS[arg].n} pays 🪙${fmt(pay)} in tribute. Your court is impressed.`}
@@ -4126,6 +4212,8 @@ function act(a,arg,n){
     case'closeCon':$('#conWrap').classList.remove('open');break;
     case'runCon':{const i=$('#conIn');runCmd(i.value);i.value='';i.focus();return}
     case'cmd':runCmd(arg);return;
+    case'devTab':UI.devTab=arg;saveUI();devRender();$('#devBody').scrollTop=0;return;
+    case'devGo':{const vals=(n||'').split(',').filter(Boolean).map(id=>{const el=$('#'+id);return el?String(el.value).trim():''});runCmd([arg,...vals].join(' '));return}
     case'lastCmd':{if(!CHIST.length)return;const i=$('#conIn');chIdx=chIdx<=0?CHIST.length-1:chIdx-1;i.value=CHIST[chIdx];i.focus();return}
     case'sug':{const i=$('#conIn');i.value=arg+' ';suggest();i.focus();return}
     case'start':case'rename':{const v=esc(($('#nm')||{}).value||'').trim();if(v)S.name=v;closeSheet();if(a==='rename')toast('Nation renamed');break}
