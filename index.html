@@ -2929,7 +2929,7 @@ function v3TexOf(sh,c,tx,w,h,d){if(tx>=0)return tx;if(tx===-2)return 15;const C=
 function v3TexMat(map,grid,vert,frag){const m=new THREE.MeshLambertMaterial({map,vertexColors:frag==='patch'}),gl2=V3.r.capabilities.isWebGL2,k=(.96/grid).toFixed(4);m.customProgramCacheKey=()=>'v3'+frag+grid;
   m.onBeforeCompile=sh=>{sh.vertexShader='attribute float aTex;\nvarying float vTile;\nvarying vec2 vTUV;\n'+sh.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\n'+vert);
     const samp=gl2?`textureGrad(map,uv0,dFdx(vTUV)*${k},dFdy(vTUV)*${k})`:'texture2D(map,uv0)';
-    sh.fragmentShader='varying float vTile;\nvarying vec2 vTUV;\n'+sh.fragmentShader.replace('#include <map_fragment>',`if(vTile>-.5){vec2 cell=vec2(mod(vTile,${grid}.),${grid-1}.-floor(vTile/${grid}.));vec2 uv0=(cell+.02+fract(vTUV)*.96)/${grid}.;diffuseColor*=${samp};}`)};
+    sh.fragmentShader='varying float vTile;\nvarying vec2 vTUV;\n'+sh.fragmentShader.replace('#include <map_fragment>',`if(vTile>-.5){float tI=floor(vTile+.5);vec2 cell=vec2(mod(tI,${grid}.),${grid-1}.-floor(tI/${grid}.+.001));vec2 uv0=(cell+.02+fract(vTUV)*.96)/${grid}.;diffuseColor*=${samp};}`)};
   return m}
 function v3Protos(){const T=THREE,unit=g=>{g.computeBoundingBox();const b=g.boundingBox,s=new T.Vector3();b.getSize(s);g.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);g.scale(1/(s.x||1),1/(s.y||1),1/(s.z||1));return g};
   const gable=new T.CylinderGeometry(1,1,1,3);gable.rotateZ(Math.PI/2);gable.rotateX(-Math.PI/2);
@@ -2983,7 +2983,8 @@ function v3Recipe(id,rnd){const C=V3C,P=[],add=(s,x,z,y,w,h,d,c,ry=0,rz=0,tx=-1)
     university:()=>{add('box',-.22,.04,0,.14,.2,.48,C.stone);add('box',.22,.04,0,.14,.2,.48,C.stone);add('box',0,-.2,0,.3,.2,.14,C.stone);add('gable',-.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);add('gable',.22,.04,.2,.48,.08,.16,C.slate,Math.PI/2);tower(0,-.2,.07,.42,C.stone,C.slate)},
     polytechnic:()=>{add('box',0,0,0,.5,.24,.3,'#B7BCC0');add('box',0,0,.09,.505,.06,.305,C.glass)},
     church:()=>{house(0,.07,.36,.16,.18,C.wall,C.slate,Math.PI/2,2);for(let k=0;k<6;k++)add('box',.22+(k%2)*.08,-.05+(k>>1)*.1,0,.022,.03,.008,'#8E8A82',0,0,15);add('box',0,-.2,0,.1,.34,.1,C.wall,0,0,2);add('pyr',0,-.2,.34,.12,.24,.12,C.slate)},
-    park:()=>{add('box',0,0,0,.8,.012,.06,'#CFC3A0');add('box',0,0,0,.06,.012,.8,'#CFC3A0');add('cyl',.16,.14,0,.3,.02,.22,C.water);[[-.2,-.2],[.22,-.18],[-.2,.2]].forEach(([x,z])=>{add('cyl',x,z,0,.03,.08,.03,C.timber);add('ball',x,z,.07,.2,.18,.2,'#4F8A3E')})},
+    // a park's lawn, paths, pond and trees are ground patches and plants (see v3Objects); on a tile shared with homes it keeps a small green
+    park:()=>{add('cyl',0,0,0,.34,.012,.34,'#8FB86E');add('cyl',-.08,.06,0,.03,.08,.03,C.timber);add('ball',-.08,.06,.07,.16,.15,.16,'#4F8A3E')},
     garden:()=>{[['#A8667A',-.2,-.2],['#B89A4E',.2,-.2],['#7E6E9E',-.2,.2],['#B07A52',.2,.2]].forEach(([c,x,z])=>add('box',x,z,0,.22,.04,.22,c));add('dome',0,0,0,.26,.2,.26,C.glass)},
     tavern:()=>{house(0,0,.28,.14,.2,C.timber,C.roof);add('box',.16,.1,.08,.01,.06,.08,C.gold);props(-.18,.16,3)},
     coffeehouse:()=>{house(0,0,.28,.15,.2,C.wall,'#6B8E5A')},
@@ -3032,7 +3033,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
       if(h*sc<.05||rz)parts.push([sh,u,v,v3G(u,v)+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);else if(y===0)parts.push([sh,u,v,g0-.1,w*sc,h*sc+.1,d*sc,c,ry+pry,rz,t2]);else parts.push([sh,u,v,g0+y*sc,w*sc,h*sc,d*sc,c,ry+pry,rz,t2]);parts[parts.length-1][11]=chk;if(tx===-2){const p2=parts[parts.length-1];L.smoke.push([p2[1],p2[2],p2[3]+p2[5],chk])}})};
   const RURALB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine'],dev=x=>x&&x.t!=='w'&&(x.hs||(x.b&&!RURALB.includes(x.b))),patches=[];
   // a flat patch on the ground (fields, roads), given by its four corners in tile units
-  const patch=(a,b,c,d,col,n=3,tx=-1,rot=0)=>patches.push([a,b,c,d,col,n,tx,rot]);
+  const patch=(a,b,c,d,col,n=3,tx=-1,rot=0,lift=0)=>patches.push([a,b,c,d,col,n,tx,rot,lift]);
   // a field: one of the crop surfaces, its rows turned one way or the other
   const parcel=(u0,v0,u1,v1,tx,rot,f)=>patch([u0,v0],[u1,v0],[u1,v1],[u0,v1],new T.Color(f,f,f),3,tx,rot);
   const dens=W<=36?26:W<=52?18:14,bushes=[],tufts=[],flowers=[],rocks=[];
@@ -3059,7 +3060,15 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     // a paved lane between the two rows of houses (the same way round as the detailed rows), and a paved square under a market
     if(x.hs&&!x.b){const sd=((i*7919+17)*1664525+1013904223)>>>0,lt=[7,4,4,5][Math.min(3,era())],w2=.075;
       if(sd/4294967296<.5)patch([c,r+.5-w2],[c+1,r+.5-w2],[c+1,r+.5+w2],[c,r+.5+w2],'#FFFFFF',6,lt);else patch([c+.5-w2,r],[c+.5-w2,r+1],[c+.5+w2,r+1],[c+.5+w2,r],'#FFFFFF',6,lt)}
-    if(x.b==='market')patch([c+.12,r+.12],[c+.88,r+.12],[c+.88,r+.88],[c+.12,r+.88],'#FFFFFF',4,6);
+    if(x.b==='market')patch([c+.12,r+.12],[c+.88,r+.12],[c+.88,r+.88],[c+.12,r+.88],'#FFFFFF',4,6,0,.003);
+    // a park: a lawn crossed by paved paths to a square in the middle, a pond, hedges, flower beds and shady trees (the trees and plants use the detailed nature near the camera); a botanic garden gets paths and many more flowers
+    if((x.b==='park'||x.b==='garden')&&!x.hs){const pk=x.b==='park',pt=era()<2?7:6;patch([c+.04,r+.04],[c+.96,r+.04],[c+.96,r+.96],[c+.04,r+.96],'#FFFFFF',4,3);
+      patch([c+.46,r+.04],[c+.46,r+.96],[c+.54,r+.96],[c+.54,r+.04],'#FFFFFF',6,pt,0,.002);patch([c+.04,r+.46],[c+.96,r+.46],[c+.96,r+.54],[c+.04,r+.54],'#FFFFFF',6,pt,0,.002);
+      patch([c+.36,r+.36],[c+.64,r+.36],[c+.64,r+.64],[c+.36,r+.64],'#FFFFFF',4,6,0,.004);
+      if(pk)patch([c+.64,r+.1],[c+.9,r+.1],[c+.9,r+.36],[c+.64,r+.36],'#4B7C90',3,-1,0,.003);
+      [[.18,.2],[.3,.1],[.1,.33],[.2,.8],[.1,.66],[.33,.9],[.8,.8],[.9,.66],[.67,.9]].slice(0,pk?9:4).forEach(([a,b2])=>trees.push([c+a,r+b2,.85+rnd()*.35,false,rnd()]));
+      for(let k=0;k<(pk?12:6);k++){const t=.1+(k*.11)%.26,[a,b2]=[[.42,t],[.58,1-t],[t,.58],[1-t,.42]][k%4];bushes.push([c+a,r+b2,.5,0,rnd()])}
+      for(let k=0;k<(pk?24:60);k++){const ang=rnd()*6.283,rr=pk?.17+rnd()*.04:.08+rnd()*.36,a=.5+Math.cos(ang)*rr,b2=.5+Math.sin(ang)*rr;if(Math.abs(a-.5)<.05||Math.abs(b2-.5)<.05||a<.06||a>.94||b2<.06||b2>.94)continue;flowers.push([c+a,r+b2,rnd()])}}
     // fields: a farm is a patchwork of crops, and open land beside a town is farmed too
     const town=!x.b&&!x.hs&&x.t!=='f'&&!x.hl&&[-1,0,1].some(dr=>[-1,0,1].some(dc=>{const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)return false;const y=S.map[rr*W+cc];return y.hs&&y.o===x.o}))&&rnd()<.75;
     if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++){const u0=c+a/nx+g,v0=r+b*z1/nz+g,u1=c+(a+1)/nx-g,v1=r+(b+1)*z1/nz-g,tf=Math.floor(rnd()*4);parcel(u0,v0,u1,v1,tf,rnd()<.5,.88+rnd()*.2);fieldLife(u0,v0,u1,v1,tf,rnd)}}
@@ -3112,8 +3121,8 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
   if(leafy.length)inst(protos.ball,leafy,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.05*sc,.15*sc,.13*sc,r);mesh.setColorAt(k,col.setHSL(.2+r*.08,.34+r*.12,.22+r*.08))});
   meshes.slice(natStart).forEach(v3NatCode);
   // the ground patches: one mesh that follows the terrain
-  if(patches.length){const pos=[],cols=[],uvs=[],txs=[],cc=new T.Color();patches.forEach(([a,b,c2,d,cl,n,tx,rot])=>{cc.set(cl);const Ls=Math.hypot(b[0]-a[0],b[1]-a[1])*3,Lt=Math.hypot(d[0]-a[0],d[1]-a[1])*3;const f=v3fbm(a[0]*2,a[1]*2)*.14+.93;
-      const at=(s1,t1)=>{const u=(a[0]*(1-s1)+b[0]*s1)*(1-t1)+(d[0]*(1-s1)+c2[0]*s1)*t1,v=(a[1]*(1-s1)+b[1]*s1)*(1-t1)+(d[1]*(1-s1)+c2[1]*s1)*t1;return[v3X(u),v3G(u,v)+.007,v3Z(v)]};
+  if(patches.length){const pos=[],cols=[],uvs=[],txs=[],cc=new T.Color();patches.forEach(([a,b,c2,d,cl,n,tx,rot,lift=0])=>{cc.set(cl);const Ls=Math.hypot(b[0]-a[0],b[1]-a[1])*3,Lt=Math.hypot(d[0]-a[0],d[1]-a[1])*3;const f=v3fbm(a[0]*2,a[1]*2)*.14+.93;
+      const at=(s1,t1)=>{const u=(a[0]*(1-s1)+b[0]*s1)*(1-t1)+(d[0]*(1-s1)+c2[0]*s1)*t1,v=(a[1]*(1-s1)+b[1]*s1)*(1-t1)+(d[1]*(1-s1)+c2[1]*s1)*t1;return[v3X(u),v3G(u,v)+.007+lift,v3Z(v)]};
       const m=n,k2=n===6?1:n;for(let i2=0;i2<m;i2++)for(let j2=0;j2<k2;j2++){const s0=i2/m,s1=(i2+1)/m,t0=j2/k2,t1=(j2+1)/k2,A=at(s0,t0),B2=at(s1,t0),C2=at(s1,t1),D=at(s0,t1);
         [[A,s0,t0],[C2,s1,t1],[B2,s1,t0],[A,s0,t0],[D,s0,t1],[C2,s1,t1]].forEach(([pt,ss,tt])=>{pos.push(...pt);cols.push(cc.r*f,cc.g*f,cc.b*f);uvs.push(...(rot?[tt*Lt,ss*Ls]:[ss*Ls,tt*Lt]));txs.push(tx)})}});
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(cols,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.setAttribute('aTex',new T.Float32BufferAttribute(txs,1));g.computeVertexNormals();
@@ -3201,14 +3210,14 @@ const V3CS=4,KIT={url:'kit/',state:0,designs:{},mats:{}};
 const v3CW=()=>Math.ceil(W/V3CS),v3Chunk=i=>Math.floor((i%W)/V3CS)+Math.floor((i/W|0)/V3CS)*v3CW();
 const v3Q=()=>UI.v3q||'high';
 // civic buildings that have a detailed model: medieval ones first, then the town pack's from the Enlightenment on (the loader falls back to a medieval one if the town pack is missing)
-const KIT_CIVIC={dock:'port_dock',harbor:'port_harbor',shipyard:'port_yard',ferry:'port_ferry',market:'market',church:'church',inn:'manor',tavern:'manor',coffeehouse:'manor',bank:'manor',library:'manor',fcap:'hall',tradeco:'hall',school:'hall',watch:'tower',printhouse:'town3'};
+const KIT_CIVIC={park:'park_band',dock:'port_dock',harbor:'port_harbor',shipyard:'port_yard',ferry:'port_ferry',market:'market',church:'church',inn:'manor',tavern:'manor',coffeehouse:'manor',bank:'manor',library:'manor',fcap:'hall',tradeco:'hall',school:'hall',watch:'tower',printhouse:'town3'};
 const KIT_CIVIC1={bank:'bank',university:'bank',coffeehouse:'geo1',printhouse:'geo3',library:'geo3',observatory:'geo3'};
-const KIT_CIVIC2={dock:'port_dock',harbor:'port_harbor2',shipyard:'port_yard',ferry:'port_ferry',market:'market',church:'church',bank:'bank',university:'bank',polytechnic:'bank',hospital:'bank',hotel:'bank',fcap:'bank',clinic:'geo3',school:'geo3',library:'geo3',printhouse:'vic2',coffeehouse:'geo1',
+const KIT_CIVIC2={park:'park_band',dock:'port_dock',harbor:'port_harbor2',shipyard:'port_yard',ferry:'port_ferry',market:'market',church:'church',bank:'bank',university:'bank',polytechnic:'bank',hospital:'bank',hotel:'bank',fcap:'bank',clinic:'geo3',school:'geo3',library:'geo3',printhouse:'vic2',coffeehouse:'geo1',
   inn:'geo2',tavern:'vic2',watch:'vic2',tradeco:'works',factory:'factory',textile:'mill',workshop:'works',steelworks:'steel',powerstation:'power',diesel:'factory',firestation:'works',atelier:'vic3',deptstore:'office',broadcaster:'office',cinema:'mod2',garage:'works'};
 const v3CivOf=b=>era()>=2?KIT_CIVIC2[b]:era()===1?KIT_CIVIC1[b]||KIT_CIVIC[b]:KIT_CIVIC[b];
 const v3KitCivic=b=>!!v3CivOf(b);
 // how a tile is filled with detailed houses: rows along a lane, three corners round a building, or none
-const v3KitMode=x=>{if(!x||x.t==='w')return null;if(x.hs)return x.b?'corners':'rows';const RB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine','hall','fort','park','garden','fair'];return x.b&&!RB.includes(x.b)?'lone':null};
+const v3KitMode=x=>{if(!x||x.t==='w')return null;if(x.hs)return x.b?'corners':'rows';if(x.b==='park')return'civic';const RB=['farm','vineyard','lumber','quarry','greenhouse','charcoal','mine','coalmine','hall','fort','park','garden','fair'];return x.b&&!RB.includes(x.b)?'lone':null};
 function v3KitLoad(){if(KIT.state)return;KIT.state=1;const T=THREE,tl=new T.TextureLoader(),tex={};
   const texOf=f=>tex[f]||(tex[f]=(()=>{const t=tl.load(KIT.url+f,()=>v3Draw());t.flipY=false;t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=Math.min(8,V3.r.capabilities.getMaxAnisotropy());return t})());
   // two packs: the medieval village, and the town pack (Georgian, Victorian and modern buildings, and market props); each works on its own
@@ -3242,6 +3251,7 @@ const PXP={port_dock:[['box',0,6,1.05,4.4,.35,12,10,'#8A6848'],['box',0,-3.4,0,4
   port_ferry:[['box',0,4,.85,4.4,.35,8,10,'#8A6848'],['box',0,-2,0,2,3.12,2,3,'#EDE6D6',0,'w'],['gable',0,-2,3.12,2.8,2,2.8,4,'#B55A3C',Math.PI/2,'r']],
   port_harbor:[['box',0,5,-2,8,3,10,2,'#B0A898'],['box',0,-5,0,6,6.24,8,1,'#B58068',0,'w'],['gable',0,-5,6.24,8.8,4.3,6.8,4,'#B55A3C',Math.PI/2,'r']],
   port_harbor2:[['box',0,6,-2,9,3.2,12,11,'#8C8A86'],['box',0,-4,0,8,6,6,1,'#A95E48',0,'w'],['box',0,-4,6,8,.6,6,14,'#8C8578'],['box',3,9,1,1.2,10,1.2,13,'#4A4C50']],
+  park_band:[['box',0,0,0,4,.45,4,2,'#B0A898'],...[[-1.4,-1.4],[1.4,-1.4],[-1.4,1.4],[1.4,1.4]].map(([x,z])=>['box',x,z,.45,.25,2.6,.25,10,'#7A5A3C']),['pyr',0,0,3,4.6,2.6,4.6,4,'#B55A3C',0,'r']],
   port_yard:[['box',0,1,.1,7.2,.35,14,10,'#8A6848'],['gable',0,1,6.3,14.6,2.6,7.8,4,'#B55A3C',Math.PI/2,'r'],...[[-3.6,-6],[3.6,-6],[-3.6,1],[3.6,1],[-3.6,8],[3.6,8]].map(([x,z])=>['box',x,z,-1,.45,7.4,.45,10,'#6B5238'])]};
 function v3ProxParts(dn,d){if(PXP[dn])return PXP[dn];const p=PX[dn];if(!p||!d)return[];const [wh,rf,tx,c]=p,rh=Math.max(.5,d.h-wh),out=[['box',0,0,0,d.w*.94,wh,d.d*.94,tx,c,0,'w']];
   if(rf==='g')out.push(['gable',0,0,wh,d.d*.98,rh,d.w,4,'#B55A3C',Math.PI/2,'r']);else if(rf==='c')out.push(['cone',0,0,wh,d.w*.8,rh,d.d*.8,4,'#B55A3C',0,'r']);
@@ -3277,7 +3287,7 @@ function v3KitBuild(){const T=THREE;if(V3.kitCh)V3.kitCh.forEach(ms=>ms.forEach(
       if(rnd()<.35){const e=rnd()<.5?-.4:.4;props(ch,u0+(turn?0:e),v0+(turn?e:0),turn?0:Math.PI/2,false,rnd)}}
     else if(mode==='corners'){// two houses side by side in each of the three corners the building leaves free
       [[.25,-.25],[-.25,.25],[.25,.25]].forEach(([a,b])=>{const side=rnd()<.5,rot=(b<0?0:Math.PI)+(side?Math.PI/2:0);for(const o of[-.12,.12]){const hu=u0+a+(side?0:o),hv=v0+b+(side?o:0);if(free(hu,hv))add(ch,kinds[Math.floor(rnd()*kinds.length)],hu,hv,rot,s*.92,...st())}})}
-    else{const cs=[[-.36,-.36],[.36,-.36],[-.36,.36],[.36,.36]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([a,b])=>add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,Math.floor(rnd()*4)*Math.PI/2,s*.85,...st()));
+    else if(mode==='lone'){const cs=[[-.36,-.36],[.36,-.36],[-.36,.36],[.36,.36]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([a,b])=>add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,Math.floor(rnd()*4)*Math.PI/2,s*.85,...st()));
       // the free corner: a market spreads its stalls there, other buildings keep a few barrels
       const [fa,fb]=cs[3],mk=x.b==='market'||x.b==='fair'||x.b==='deptstore';if(mk||rnd()<.5)props(ch,u0+fa*.9,v0+fb*.9,Math.floor(rnd()*4)*Math.PI/2,mk,rnd)}
     const civ0=v3CivOf(x.b),civ=civ0&&(D[civ0]||civ0==='church'||civ0==='market'?civ0:'manor');if(civ&&civ.startsWith('port_')){if(pw!=null)add(ch,civ,u0+pdx*.5,v0+pdz*.5,Math.atan2(pdx,pdz),s,...st());else add(ch,'manor',u0,v0,0,s,...st())}else if(civ==='market'){if(D.p_barrel){const r0=Math.floor(rnd()*4)*Math.PI/2;[[-.14,-.14],[.14,-.14],[-.14,.14],[.14,.14]].forEach(([a,b],k)=>props(ch,u0+a,v0+b,r0+k*Math.PI/2,true,rnd))}}else if(civ){const big=D[civ]&&D[civ].h>20,bu=u0+(x.hs?-.2:0),bv=v0+(x.hs?-.2:0),rot=Math.floor(rnd()*4)*Math.PI/2,sc=s*(x.hs?.8:big?.9:1.05);
