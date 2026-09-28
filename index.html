@@ -2878,13 +2878,20 @@ function v3Atlas(){const S=256,cv=document.createElement('canvas');cv.width=cv.h
   cell(15,()=>{fill('#F4F4F2');speck(1800,.08)});
   const t=new THREE.CanvasTexture(cv);t.anisotropy=V3.r.capabilities.getMaxAnisotropy();return t}
 // fields in a 2×2 grid: 0 ripe wheat, 1 green crops, 2 ploughed furrows, 3 pasture
-function v3FieldAtlas(){const S=256,cv=document.createElement('canvas');cv.width=cv.height=S*2;const g=cv.getContext('2d');let seed=11;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
-  const cell=(k,fn)=>{g.save();g.translate((k%2)*S,(k/2|0)*S);g.beginPath();g.rect(0,0,S,S);g.clip();fn();g.restore()};
+function v3FieldAtlas(){const S=256,cv=document.createElement('canvas');cv.width=cv.height=S*3;const g=cv.getContext('2d');let seed=11;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  const cell=(k,fn)=>{g.save();g.translate((k%3)*S,(k/3|0)*S);g.beginPath();g.rect(0,0,S,S);g.clip();fn();g.restore()};
   const fill=(c,x=0,y=0,w=S,h=S)=>{g.fillStyle=c;g.fillRect(x,y,w,h)},dots=(n,cols,sz)=>{for(let i=0;i<n;i++){g.fillStyle=cols[R()*cols.length|0];g.fillRect(R()*S,R()*S,sz*(.5+R()),sz*(.5+R()))}};
   cell(0,()=>{fill('#C8B066');for(let y=0;y<S;y+=16){fill('#A38C4B',0,y,S,5);fill('rgba(255,240,190,.25)',0,y+8,S,3)}dots(1600,['#D8C27A','#B39C58','#E0CC88'],3)});
   cell(1,()=>{fill('#7E9B4D');for(let y=0;y<S;y+=14){fill('#5C7835',0,y,S,5)}dots(2200,['#94B05E','#6A8A3E','#A6BE6C'],3)});
   cell(2,()=>{fill('#7A634A');for(let y=0;y<S;y+=12){fill('#5B4835',0,y,S,5);fill('#937A5E',0,y+7,S,2)}dots(900,['#6A5540','#8C735A'],3)});
   cell(3,()=>{fill('#7D9E56');dots(3000,['#8DAE64','#6C8C46','#9AB870','#62823E'],4);dots(60,['#E8E4C8','#E0C860'],3)});
+  // paving: cobbles, asphalt, flagstones and a dirt track
+  const stones=(sw,sh,cols,gap,base)=>{fill(base);for(let y=0,row=0;y<S;y+=sh,row++)for(let x=-(row%2)*sw/2;x<S;x+=sw){g.fillStyle=cols[R()*cols.length|0];const w=sw-gap-R()*gap,h=sh-gap-R()*gap*.6;
+    if(g.roundRect){g.beginPath();g.roundRect(x+gap/2,y+gap/2,w,h,Math.min(w,h)*.3);g.fill()}else g.fillRect(x+gap/2,y+gap/2,w,h)}};
+  cell(4,()=>{stones(16,12,['#9A9387','#88827A','#A69F92','#7E786F','#928B7F'],3,'#5E5850');dots(500,['rgba(255,255,255,.08)','rgba(0,0,0,.1)'],2)});
+  cell(5,()=>{fill('#55565A');dots(4000,['#4A4B4F','#616266','#5A5B5F','#6B6C70'],2);dots(40,['rgba(0,0,0,.18)'],10)});
+  cell(6,()=>{stones(64,43,['#BDB3A1','#B0A694','#C6BCAA','#A99F8D'],4,'#857B6C');dots(700,['rgba(0,0,0,.07)','rgba(255,255,255,.07)'],3)});
+  cell(7,()=>{fill('#A08F6E');dots(2600,['#8E7D5E','#B09E7C','#968463','#AA9874'],3);dots(120,['#C8BCA2','#7C6C50'],2)});
   const t=new THREE.CanvasTexture(cv);t.anisotropy=V3.r.capabilities.getMaxAnisotropy();return t}
 // which surface a part gets, from its shape and color, unless its recipe says
 function v3TexOf(sh,c,tx,w,h,d){if(tx>=0)return tx;if(tx===-2)return 15;const C=V3C;
@@ -3024,6 +3031,10 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
     // with a building on the tile, the homes wrap round it in the other three corners
     if(x.hs){if(both)[[.25,-.25],[-.25,.25],[.25,.25]].forEach(([ox,oz])=>lay(i,v3Recipe(x.hs,rnd),ox,oz,.48,0,true));else lay(i,v3Recipe(x.hs,rnd),0,0,.92,ry,true)}
     if(x.sm)lay(i,v3Recipe(x.sm,rnd),.3,-.3,.38,0);
+    // a paved lane between the two rows of houses (the same way round as the detailed rows), and a paved square under a market
+    if(x.hs&&!x.b){const sd=((i*7919+17)*1664525+1013904223)>>>0,lt=[7,4,4,5][Math.min(3,era())],w2=.075;
+      if(sd/4294967296<.5)patch([c,r+.5-w2],[c+1,r+.5-w2],[c+1,r+.5+w2],[c,r+.5+w2],'#FFFFFF',6,lt);else patch([c+.5-w2,r],[c+.5-w2,r+1],[c+.5+w2,r+1],[c+.5+w2,r],'#FFFFFF',6,lt)}
+    if(x.b==='market')patch([c+.12,r+.12],[c+.88,r+.12],[c+.88,r+.88],[c+.12,r+.88],'#FFFFFF',4,6);
     // fields: a farm is a patchwork of crops, and open land beside a town is farmed too
     const town=!x.b&&!x.hs&&x.t!=='f'&&!x.hl&&[-1,0,1].some(dr=>[-1,0,1].some(dc=>{const cc=c+dc,rr=r+dr;if(cc<0||rr<0||cc>=W||rr>=H)return false;const y=S.map[rr*W+cc];return y.hs&&y.o===x.o}))&&rnd()<.75;
     if(x.b==='farm'||town){const g=.025,nx=x.b==='farm'?3:2,nz=2,z1=x.b==='farm'?.62:1;for(let a=0;a<nx;a++)for(let b=0;b<nz;b++){const u0=c+a/nx+g,v0=r+b*z1/nz+g,u1=c+(a+1)/nx-g,v1=r+(b+1)*z1/nz-g,tf=Math.floor(rnd()*4);parcel(u0,v0,u1,v1,tf,rnd()<.5,.88+rnd()*.2);fieldLife(u0,v0,u1,v1,tf,rnd)}}
@@ -3044,9 +3055,9 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
       const sm=(px,pz,rot)=>[['box',px,pz,0,.13,.08,.11,rnd()<.5?V3C.wall:V3C.timber,rot,0,-1],['gable',px,pz,.08,.14,.055,.12,era()<1&&rnd()<.5?V3C.thatch:V3C.roof,rot,0,-1]];
       const cs=[[-.38,-.38],[.38,-.38],[-.38,.38],[.38,.38]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([px,pz])=>lay(i,sm(0,0,rnd()<.5?0:Math.PI/2),px,pz,1,0,true));trees.push([c+.5+cs[3][0],r+.5+cs[3][1],.6+rnd()*.3,false,rnd()])}});
   // roads join the built-up tiles of each kingdom, and link each settlement to its nearest neighbor across the countryside
-  const roadCol=era()<2?'#A08F6E':'#88857E',edges=new Set(),road=(i,j)=>{const k=i<j?i+','+j:j+','+i;if(edges.has(k))return;edges.add(k);
+  const roadCol='#FFFFFF',roadTx=era()<2?7:era()<3?4:5,edges=new Set(),road=(i,j)=>{const k=i<j?i+','+j:j+','+i;if(edges.has(k))return;edges.add(k);
     const a=[i%W+.5,(i/W|0)+.5],b=[j%W+.5,(j/W|0)+.5],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,dx=(b[0]-a[0])/L,dy=(b[1]-a[1])/L,w=.026,e=.026;
-    patch([a[0]-dx*e+dy*w,a[1]-dy*e-dx*w],[b[0]+dx*e+dy*w,b[1]+dy*e-dx*w],[b[0]+dx*e-dy*w,b[1]+dy*e+dx*w],[a[0]-dx*e-dy*w,a[1]-dy*e+dx*w],roadCol,6);
+    patch([a[0]-dx*e+dy*w,a[1]-dy*e-dx*w],[b[0]+dx*e+dy*w,b[1]+dy*e-dx*w],[b[0]+dx*e-dy*w,b[1]+dy*e+dx*w],[a[0]-dx*e-dy*w,a[1]-dy*e+dx*w],roadCol,6,roadTx);
     if(era()>=2){const mu=(a[0]+b[0])/2-dy*.05,mv=(a[1]+b[1])/2+dx*.05;prop('cyl',mu,mv,0,.007,.07,.007,'#2E2E2E',0,15);prop('ball',mu,mv,.066,.016,.016,.016,'#F2D38A',0,14)}};
   const st=setlStats();Object.values(st).forEach(s=>{const own=s.o,home=s.t.reduce((b,t)=>Math.hypot(t%W-s.cx,(t/W|0)-s.cy)<Math.hypot(b%W-s.cx,(b/W|0)-s.cy)?t:b,s.t[0]);
     // streets branch out from the town's centre to each of its built-up tiles
@@ -3151,7 +3162,7 @@ function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.
   if(lp)lp.wild.forEach(w=>{if(Math.hypot(w.u-tu,w.v-tv)<R+1.5)lp.put(w.kind,'eat',w.u,v3G(w.u,w.v),w.v,w.ry,LPSIZE[w.kind],t+w.ph*3)});
   lf.mills.forEach(([u,v,y,ry,sc],k)=>{for(let b=0;b<4;b++)set(lf.blade,k*4+b,u,y,v,ry,.045*sc,.28*sc,.012*sc,t*1.2+b*Math.PI/2)});
   lf.wheels.forEach(([u,v,y,ry,sc],k)=>{q.setFromEuler(e.set(0,ry,Math.PI/2));q2.setFromAxisAngle(ax,t*1.5);q.multiply(q2);p.set(v3X(u),y,v3Z(v));s.set(.2*sc,.04*sc,.2*sc);m4.compose(p,q,s);lf.wheel.setMatrixAt(k,m4)});
-  lf.smoke.forEach(([u,v,y,ck],k)=>{const off=ck>=0&&era()>=1&&V3.kitCh&&V3.kitCh.get(ck)&&V3.kitCh.get(ck).near;for(let j=0;j<6;j++){if(off){set(lf.puff,k*6+j,u,-1,v,0,.0001,.0001,.0001);continue}const a=(t*.2+j/6+k*.37)%1,sz=(.01+a*.028)*(1-a*a*.6);set(lf.puff,k*6+j,u+a*.07+Math.sin(a*9+k)*.006,y+a*.2,v+a*.015,0,sz,sz*.85,sz)}});
+  v3KitSmoke(t);lf.smoke.forEach(([u,v,y,ck],k)=>{const off=ck>=0&&era()>=1&&V3.kitCh&&V3.kitCh.get(ck)&&V3.kitCh.get(ck).near;for(let j=0;j<6;j++){if(off){set(lf.puff,k*6+j,u,-1,v,0,.0001,.0001,.0001);continue}const a=(t*.2+j/6+k*.37)%1,sz=(.01+a*.028)*(1-a*a*.6);set(lf.puff,k*6+j,u+a*.07+Math.sin(a*9+k)*.006,y+a*.2,v+a*.015,0,sz,sz*.85,sz)}});
   if(lp)lp.end();
   lf.meshes.forEach(m=>{m.instanceMatrix.needsUpdate=true})}
 function v3Loop(now){V3.loop=0;if(!v3LifeOn())return;V3.loop=requestAnimationFrame(v3Loop);if(now-(V3.last||0)<33)return;
@@ -3168,7 +3179,7 @@ const v3Q=()=>UI.v3q||'high';
 const KIT_CIVIC={market:'market',church:'church',inn:'manor',tavern:'manor',coffeehouse:'manor',bank:'manor',library:'manor',fcap:'hall',tradeco:'hall',school:'hall',watch:'tower',printhouse:'town3'};
 const KIT_CIVIC1={bank:'bank',university:'bank',coffeehouse:'geo1',printhouse:'geo3',library:'geo3',observatory:'geo3'};
 const KIT_CIVIC2={market:'market',church:'church',bank:'bank',university:'bank',polytechnic:'bank',hospital:'bank',hotel:'bank',fcap:'bank',clinic:'geo3',school:'geo3',library:'geo3',printhouse:'vic2',coffeehouse:'geo1',
-  inn:'geo2',tavern:'vic2',watch:'vic2',tradeco:'works',factory:'works',textile:'works',workshop:'works',steelworks:'works',firestation:'works',atelier:'vic3',deptstore:'office',broadcaster:'office',cinema:'mod2',garage:'works'};
+  inn:'geo2',tavern:'vic2',watch:'vic2',tradeco:'works',factory:'factory',textile:'mill',workshop:'works',steelworks:'steel',powerstation:'power',diesel:'factory',firestation:'works',atelier:'vic3',deptstore:'office',broadcaster:'office',cinema:'mod2',garage:'works'};
 const v3CivOf=b=>era()>=2?KIT_CIVIC2[b]:era()===1?KIT_CIVIC1[b]||KIT_CIVIC[b]:KIT_CIVIC[b];
 const v3KitCivic=b=>!!v3CivOf(b);
 // how a tile is filled with detailed houses: rows along a lane, three corners round a building, or none
@@ -3181,7 +3192,7 @@ function v3KitLoad(){if(KIT.state)return;KIT.state=1;const T=THREE,tl=new T.Text
       if(e.map)m.map=texOf(e.map);if(e.nor){m.normalMap=texOf(e.nor);m.normalScale.set(1,-1)}
       if(n==='MI_WindowGlass'||n==='C_Glass'){m.color.set('#6E8594');m.roughness=.25;m.metalness=.1}if(n==='C_FakeInterior')m.color.set('#5E5247');if(n==='C_RedBrick')m.color.setRGB(1.3,1.18,1.1);if(e.alphaTest){m.alphaTest=e.alphaTest;m.color.set('#ffffff')}KIT.mats[n]=m});
     const al=n=>(n+3)&~3;
-    man.designs.forEach(d=>{KIT.designs[d.name]={h:d.h,parts:d.parts.map(p=>{let o=p.off;const g=new T.BufferGeometry();
+    man.designs.forEach(d=>{KIT.designs[d.name]={h:d.h,smoke:d.smoke,parts:d.parts.map(p=>{let o=p.off;const g=new T.BufferGeometry();
       if(man.q){// compact packs: positions and uvs are stored as int16
         const q=new Int16Array(buf,o,p.v*3),pos=new Float32Array(p.v*3),s=d.E/32767;for(let k=0;k<pos.length;k++)pos[k]=q[k]*s;g.setAttribute('position',new T.BufferAttribute(pos,3));o+=al(p.v*6);
         g.setAttribute('normal',new T.BufferAttribute(new Int8Array(buf,o,p.v*4),4,true));o+=p.v*4;
@@ -3194,39 +3205,50 @@ function v3KitLoad(){if(KIT.state)return;KIT.state=1;const T=THREE,tl=new T.Text
       g.computeBoundingSphere();return{mat:p.mat,geo:g}})}});done();v3KitBuild();v3Draw()}));
   KIT.scale=.03;pack('kitmedieval',()=>{KIT.state=2}).catch(()=>{KIT.state=-1});pack('kittown',()=>{KIT.town=true}).catch(()=>{KIT.town=false})}
 // place the detailed models, chunk by chunk
-function v3KitBuild(){const T=THREE;if(V3.kitCh)V3.kitCh.forEach(ms=>ms.forEach(m=>{V3.scene.remove(m);m.dispose&&m.dispose()}));V3.kitCh=new Map();
+function v3KitBuild(){const T=THREE;if(V3.kitCh)V3.kitCh.forEach(ms=>ms.forEach(m=>{V3.scene.remove(m);m.dispose&&m.dispose()}));V3.kitCh=new Map();if(KIT.puff){V3.scene.remove(KIT.puff);KIT.puff.dispose();KIT.puff=null}const smk=[];
   if(V3.codeCh)V3.codeCh.forEach(ms=>ms.forEach(m=>{m.visible=true}));if(KIT.state!==2||v3Q()==='low'||(era()>=2&&!KIT.town)||!V3.on)return;
   const D=KIT.designs,s=KIT.scale,E=era(),TINT=['#FFFFFF','#E4D2C6','#C9B2A0','#BBA89A','#D8C0B0'],place=new Map(),M4=()=>new T.Matrix4(),col=new T.Color();
-  const add=(ch,dn,u,v,rot,sc,tint)=>{if(!D[dn])return;let byD=place.get(ch);if(!byD)place.set(ch,byD=new Map());let l=byD.get(dn);if(!l)byD.set(dn,l=[]);
-    l.push([M4().makeTranslation(v3X(u),v3G(u,v)-.004,v3Z(v)).multiply(M4().makeRotationY(rot)).multiply(M4().makeScale(sc,sc,sc)),tint])};
+  const add=(ch,dn,u,v,rot,sc,tint,wall,slate)=>{if(!D[dn])return;let byD=place.get(ch);if(!byD)place.set(ch,byD=new Map());let l=byD.get(dn);if(!l)byD.set(dn,l=[]);
+    l.push([M4().makeTranslation(v3X(u),v3G(u,v)-.004,v3Z(v)).multiply(M4().makeRotationY(rot)).multiply(M4().makeScale(sc,sc,sc)),tint,wall||'#FFFFFF',slate||'#FFFFFF'])};
   // the houses of each era: medieval cottages, then Georgian townhouses, Victorian brick terraces, and modern blocks
   const ERA_KINDS=[{cottage:['cottage1','cottage2','cottage3'],townhouse:['town1','town2','cottage1'],tenement:['town3','manor','town1']},
     {cottage:['cottage2','geo2','cottage3','geo2','geo1'],townhouse:['geo1','geo3','town2','geo1'],tenement:['geo1','vic2','town3']},
     {cottage:['geo2','vic2','geo3'],townhouse:['vic1','vic2','geo1','vic1'],tenement:['vic3','vic1'],apartments:['mod3','vic3']},
     {cottage:['geo2','mod2','vic2','mod2'],townhouse:['mod2','mod1','vic1','mod3'],tenement:['mod3','vic3','mod1'],apartments:['mod1','mod3','office']}];
   const kindsOf=hs=>{const k=ERA_KINDS[Math.min(3,E)],l=(k[hs]||k[hs==='apartments'?'tenement':'townhouse']||k.cottage).filter(n=>D[n]);return l.length?l:ERA_KINDS[0][hs==='townhouse'?'townhouse':hs==='cottage'?'cottage':'tenement']};
+  // each rival kingdom builds in its own way: Norvik dark northern roofs and timber, Solenne cream plaster and blue slate, Aurelia ochre walls and terracotta
+  const NSTYLE={norvik:{roof:['#6E7A78','#626C6A','#7C8684'],wall:'#D2CEC6',slate:'#8A9690',like:['cottage1','cottage3','town1','town3','manor','vic1','vic2','vic3','mod1','mod3','geo1']},
+    solenne:{roof:['#FFFFFF','#FFF0DC','#FFE4C8'],wall:'#FFF3DC',slate:'#A8B6D0',like:['cottage2','town2','manor','geo2','geo3','vic2','mod2','mod1']},
+    aurelia:{roof:['#F0B8A0','#E8A890','#F8C8B0'],wall:'#F6DDB0',slate:'#D49A84',like:['cottage2','cottage3','town2','manor','geo1','geo2','vic2','vic3','mod2','mod3']}};
   // market props (Fantasy Props kit): stalls and barrels until the Modern Age, then benches
   const props=(ch,u,v,rot,big,rnd)=>{if(!D.p_barrel)return;const c=Math.cos(rot),si=Math.sin(rot),at=(a,b,n,r2,k=1,t='#FFFFFF')=>add(ch,n,u+a*c+b*si,v-a*si+b*c,rot+r2,s*k,t),cc=()=>['#B8473A','#3D6A9E','#D6A23E','#56804A','#EDE4D2','#8A4A7A'][Math.floor(rnd()*6)];
     if(E>=3){at(0,0,'p_bench',0);if(big)at(0,.1,'p_bench',Math.PI);return}
     if(big){at(-.08,0,'p_stallcartempty',0,1,cc());at(.1,.02,'p_stallempty',0,1,cc());at(.1,-.1,'p_stallempty',Math.PI,1,cc());at(-.1,-.1,'p_barrel',0);at(-.06,-.12,'p_cratewooden',.4);at(.02,-.1,'p_tablelarge',Math.PI/2)}
     else{at(0,0,'p_barrel',0);at(.035,.01,'p_barrel',1);at(.01,-.04,'p_cratewooden',rnd()*3);if(rnd()<.4)at(-.06,0,'p_stallempty',0,1,cc())}};
   S.map.forEach((x,i)=>{const mode=v3KitMode(x);if(!mode)return;let seed=i*7919+17;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
-    const c=i%W,r=i/W|0,u0=c+.5,v0=r+.5,ch=v3Chunk(i),tint=()=>TINT[Math.floor(rnd()*TINT.length)];
-    const kinds=kindsOf(x.hs||'cottage');
-    if(mode==='rows'){const turn=rnd()<.5;let k=0;for(const rz of[-.25,.25])for(const rx of[-.36,-.12,.12,.36]){const a=turn?rz:rx,b=turn?rx:rz;add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,(rz<0?0:Math.PI)+(turn?Math.PI/2:0),s,tint());k++}
+    const c=i%W,r=i/W|0,u0=c+.5,v0=r+.5,ch=v3Chunk(i),tint=()=>TINT[Math.floor(rnd()*TINT.length)],ns=NSTYLE[x.o],st=()=>ns?[ns.roof[Math.floor(rnd()*ns.roof.length)],ns.wall,ns.slate]:[tint()];
+    const k0=kindsOf(x.hs||'cottage'),kl=ns?k0.filter(n=>ns.like.includes(n)):k0,kinds=kl.length?kl:k0;
+    if(mode==='rows'){const turn=rnd()<.5;let k=0;for(const rz of[-.25,.25])for(const rx of[-.36,-.12,.12,.36]){const a=turn?rz:rx,b=turn?rx:rz;add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,(rz<0?0:Math.PI)+(turn?Math.PI/2:0),s,...st());k++}
       // now and then a stall or some barrels in the lane
       if(rnd()<.35){const e=rnd()<.5?-.4:.4;props(ch,u0+(turn?0:e),v0+(turn?e:0),turn?0:Math.PI/2,false,rnd)}}
     else if(mode==='corners'){// two houses side by side in each of the three corners the building leaves free
-      [[.25,-.25],[-.25,.25],[.25,.25]].forEach(([a,b])=>{const side=rnd()<.5,rot=(b<0?0:Math.PI)+(side?Math.PI/2:0);for(const o of[-.12,.12])add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a+(side?0:o),v0+b+(side?o:0),rot,s*.92,tint())})}
-    else{const cs=[[-.36,-.36],[.36,-.36],[-.36,.36],[.36,.36]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([a,b])=>add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,Math.floor(rnd()*4)*Math.PI/2,s*.85,tint()));
+      [[.25,-.25],[-.25,.25],[.25,.25]].forEach(([a,b])=>{const side=rnd()<.5,rot=(b<0?0:Math.PI)+(side?Math.PI/2:0);for(const o of[-.12,.12])add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a+(side?0:o),v0+b+(side?o:0),rot,s*.92,...st())})}
+    else{const cs=[[-.36,-.36],[.36,-.36],[-.36,.36],[.36,.36]].sort(()=>rnd()-.5);cs.slice(0,3).forEach(([a,b])=>add(ch,kinds[Math.floor(rnd()*kinds.length)],u0+a,v0+b,Math.floor(rnd()*4)*Math.PI/2,s*.85,...st()));
       // the free corner: a market spreads its stalls there, other buildings keep a few barrels
       const [fa,fb]=cs[3],mk=x.b==='market'||x.b==='fair'||x.b==='deptstore';if(mk||rnd()<.5)props(ch,u0+fa*.9,v0+fb*.9,Math.floor(rnd()*4)*Math.PI/2,mk,rnd)}
     const civ0=v3CivOf(x.b),civ=civ0&&(D[civ0]||civ0==='church'||civ0==='market'?civ0:'manor');if(civ==='market'){if(D.p_barrel){const r0=Math.floor(rnd()*4)*Math.PI/2;[[-.14,-.14],[.14,-.14],[-.14,.14],[.14,.14]].forEach(([a,b],k)=>props(ch,u0+a,v0+b,r0+k*Math.PI/2,true,rnd))}}else if(civ){const big=D[civ]&&D[civ].h>20,bu=u0+(x.hs?-.2:0),bv=v0+(x.hs?-.2:0),rot=Math.floor(rnd()*4)*Math.PI/2,sc=s*(x.hs?.8:big?.9:1.05);
-      if(civ==='church'){add(ch,'hall',bu,bv,rot,sc,'#FFFFFF');add(ch,'tower',bu+Math.sin(rot)*-.2*sc/s,bv+Math.cos(rot)*-.2*sc/s,rot,sc,'#FFFFFF')}else add(ch,civ,bu,bv,rot,sc,tint())}});
-  place.forEach((byD,ch)=>{const ms=[];byD.forEach((list,dn)=>D[dn].parts.forEach(pt=>{const m=new T.InstancedMesh(pt.geo,KIT.mats[pt.mat],list.length),roof=pt.mat==='MI_RoundTiles'||pt.mat==='C_Banner';
-      list.forEach(([mx,t],k)=>{m.setMatrixAt(k,mx);if(roof)m.setColorAt(k,col.set(t))});m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;
+      if(civ==='church'){add(ch,'hall',bu,bv,rot,sc,'#FFFFFF');add(ch,'tower',bu+Math.sin(rot)*-.2*sc/s,bv+Math.cos(rot)*-.2*sc/s,rot,sc,'#FFFFFF')}else{add(ch,civ,bu,bv,rot,sc,...st());if(D[civ]&&D[civ].smoke){const co=Math.cos(rot),si=Math.sin(rot),g0=v3G(bu,bv)-.004;D[civ].smoke.forEach(([sx,sy,sz])=>smk.push([bu+(sx*co+sz*si)*sc,g0+sy*sc,bv+(-sx*si+sz*co)*sc,ch]))}}}});
+  place.forEach((byD,ch)=>{const ms=[];byD.forEach((list,dn)=>D[dn].parts.forEach(pt=>{const m=new T.InstancedMesh(pt.geo,KIT.mats[pt.mat],list.length),roof=pt.mat==='MI_RoundTiles'||pt.mat==='C_Banner',wall=['MI_Plaster','MI_UnevenBrick','MI_Brick','C_RedBrick'].includes(pt.mat),slate=pt.mat==='C_Roof_Slate';
+      list.forEach(([mx,t,w,sl],k)=>{m.setMatrixAt(k,mx);if(roof)m.setColorAt(k,col.set(t));else if(wall)m.setColorAt(k,col.set(w));else if(slate)m.setColorAt(k,col.set(sl))});m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;
       m.castShadow=m.receiveShadow=true;m.frustumCulled=false;m.visible=false;V3.scene.add(m);ms.push(m)}));ms.near=false;V3.kitCh.set(ch,ms)});
+  // factory smoke: grey puffs rising from each chimney top; they show with the chunk's detailed models
+  if(smk.length){const pm=new T.MeshLambertMaterial({color:'#86827B',transparent:true,opacity:.6,depthWrite:false});KIT.puff=new T.InstancedMesh(new T.IcosahedronGeometry(1,1),pm,smk.length*8);KIT.puff.frustumCulled=false;KIT.puff.smk=smk;
+    KIT.puff.count=0;V3.scene.add(KIT.puff)}
   v3LOD(true)}
+// the factory smoke drifts up and away with the wind; t is in seconds
+function v3KitSmoke(t){const P=KIT.puff;if(!P)return;const m4=V3._pm4||(V3._pm4=new THREE.Matrix4()),q=V3._pq||(V3._pq=new THREE.Quaternion()),p=V3._pp||(V3._pp=new THREE.Vector3()),s=V3._ps||(V3._ps=new THREE.Vector3());let n=0;
+  P.smk.forEach(([u,y,v,ch],k)=>{const c=V3.kitCh&&V3.kitCh.get(ch);if(!c||!c.near)return;for(let j=0;j<8;j++){const a=(t*.12+j/8+k*.37)%1,sz=(.02+a*.07)*(1-a*a*.4);
+    p.set(v3X(u+a*.16+Math.sin(a*7+k)*.012),y+.01+a*.32,v3Z(v+a*.05));s.set(sz,sz*.85,sz);m4.compose(p,q,s);P.setMatrixAt(n++,m4)}});P.count=n;P.instanceMatrix.needsUpdate=true}
 // each chunk near the camera shows its detailed models and hides its light ones
 function v3LOD(force){if(!(V3.kitCh&&V3.kitCh.size)&&!(V3.natCh&&V3.natCh.size))return;const T=THREE,q=v3Q(),R=q==='high'?3.6:2.2,Z=q==='high'?7.5:5.5,tu=V3.tx+W/2,tv=V3.tz+H/2,cw=v3CW();let changed=false;
   // only chunks inside the camera's view are drawn in detail
@@ -3320,7 +3342,7 @@ function v3Init(){const T=THREE,cv=$('#cv3d');
   if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;V3.r.shadowMap.autoUpdate=false;document.addEventListener('visibilitychange',()=>{if(!document.hidden)v3Draw()});
     V3.scene=new T.Scene();V3.cam=new T.PerspectiveCamera(38,1,.05,400);V3.protos=v3Protos();
     V3.det=v3DetailTex();V3.bmat=v3TexMat(v3Atlas(),4,'{vec3 sc=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));vec3 lp=position*sc;vec3 an=abs(normal);vec2 q=an.x>an.z?vec2(lp.z,lp.y-.1):vec2(lp.x,lp.y-.1);if(an.y>.72)q=lp.xz;vTUV=q*vec2(6.,7.);vTile=aTex;}','b');
-    V3.pmat=v3TexMat(v3FieldAtlas(),2,'vTile=aTex;vTUV=uv;','patch');Object.assign(V3.pmat,{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});V3.hemi=new T.HemisphereLight(0xdde8ec,0x5b4d36,.5);V3.scene.add(V3.hemi);
+    V3.pmat=v3TexMat(v3FieldAtlas(),3,'vTile=aTex;vTUV=uv;','patch');Object.assign(V3.pmat,{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});V3.hemi=new T.HemisphereLight(0xdde8ec,0x5b4d36,.5);V3.scene.add(V3.hemi);
     V3.sun=new T.DirectionalLight(0xffe2b4,1.1);V3.sun.castShadow=true;V3.sun.shadow.mapSize.set(2048,2048);V3.sun.shadow.bias=-.0006;V3.sun.shadow.normalBias=.02;V3.scene.add(V3.sun,V3.sun.target);
     V3.wave=v3WaveTex();V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x3b6878,transparent:true,opacity:.8,shininess:40,specular:0x55656b,normalMap:V3.wave,normalScale:new T.Vector2(.3,.3)}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
     V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x27454e}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
