@@ -3064,6 +3064,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
   Object.entries(by).forEach(([key,list])=>{const sh=key.split('|')[0],chk=+key.split('|')[1],geo=protos[sh].clone(),tex=new Float32Array(list.length),mesh=new T.InstancedMesh(geo,V3.bmat,list.length);
     list.forEach(([,u,v,y,w,h,d,c,ry,rz,t2],k)=>{e.set(0,ry,rz);q.setFromEuler(e);p.set(v3X(u),y-.012,v3Z(v));s.set(w,h,d);m4.compose(p,q,s);mesh.setMatrixAt(k,m4);mesh.setColorAt(k,col.set(c));tex[k]=t2});
     geo.setAttribute('aTex',new T.InstancedBufferAttribute(tex,1));mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.castShadow=mesh.receiveShadow=true;mesh.userData.shared=true;if(chk>=0){mesh.frustumCulled=false;(V3.codeCh.get(chk)||V3.codeCh.set(chk,[]).get(chk)).push(mesh)}meshes.push(mesh)});
+  const natStart=meshes.length;V3.natL={trees,bushes,tufts,flowers,rocks};
   const pines=trees.filter(t=>t[3]),leafy=trees.filter(t=>!t[3]),put=(mesh,k,u,v,dy,sx,sy,r)=>{e.set(0,r*6,0);q.setFromEuler(e);p.set(v3X(u),v3G(u,v)+dy,v3Z(v));s.set(sx,sy,sx);m4.compose(p,q,s);mesh.setMatrixAt(k,m4)};
   if(trees.length)inst(protos.trunk,trees,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,-.01,.018*sc,.07*sc,r);mesh.setColorAt(k,col.set('#5A4430'))});
   if(pines.length){inst(protos.pine,pines,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.03*sc,.12*sc,.15*sc,r);mesh.setColorAt(k,col.setHSL(.3+r*.06,.28+r*.12,.17+r*.06))});
@@ -3073,6 +3074,7 @@ function v3Objects(){const T=THREE,parts=[],trees=[],L={smoke:[],mills:[],wheels
   if(flowers.length)inst(protos.box,flowers,([u,v,r],k,mesh)=>{put(mesh,k,u,v,0,.02,.018,r);mesh.setColorAt(k,col.set(['#E8E4D0','#D8C44A','#B85A8A','#C9563C','#8A7AC4'][Math.floor(r*5)]))});
   if(rocks.length)inst(protos.ball,rocks,([u,v,sc,r],k,mesh)=>{put(mesh,k,u,v,-.01,.06*sc,.035*sc,r);mesh.setColorAt(k,col.setHSL(.1,.05+r*.05,.42+r*.12))});
   if(leafy.length)inst(protos.ball,leafy,([u,v,sc,,r],k,mesh)=>{put(mesh,k,u,v,.05*sc,.15*sc,.13*sc,r);mesh.setColorAt(k,col.setHSL(.2+r*.08,.34+r*.12,.22+r*.08))});
+  meshes.slice(natStart).forEach(v3NatCode);
   // the ground patches: one mesh that follows the terrain
   if(patches.length){const pos=[],cols=[],uvs=[],txs=[],cc=new T.Color();patches.forEach(([a,b,c2,d,cl,n,tx,rot])=>{cc.set(cl);const Ls=Math.hypot(b[0]-a[0],b[1]-a[1])*3,Lt=Math.hypot(d[0]-a[0],d[1]-a[1])*3;const f=v3fbm(a[0]*2,a[1]*2)*.14+.93;
       const at=(s1,t1)=>{const u=(a[0]*(1-s1)+b[0]*s1)*(1-t1)+(d[0]*(1-s1)+c2[0]*s1)*t1,v=(a[1]*(1-s1)+b[1]*s1)*(1-t1)+(d[1]*(1-s1)+c2[1]*s1)*t1;return[v3X(u),v3G(u,v)+.007,v3Z(v)]};
@@ -3140,13 +3142,13 @@ function v3LifeTick(t,dt){const lf=V3.life;if(!lf)return;const T=THREE,m4=new T.
     lf.carts.forEach((o,k)=>{home(o);const[u,v,h,ry]=move(o),fx=Math.sin(ry)*.032,fz=Math.cos(ry)*.032;
       if(lp){if(era()<3){lp.put('horse','walk',u+fx*1.2,h,v+fz*1.2,ry,LPSIZE.horse,t*6.8+k*2);lp.put('wagon','still',u-fx*.5,h,v-fz*.5,ry,LPSIZE.wagon,0)}else{const c=k%2?'car':'taxi';lp.put(c,'still',u,h,v,ry,.1/(LP.items[c].len||3.5),0)}return}set(lf.cart,k,u,h,v,ry,.03,.022,.045);
       if(era()>=3)set(lf.horse,k,u,h,v,ry,0,0,0);else set(lf.horse,k,u+fx,h+.004,v+fz,ry,.012,.022,.032)})}
-  const n0=lf.walkers.length;lf.farm.forEach((f,k)=>{const h=v3G(f.u,f.v);if(lp){lp.put('farmer','work',f.u,h,f.v,f.ry,LPSIZE.person,t*4.8+f.ph*3);return}const bend=.75+Math.abs(Math.sin(t*2+f.ph))*.25;set(lf.body,n0+k,f.u,h,f.v,f.ry,.016,.034*bend,.016);set(lf.head,n0+k,f.u,h+.034*bend,f.v,f.ry,.016,.016,.016)});
-  lf.sheep.forEach((o,k)=>{const a=t*o.w+o.ph,u=o.cu+Math.cos(a)*o.r,v=o.cv+Math.sin(a*1.3)*o.r,h=v3G(u,v),ry=Math.atan2(-Math.sin(a),1.3*Math.cos(a*1.3)),_lp=lp&&lp.put(o.cow?'cow':'sheep','eat',u,h,v,ry,o.cow?LPSIZE.cow:LPSIZE.sheep,t+o.ph*3),sz=o.cow?1.35:1,fx=Math.sin(ry)*.022*sz,fz=Math.cos(ry)*.022*sz;
+  const n0=lf.walkers.length;lf.farm.forEach((f,k)=>{const h=v3G(f.u,f.v);if(lp){if(Math.hypot(f.u-tu,f.v-tv)<R+1.5)lp.put('farmer','work',f.u,h,f.v,f.ry,LPSIZE.person,t*4.8+f.ph*3);return}const bend=.75+Math.abs(Math.sin(t*2+f.ph))*.25;set(lf.body,n0+k,f.u,h,f.v,f.ry,.016,.034*bend,.016);set(lf.head,n0+k,f.u,h+.034*bend,f.v,f.ry,.016,.016,.016)});
+  lf.sheep.forEach((o,k)=>{const a=t*o.w+o.ph,u=o.cu+Math.cos(a)*o.r,v=o.cv+Math.sin(a*1.3)*o.r,h=v3G(u,v),ry=Math.atan2(-Math.sin(a),1.3*Math.cos(a*1.3)),_lp=lp&&(Math.hypot(u-tu,v-tv)>R+1.5||lp.put(o.cow?'cow':'sheep','eat',u,h,v,ry,o.cow?LPSIZE.cow:LPSIZE.sheep,t+o.ph*3)),sz=o.cow?1.35:1,fx=Math.sin(ry)*.022*sz,fz=Math.cos(ry)*.022*sz;
     if(_lp)return;set(lf.sheepB,k,u,h+.004,v,ry,.028*sz,.022*sz,.04*sz);set(lf.sheepH,k,u+fx,h+.012*sz,v+fz,ry,.013*sz,.013*sz,.015*sz)});
   lf.ships.forEach((o,k)=>{const a=t*.12+o.ph,u=o.u+Math.cos(a)*o.r,v=o.v+Math.sin(a)*o.r*.7,ry=Math.atan2(-Math.sin(a),Math.cos(a)*.7),sc=o.big?1.4:1,roll=Math.sin(t*1.7+o.ph)*.06;
     if(lp){const nm=o.big?'ship':'shipsmall',it=LP.items[nm],long=Math.max(it.len,it.wid),s2=(o.big?.3:.14)/(long||2);lp.put(nm,'still',u,-s2*.12,v,ry+(it.wid>it.len?Math.PI/2:0),s2,0,roll);return}
     set(lf.hull,k,u,-.01,v,ry,.05*sc,.025*sc,.14*sc,roll);set(lf.sail,k,u,.012,v,ry,.006*sc,.09*sc,.08*sc,roll)});
-  if(lp)lp.wild.forEach(w=>lp.put(w.kind,'eat',w.u,v3G(w.u,w.v),w.v,w.ry,LPSIZE[w.kind],t+w.ph*3));
+  if(lp)lp.wild.forEach(w=>{if(Math.hypot(w.u-tu,w.v-tv)<R+1.5)lp.put(w.kind,'eat',w.u,v3G(w.u,w.v),w.v,w.ry,LPSIZE[w.kind],t+w.ph*3)});
   lf.mills.forEach(([u,v,y,ry,sc],k)=>{for(let b=0;b<4;b++)set(lf.blade,k*4+b,u,y,v,ry,.045*sc,.28*sc,.012*sc,t*1.2+b*Math.PI/2)});
   lf.wheels.forEach(([u,v,y,ry,sc],k)=>{q.setFromEuler(e.set(0,ry,Math.PI/2));q2.setFromAxisAngle(ax,t*1.5);q.multiply(q2);p.set(v3X(u),y,v3Z(v));s.set(.2*sc,.04*sc,.2*sc);m4.compose(p,q,s);lf.wheel.setMatrixAt(k,m4)});
   lf.smoke.forEach(([u,v,y],k)=>{for(let j=0;j<6;j++){const a=(t*.2+j/6+k*.37)%1,sz=(.01+a*.028)*(1-a*a*.6);set(lf.puff,k*6+j,u+a*.07+Math.sin(a*9+k)*.006,y+a*.2,v+a*.015,0,sz,sz*.85,sz)}});
@@ -3199,15 +3201,19 @@ function v3KitBuild(){const T=THREE;if(V3.kitCh)V3.kitCh.forEach(ms=>ms.forEach(
       m.castShadow=m.receiveShadow=true;m.frustumCulled=false;m.visible=false;V3.scene.add(m);ms.push(m)}));ms.near=false;V3.kitCh.set(ch,ms)});
   v3LOD(true)}
 // each chunk near the camera shows its detailed models and hides its light ones
-function v3LOD(force){if(!V3.kitCh||!V3.kitCh.size)return;const T=THREE,q=v3Q(),R=q==='high'?3.6:2.2,Z=q==='high'?7.5:5.5,tu=V3.tx+W/2,tv=V3.tz+H/2,cw=v3CW();let changed=false;
+function v3LOD(force){if(!(V3.kitCh&&V3.kitCh.size)&&!(V3.natCh&&V3.natCh.size))return;const T=THREE,q=v3Q(),R=q==='high'?3.6:2.2,Z=q==='high'?7.5:5.5,tu=V3.tx+W/2,tv=V3.tz+H/2,cw=v3CW();let changed=false;
   // only chunks inside the camera's view are drawn in detail
   const fr=V3.fr||(V3.fr=new T.Frustum()),sp=V3.sp||(V3.sp=new T.Sphere()),pm=V3.pm||(V3.pm=new T.Matrix4());V3.cam.updateMatrixWorld();pm.multiplyMatrices(V3.cam.projectionMatrix,V3.cam.matrixWorldInverse);fr.setFromProjectionMatrix(pm);
-  V3.kitCh.forEach((ms,c)=>{const x0=(c%cw)*V3CS,z0=Math.floor(c/cw)*V3CS,dx=Math.max(x0-tu,0,tu-x0-V3CS),dz=Math.max(z0-tv,0,tv-z0-V3CS);sp.center.set(v3X(x0+V3CS/2),.2,v3Z(z0+V3CS/2));sp.radius=V3CS*.75;
-    const near=V3.dist<Z&&Math.hypot(dx,dz)<R&&fr.intersectsSphere(sp);
+  const nearOf=(c,rr=R)=>{const x0=(c%cw)*V3CS,z0=Math.floor(c/cw)*V3CS,dx=Math.max(x0-tu,0,tu-x0-V3CS),dz=Math.max(z0-tv,0,tv-z0-V3CS);sp.center.set(v3X(x0+V3CS/2),.2,v3Z(z0+V3CS/2));sp.radius=V3CS*.75;return V3.dist<Z&&Math.hypot(dx,dz)<rr&&fr.intersectsSphere(sp)};
+  if(V3.kitCh)V3.kitCh.forEach((ms,c)=>{const near=nearOf(c);
     if(force||ms.near!==near){ms.near=near;changed=true;ms.forEach(m=>{m.visible=near});(V3.codeCh&&V3.codeCh.get(c)||[]).forEach(m=>{m.visible=!near})}});
+  if(V3.natCh)V3.natCh.forEach((ms,c)=>{const near=nearOf(c,(q==='high'?2.8:1.8)+.5);if(force||ms.near!==near){ms.near=near;changed=true;ms.forEach(m=>{m.visible=near})}});
+  // the circle where detailed plants replace the light ones follows the view in half-tile steps
+  if(V3.uNear){const on=NAT.state===2&&q!=='low'&&V3.dist<Z,rt=on?(q==='high'?2.8:1.8):0,cu=Math.round(tu*2)/2,cv=Math.round(tv*2)/2,u=V3.uNear.value;
+    if(u.z!==rt||u.x!==v3X(cu)||u.y!==v3Z(cv)){u.set(v3X(cu),v3Z(cv),rt);changed=true}}
   if(changed)V3.r.shadowMap.needsUpdate=true}
 function v3SetQ(v){if(v==='fps'){UI.v3fps=!UI.v3fps;saveUI();const f=$('#v3fps');if(f)f.hidden=!UI.v3fps;$('#v3Q').value=v3Q();return}
-  UI.v3q=v;saveUI();if(v!=='low'&&!KIT.state)v3KitLoad();else v3KitBuild();if(v!=='low'&&!LP.state)v3LPLoad();else if(V3.L)v3LifeBuild();v3Draw()}
+  UI.v3q=v;saveUI();if(v!=='low'&&!KIT.state)v3KitLoad();else v3KitBuild();if(v!=='low'&&!LP.state)v3LPLoad();else if(V3.L)v3LifeBuild();if(v!=='low'&&!NAT.state)v3NatLoad();else v3NatBuild();v3Draw()}
 /* ---------- animated people, animals, carts and ships ---------- */
 // Quaternius models (CC0) recorded as flip-book poses: each pose is its own set of instances, and every figure picks the pose
 // for its moment in the walk. Loaded from the site's kit folder with the houses; without it, the simple figures stay.
@@ -3249,6 +3255,39 @@ function v3LPBuild(lf){if(LP.state!==2||v3Q()==='low')return null;const T=THREE,
   // the simple figures this layer replaces stay hidden
   [lf.body,lf.head,lf.cart,lf.horse,lf.sheepB,lf.sheepH,lf.hull,lf.sail].forEach(m=>{if(m){m.userData.off=true;m.visible=false}});
   return lp}
+/* ---------- detailed trees and plants ---------- */
+// Near the camera, trees, bushes, grass, flowers and rocks come from the Quaternius Stylized Nature kit (CC0). A circle around the
+// view decides which to show: inside it the detailed plants, outside it the light ones. The shader hides each tree on the wrong side,
+// so the light forest still draws in a few batches, and the detailed plants exist only for the chunks near the view.
+const NAT={state:0,items:{},mats:{},dmats:{}};
+function v3NatPatch(mat,inside,depth){mat.onBeforeCompile=sh=>{sh.uniforms.uNear=V3.uNear;sh.vertexShader='uniform vec3 uNear;\n'+sh.vertexShader.replace('#include <project_vertex>',
+    `#include <project_vertex>\n#ifdef USE_INSTANCING\n{vec4 ipw=modelMatrix*instanceMatrix*vec4(0.,0.,0.,1.);float dn=distance(ipw.xz,uNear.xy);if(${inside?'dn<uNear.z':'dn>=uNear.z'})gl_Position=vec4(2.,2.,2.,1.);}\n#endif`)};
+  mat.customProgramCacheKey=()=>'nat'+(inside?1:0)+(depth?'d':'')+(mat.map?'m':'')+(mat.alphaTest?'a':'');mat.needsUpdate=true;return mat}
+// the light trees and plants hide inside the circle
+function v3NatCode(m){if(!V3.uNear)V3.uNear={value:new THREE.Vector3(0,0,0)};v3NatPatch(m.material,true,false);m.customDepthMaterial=v3NatPatch(new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking}),true,true)}
+function v3NatLoad(){if(NAT.state)return;NAT.state=1;const T=THREE,tl=new T.TextureLoader();if(!V3.uNear)V3.uNear={value:new T.Vector3(0,0,0)};
+  fetch(KIT.url+'naturepack.json').then(r=>{if(!r.ok)throw 0;return r.json()}).then(man=>fetch(KIT.url+'naturepack.bin').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(buf=>{
+    Object.entries(man.mats).forEach(([n,e])=>{const t=e.map?tl.load(KIT.url+e.map,()=>v3Draw()):null;if(t)t.flipY=false;
+      const m=new T.MeshLambertMaterial({color:e.color||'#ffffff',map:t,side:T.DoubleSide});if(e.alpha)m.alphaTest=.5;NAT.mats[n]=v3NatPatch(m,false,false);
+      const d=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking,map:t});if(e.alpha)d.alphaTest=.5;NAT.dmats[n]=v3NatPatch(d,false,true)});
+    Object.entries(man.items).forEach(([name,it])=>{NAT.items[name]=it.parts.map(p=>{const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(new Float32Array(buf,p.pos,p.v*3),3));
+      g.setAttribute('normal',new T.BufferAttribute(new Int8Array(buf,p.nor,p.v*4),4,true));g.setAttribute('uv',new T.BufferAttribute(new Float32Array(buf,p.uv,p.v*2),2));
+      g.setIndex(new T.BufferAttribute(new Uint32Array(buf,p.idx,p.i),1));g.computeBoundingSphere();return{mat:p.mat,geo:g}})});
+    NAT.state=2;v3NatBuild();v3Draw()})).catch(()=>{NAT.state=-1})}
+// the detailed plants, chunk by chunk, from the same spots as the light ones (fewer, as each is bigger)
+function v3NatBuild(){const T=THREE;if(V3.natCh)V3.natCh.forEach(ms=>ms.forEach(m=>{V3.scene.remove(m);m.dispose&&m.dispose()}));V3.natCh=new Map();
+  if(NAT.state!==2||v3Q()==='low'||!V3.on||!V3.natL)return;const N=V3.natL,place=new Map(),M4=()=>new T.Matrix4();
+  const add=(name,u,v,ry,sc,wd=1)=>{if(!NAT.items[name])return;const c=Math.floor(u),r=Math.floor(v);if(c<0||r<0||c>=W||r>=H)return;const ch=v3Chunk(r*W+c);let byN=place.get(ch);if(!byN)place.set(ch,byN=new Map());let l=byN.get(name);if(!l)byN.set(name,l=[]);
+    l.push(M4().makeTranslation(v3X(u),v3G(u,v)-.006,v3Z(v)).multiply(M4().makeRotationY(ry)).multiply(M4().makeScale(sc*wd,sc,sc*wd)))};
+  N.trees.forEach(([u,v,sc,pine,r],k)=>{if(k%2===0){if(pine)add(['pine5','pine5','pine2','pine4'][Math.floor(r*4)],u,v,r*6,(.2+r*.07)*sc,1.15);else add(['oak5','oak3','oak4'][Math.floor(r*3)],u,v,r*6,(.19+r*.06)*sc,1.35)}
+    else{add('pine5',u,v,r*6,(.11+r*.07)*sc,1.2);if(k%3===0)add('fern',u+.03,v+.02,r*6,.06+r*.03)}});
+  N.bushes.forEach(([u,v,sc,,r],k)=>{if(k%2===0)add('bushf',u,v,r*6,.05*sc)});
+  N.tufts.forEach(([u,v,sc,r],k)=>{if(k%2===0)add('grass',u,v,r*6,.03*sc)});
+  N.flowers.forEach(([u,v,r],k)=>{if(k%2===0)add('flower',u,v,r*6,.034)});
+  N.rocks.forEach(([u,v,sc,r])=>add('rock',u,v,r*6,.035*sc));
+  place.forEach((byN,ch)=>{const ms=[];byN.forEach((list,name)=>NAT.items[name].forEach(pt=>{const m=new T.InstancedMesh(pt.geo,NAT.mats[pt.mat],list.length);list.forEach((mx,k)=>m.setMatrixAt(k,mx));
+      m.instanceMatrix.needsUpdate=true;m.customDepthMaterial=NAT.dmats[pt.mat];m.castShadow=m.receiveShadow=true;m.frustumCulled=false;m.visible=false;V3.scene.add(m);ms.push(m)}));ms.near=false;V3.natCh.set(ch,ms)});
+  v3LOD(true)}
 /* setup, syncing with the game, and drawing */
 function v3Init(){const T=THREE,cv=$('#cv3d');
   if(!V3.r){V3.r=new T.WebGLRenderer({canvas:cv,antialias:true});V3.r.shadowMap.enabled=true;V3.r.shadowMap.type=T.PCFSoftShadowMap;V3.r.shadowMap.autoUpdate=false;document.addEventListener('visibilitychange',()=>{if(!document.hidden)v3Draw()});
@@ -3259,7 +3298,7 @@ function v3Init(){const T=THREE,cv=$('#cv3d');
     V3.wave=v3WaveTex();V3.water=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhongMaterial({color:0x3b6878,transparent:true,opacity:.8,shininess:40,specular:0x55656b,normalMap:V3.wave,normalScale:new T.Vector2(.3,.3)}));V3.water.rotation.x=-Math.PI/2;V3.scene.add(V3.water);
     V3.floor=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshLambertMaterial({color:0x27454e}));V3.floor.rotation.x=-Math.PI/2;V3.floor.position.y=-.7;V3.scene.add(V3.floor);
     v3Controls(cv)}
-  V3.on=true;v3Msg('');document.body.classList.add('v3');const qs=$('#v3Q');if(qs){qs.value=v3Q();if(!qs.dataset.on){qs.dataset.on=1;qs.addEventListener('change',e=>v3SetQ(e.target.value))}}$('#v3fps').hidden=!UI.v3fps;if(v3Q()!=='low'){v3KitLoad();v3LPLoad()}$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
+  V3.on=true;v3Msg('');document.body.classList.add('v3');const qs=$('#v3Q');if(qs){qs.value=v3Q();if(!qs.dataset.on){qs.dataset.on=1;qs.addEventListener('change',e=>v3SetQ(e.target.value))}}$('#v3fps').hidden=!UI.v3fps;if(v3Q()!=='low'){v3KitLoad();v3LPLoad();v3NatLoad()}$('#lifeBtn').setAttribute('aria-pressed',UI.life!==false?'true':'false');if(V3.mapRef!==S.map){const c=capIdx();V3.tx=v3X(c%W+.5);V3.tz=v3Z((c/W|0)+.5);V3.dist=Math.min(12,Math.max(W,H)*.4)}
   V3.tSig='';V3.oSig='';v3Resize();v3Sync()}
 function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map;
   const th=palette().grass+(document.documentElement.dataset.theme||''),tS=th+'|'+S.map.map(x=>x.t+(x.o||'')+(x.hs||x.b?1:0)+(x.p)).join(''),oS=S.map.map(x=>(x.b||'')+','+(x.hs||'')+','+(x.sm||'')).join(';');
@@ -3269,7 +3308,7 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
     V3.sky=new T.Color(K.dark?'#1A262C':'#AFC3CB');V3.scene.background=V3.sky;V3.scene.fog=new T.Fog(V3.sky,20,60);V3.hemi.intensity=K.dark?.34:.5;V3.sun.intensity=K.dark?.75:1.1;
     V3.sun.position.set(-big*.5,big*.5,big*.32);V3.sun.target.position.set(0,0,0);Object.assign(V3.sun.shadow.camera,{left:-big*.8,right:big*.8,top:big*.8,bottom:-big*.8,near:1,far:big*3});V3.sun.shadow.camera.updateProjectionMatrix();
     V3.oSig=''}
-  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m));v3LifeBuild();v3KitBuild();V3.r.shadowMap.needsUpdate=true}
+  if(oS!==V3.oSig){V3.oSig=oS;V3.objs.forEach(m=>{V3.scene.remove(m);if(m.userData.shared)m.geometry.dispose();else m.material.dispose();m.dispose&&m.dispose()});V3.objs=v3Objects();V3.objs.forEach(m=>V3.scene.add(m));v3LifeBuild();v3KitBuild();v3NatBuild();V3.r.shadowMap.needsUpdate=true}
   // the selected tile gets a gold outline
   if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
   if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
