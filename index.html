@@ -3851,12 +3851,33 @@ function settings(){openSheet(`<h3>Settings</h3>
   <label class="hint" for="nm">Nation name</label><input type="text" id="nm" maxlength="24" value="${esc(S.name)}">
   <button class="btn wide" data-act="rename">Rename nation</button>
   <button class="btn wide" data-act="openCon">🧪 Open developer console</button>
-  <h2>Save code</h2><p class="hint">Copy this to back up your nation or move it between devices or versions.</p>
-  <textarea id="code" aria-label="Save code">${saveCode()}</textarea>
+  <h2>Move or back up your nation</h2><p class="hint">Save your kingdom as a file, or share it straight to another device with Quick Share, Google Drive or email. On the other device, open the file here. Loading replaces the kingdom on that device.</p>
+  <div class="btns"><button class="btn" data-act="saveFile">💾 Save to file</button>${navigator.share?'<button class="btn" data-act="shareSave">📤 Share save</button>':''}<button class="btn" data-act="openFile">📂 Open save file</button></div>
+  <input type="file" id="saveFileIn" accept=".txt,.kingdom,.json,text/plain,application/json" hidden>
+  <h2>Save code</h2><p class="hint">Or copy this code and paste it on the other device. It is compressed, so it is much shorter than before, and older codes still load.</p>
+  <textarea id="code" aria-label="Save code" placeholder="Preparing the code…"></textarea>
   <div class="btns"><button class="btn" data-act="copyCode">Copy code</button><button class="btn" data-act="loadCode">Load code</button></div>
   <button class="btn wide" data-act="reset" id="resetBtn">Start a new nation</button>
-  <button class="btn primary wide" data-act="closeSheet">Done</button>`)}
+  <button class="btn primary wide" data-act="closeSheet">Done</button>`);fillCode()}
 function saveCode(){try{return btoa(unescape(encodeURIComponent(JSON.stringify(S))))}catch(e){return''}}
+// compressed saves: 'K2:' and the deflated state in base64, about a quarter the length of the old code. Old codes and plain JSON still load.
+const b64u8=u=>{let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s)};
+async function packSave(){if(typeof CompressionStream==='undefined')return saveCode();
+  try{const u=new Uint8Array(await new Response(new Blob([JSON.stringify(S)]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());return'K2:'+b64u8(u)}catch(e){return saveCode()}}
+async function unpackSave(txt){txt=String(txt||'').trim();let json;
+  if(txt.startsWith('{'))json=txt;
+  else if(txt.startsWith('K2:')){const bin=atob(txt.slice(3).replace(/\s+/g,'')),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    json=await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}
+  else json=decodeURIComponent(escape(atob(txt.replace(/\s+/g,''))));
+  const d=JSON.parse(json);if(!d||!(d.v===1||d.v===2)||!Array.isArray(d.map))throw 0;return d}
+function loadNation(d){adopt(d);splitHousing(S.map);closeSheet();render();toast('Nation loaded')}
+async function fillCode(){const t=$('#code');if(!t)return;const c=await packSave();if($('#code')===t)t.value=c}
+const saveName=()=>`${String(S.name||'Kingdom').replace(/[^\w\- ]+/g,'').trim()||'Kingdom'} - year ${S.year}.txt`;
+// save to a file, or on a phone hand the file to the share menu (Quick Share, Drive, email, messages)
+async function saveFile(share){const c=await packSave(),name=saveName();
+  if(share){try{const f=new File([c],name,{type:'text/plain'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+    toast('Sharing isn’t available here, so the file was saved instead')}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);if(!share)toast('Saved “'+name+'”')}
 function welcome(){const m=S.monarch;openSheet(`<div class="event"><div class="pic" aria-hidden="true">👑</div><h3>The crown is yours</h3><p>You are ${monarchName(m)}, absolute ruler of a small island kingdom of 60 subjects.</p></div>
   <p>Build up the realm, balance the treasury, and keep the powerful on your side. Your legitimacy depends on the landowners, clergy, merchants, intelligentsia and workers. Let it fall too far, and unrest may end in revolution.</p>
   <p class="hint" style="margin-bottom:0">Your monarch</p><div class="seg" role="group" aria-label="King or queen">${[['m','👑 King'],['f','👑 Queen']].map(([g,l])=>`<button class="btn ${m.g===g?'on':''}" data-act="mgender" data-arg="${g}" aria-pressed="${m.g===g}">${l}</button>`).join('')}</div>
@@ -4273,11 +4294,16 @@ function act(a,arg,n){
     case'sug':{const i=$('#conIn');i.value=arg+' ';suggest();i.focus();return}
     case'start':case'rename':{const v=esc(($('#nm')||{}).value||'').trim();if(v)S.name=v;closeSheet();if(a==='rename')toast('Nation renamed');break}
     case'copyCode':{const t=$('#code');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast('Save code copied'),()=>{try{document.execCommand('copy');toast('Save code copied')}catch(e){toast('Select the code and copy it')}});return}
-    case'loadCode':{try{const d=JSON.parse(decodeURIComponent(escape(atob($('#code').value.trim()))));if(!d||!(d.v===1||d.v===2)||!Array.isArray(d.map))throw 0;adopt(d);splitHousing(S.map);closeSheet();toast('Nation loaded')}catch(e){toast('That code didn\u2019t work. Check it was copied in full.')}break}
+    case'loadCode':{unpackSave($('#code').value).then(loadNation,()=>toast('That code didn\u2019t work. Check it was copied in full.'));return}
+    case'saveFile':saveFile(false);return;
+    case'shareSave':saveFile(true);return;
+    case'openFile':{const i=$('#saveFileIn');if(i){i.value='';i.click()}return}
     case'reset':{if(!resetArmed){resetArmed=true;$('#resetBtn').textContent='Tap again to start over';return}S=newState();tab='isle';queue.length=0;curEvent=null;closeSheet();render();welcome();return}
   }
   render()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;act(b.dataset.act,b.dataset.arg,b.dataset.n)});
+// a save file picked in Settings
+document.addEventListener('change',e=>{if(!e.target||e.target.id!=='saveFileIn')return;const f=e.target.files&&e.target.files[0];if(!f)return;f.text().then(unpackSave).then(loadNation,()=>toast('That file isn’t a saved kingdom.'))});
 const blocking=()=>!!$('#sheet .choice')||!!$('#sheet [data-act=start]')||!!$('#sheet [data-act=nextEvent]');
 $('#sheetWrap').addEventListener('click',e=>{if(e.target.id==='sheetWrap'&&!blocking())closeSheet()});
 $('#conWrap').addEventListener('click',e=>{if(e.target.id==='conWrap')$('#conWrap').classList.remove('open')});
