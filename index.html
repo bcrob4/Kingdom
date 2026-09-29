@@ -75,7 +75,7 @@ svg.arms{flex:none;display:block}
 input.txt{width:100%;box-sizing:border-box;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card,transparent);color:inherit;font:inherit}
 .big{font-size:2.6rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
 .mood{display:flex;align-items:center;gap:14px;margin-top:14px}
-.tots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}.tots>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tots small{display:block;color:var(--muted);font-size:.8rem}.tots b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
+.tots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}.tots.t3{grid-template-columns:repeat(3,1fr)}.tots.t3 b{font-size:1.1rem}.tots>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tots small{display:block;color:var(--muted);font-size:.8rem}.tots b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
 .mood .face{font-size:3rem}
 .quote{font-style:italic}
 .chart{width:100%;height:120px;display:block}
@@ -161,6 +161,8 @@ body.v3 .v3lab{display:block}
 .v3lab span.r3{font-size:14px;font-weight:700}.v3lab span.r4{font-size:16px;font-weight:700}
 .v3lab span.mine.r3,.v3lab span.mine.r4{color:#FFE9A8}
 .v3lab span:not(.mine){color:#D6E0E4}
+.v3lab span.pv{font:600 11px/1 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#CFD9DD;opacity:.75}
+.v3lab span.pv.mine{color:#F4F1E4;opacity:.9}.v3lab span.pv.on{color:#FFD66E;opacity:1}
 .v3msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:.9rem;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:2}
 .mapctl .wideonly{display:none}
 header .icon.wideonly{display:none}
@@ -1492,7 +1494,9 @@ function calc(){
   const army=Math.round(((soldiers*4+(S.war?soldiers*8:0))*(law('army').armyCost||1)+S.navy*20+(S.general?30:0))*FUNDM[fund('def')]);
   const costs=[['Health services',t.upH],['Schools and learning',t.upE],['Infrastructure and upkeep',t.upI],['Court life',courtCost()],['Court offices',hc.offices],['Royal allowances',hc.allow],['Palace upkeep',hc.palace],['Royal tutors',hc.tutors],['Army and navy',army],['Decrees',decCost],['Welfare',welfare],['Schools',schools],['Stipends',stipends],['Co-opted leaders',cooptCost],['Imports',impV],['Imported coal',coalImp],['Debt interest',interest],['Foreign protection',S.ov&&S.ov.prot?PROT_COST:0],['Appanages',appanages().length*APP_COST]];if(extra<0)costs.push(['Obligations and repayments',-extra]);
   const inT=income.reduce((a,x)=>a+x[1],0),outT=costs.reduce((a,x)=>a+x[1],0);
-  return{skill,needBonus:bonus,taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,pex,pexV,po,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
+  // GDP a month: the value of everything made (food, energy, goods and named products at their prices), the pay of working people, and business and tourism income
+  const gdpP={made:prod.food*price.food+prod.energy*price.energy+prod.goods*price.goods+Object.keys(PRODS).reduce((a,k)=>a+po[k].u*PRODS[k].p,0),pay:employed*WAGE[era()],biz:biz+tour},gdp=gdpP.made+gdpP.pay+gdpP.biz;
+  return{gdp,gdpP,skill,needBonus:bonus,taxBy,tax,fundCost:{health:t.upH,edu:t.upE+schools,infra:t.upI,def:army},t,sc,pop,blockaded,soldiers,quality,supply,morale,str,forts,weary,workers,employed,share,cls,rent,rentIdx,occ,target,legT,clout,mood,rp,income,costs,inT,outT,net:Math.round(inT-outT),prod,dem,sup,price,colIdx,tr,pex,pexV,po,cap:t.trade,capLeft:cap,hood,hoodAvg,polluted,matCap,matSale,coalImp,pv,integPen,common}}
 
 /* ---------- events ---------- */
 const summer=()=>S.month>=5&&S.month<=7,winter=()=>S.month===11||S.month<=1;
@@ -2098,6 +2102,26 @@ const setlOf=o=>Object.values(setlStats()).filter(s=>s.o===o).sort((a,b)=>b.pop-
 const setlOfLine=n=>{const st=setlOf(n).slice(0,4),Sx=setls();return st.length?`Largest settlements: ${st.map(s=>`${esc(Sx[s.id].name)} (${SRANK[s.r].n.toLowerCase()}, ${fmt(s.pop)})`).join(', ')}.`:'No settlements.'};
 const charters=()=>Object.values(setls()).filter(s=>s.ch).length;
 // names on the map, larger for bigger places; small ones only when zoomed in
+// where a province's name goes: the province tile nearest the middle of its land (cached per map)
+let PCTR=null;
+function provCtr(i){if(!PCTR||PCTR.map!==S.map)PCTR={map:S.map,v:[]};if(PCTR.v[i])return PCTR.v[i];const t=provTiles(i);if(!t.length)return null;
+  const mx=t.reduce((a,j)=>a+j%W,0)/t.length,my=t.reduce((a,j)=>a+(j/W|0),0)/t.length,k=t.reduce((b,j)=>Math.hypot(j%W-mx,(j/W|0)-my)<Math.hypot(b%W-mx,(b/W|0)-my)?j:b);
+  return PCTR.v[i]={c:k%W,r:k/W|0,n:t.length}}
+// the province of the tapped tile, lightly filled and outlined in gold
+function provEdges(p){const e=[];provTiles(p).forEach(t=>{const c=t%W,r=t/W|0,out=(rr,cc)=>rr<0||cc<0||rr>=H||cc>=W||S.map[rr*W+cc].p!==p;
+    if(out(r-1,c))e.push([c,r,c+1,r]);if(out(r+1,c))e.push([c,r+1,c+1,r+1]);if(out(r,c-1))e.push([c,r,c,r+1]);if(out(r,c+1))e.push([c+1,r,c+1,r+1])});return e}
+function drawProvOutline(ctx,X,Y,z){if(S.sel<0||!S.map[S.sel]||S.map[S.sel].p<0)return;const p=S.map[S.sel].p;ctx.save();
+  ctx.fillStyle='rgba(255,214,110,.12)';provTiles(p).forEach(t=>{const sx=X(t%W),sy=Y(t/W|0);ctx.fillRect(sx,sy,X(t%W+1)-sx,Y((t/W|0)+1)-sy)});
+  const path=new Path2D();provEdges(p).forEach(([a,b,c,d])=>{path.moveTo(X(a),Y(b));path.lineTo(X(c),Y(d))});
+  ctx.lineCap='round';ctx.lineWidth=Math.max(4,z*.14);ctx.strokeStyle='rgba(20,25,30,.45)';ctx.stroke(path);ctx.lineWidth=Math.max(2,z*.07);ctx.strokeStyle='#FFD66E';ctx.stroke(path);ctx.restore()}
+// province names: small spaced capitals, clear when zoomed out and fading as you zoom in on towns; the tapped province stands out in gold
+function drawProvNames(ctx,X,Y,z,c0,c1,r0,r1){const a=z<20?1:z>=34?0:(34-z)/14;if(a<=0)return;const selP=S.sel>=0&&S.map[S.sel]?S.map[S.sel].p:-1;
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  S.prov.forEach((P,i)=>{const q=provCtr(i);if(!q||q.c<c0-3||q.c>c1+3||q.r<r0-3||q.r>r1+3)return;const fs=Math.round(Math.max(10,Math.min(15,z*.5+(q.n>30?2:0)))),x=X(q.c+.5),y=Y(q.r+1.05);
+    ctx.font=`600 ${fs}px sans-serif`;if('letterSpacing' in ctx)ctx.letterSpacing=Math.round(fs*.16)+'px';const tx=P.name.toUpperCase();
+    ctx.globalAlpha=a*(i===selP?1:P.o==='me'?.9:.7);ctx.lineWidth=3;ctx.strokeStyle='rgba(20,25,30,.75)';ctx.strokeText(tx,x,y);
+    ctx.fillStyle=i===selP?'#FFD66E':P.o==='me'?'#F4F1E4':'#CFD9DD';ctx.fillText(tx,x,y)});
+  ctx.restore()}
 function drawSetl(ctx,X,Y,z,c0,c1,r0,r1){if(z<10)return;const st=setlStats(),Sx=setls();
   Object.values(st).forEach(s=>{if(z<[28,16,11,0,0,0][s.r]||!Sx[s.id])return;if(s.cx<c0-4||s.cx>c1+4||s.cy<r0-4||s.cy>r1+4)return;
     const x=X(s.cx+.5),y=Y(s.cy)-z*.1,fs=Math.round([11,12,13,15,17,20][s.r]*(z>=30?1.1:1));ctx.font=`${s.r>=3?'bold ':''}${fs}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
@@ -2281,6 +2305,10 @@ const MILESTONES=[
   {id:'p10',p:'prosperity',n:'A world power',get d(){return`Reach ${fmt(msPop(50000))} subjects`},b:'Legitimacy +2',t:()=>S.pop>=msPop(50000),g:()=>`${fmt(S.pop)} subjects.`},
   {id:'p11',p:'prosperity',get n(){return{.5:'Fifty thousand souls',1:'A hundred thousand souls',2:'Two hundred thousand souls',4:'Four hundred thousand souls'}[mapF()]||'A hundred thousand souls'},get d(){return`Reach ${fmt(msPop(100000))} subjects`},b:'Research +5%',t:()=>S.pop>=msPop(100000),g:()=>`${fmt(S.pop)} subjects.`},
   {id:'p12',p:'prosperity',n:'A world city',d:'Grow a metropolis: 50,000 people with the services to match',b:'Legitimacy +1',t:()=>setlCount(5)>0,g:()=>{const t=setlOf('me')[0];return t?`Your largest settlement, ${setls()[t.id].name}, has ${fmt(t.pop)} people.`:'No settlements yet.'}},
+  // GDP milestones: wealth per person, and the largest economy on the island (checked on last month's GDP)
+  {id:'p13',p:'prosperity',n:'A prosperous people',d:'Reach a GDP of 🪙350 a year per person',b:'Approval +1',t:()=>gdpPC()>=350,g:()=>`🪙${fmt(gdpPC())} per person now.`},
+  {id:'p14',p:'prosperity',n:'The island’s richest realm',d:'Have the largest GDP on the island, with at least two neighbors left',b:'Legitimacy +1',t:()=>liveNations().length>=2&&gdpNow()>0&&liveNations().every(n=>gdpNow()>nGdp(n)),g:()=>{const b=liveNations().map(n=>[n,nGdp(n)]).sort((a,b)=>b[1]-a[1])[0];return b?`Yours: 🪙${fmt(gdpNow())} a year. Largest neighbor, ${NATIONS[b[0]].n}: 🪙${fmt(b[1])}.`:'No neighbors left to compare with.'}},
+  {id:'p15',p:'prosperity',n:'An economic powerhouse',d:'Reach a GDP of 🪙500 a year per person',b:'Tax income +2%',t:()=>gdpPC()>=500,g:()=>`🪙${fmt(gdpPC())} per person now.`},
   {id:'d1',p:'dynasty',n:'A family tradition',d:'Your family holds the throne for 3 generations',b:'Legitimacy +1',t:()=>(S.gens||1)>=3,g:()=>`Generation ${S.gens||1}.`},
   {id:'d2',p:'dynasty',n:'An established house',d:'Your family holds the throne for 5 generations',b:'Legitimacy +1',t:()=>(S.gens||1)>=5,g:()=>`Generation ${S.gens||1}.`},
   {id:'d3',p:'dynasty',n:'A royal line for the ages',d:'Your family holds the throne for 10 generations',b:'Legitimacy +2',t:()=>(S.gens||1)>=10,g:()=>`Generation ${S.gens||1}.`},
@@ -2304,9 +2332,10 @@ const MILESTONES=[
   {id:'a6',p:'ages',n:'All the world’s knowledge',d:'Research every technology',b:'Research +5%',t:()=>TECH.every(x=>hasTech(x.id)),g:()=>`${S.tech.done.length} of ${TECH.length} known.`}];
 const msHas=id=>!!(S.ms&&S.ms[id]);
 const msCount=ids=>ids.filter(msHas).length;
-const msLeg=()=>(msHas('c4')?2:0)+(msHas('p12')?1:0)+(msHas('d9')?1:0)+(msHas('p10')?2:0)+(msHas('d8')?2:0)+(msHas('a3')?2:0)+(msHas('a5')?2:0)+(msHas('c5')?2:0)+(msHas('p5')?2:0)+msCount(['d1','d2','d5','d6','d7'])+(msHas('d3')?2:0)+(msHas('d4')?2:0);
-const msHap=()=>msCount(['p1','p3','g4','p9']);
-const msTax=()=>(msHas('p2')?.03:0)+(msHas('p4')?.03:0)+(msHas('p6')?.02:0);
+const msLeg=()=>(msHas('c4')?2:0)+(msHas('p12')?1:0)+(msHas('p14')?1:0)+(msHas('d9')?1:0)+(msHas('p10')?2:0)+(msHas('d8')?2:0)+(msHas('a3')?2:0)+(msHas('a5')?2:0)+(msHas('c5')?2:0)+(msHas('p5')?2:0)+msCount(['d1','d2','d5','d6','d7'])+(msHas('d3')?2:0)+(msHas('d4')?2:0);
+const msHap=()=>msCount(['p1','p3','g4','p9','p13']);
+const gdpNow=()=>{const m=S.gdpm;return m&&m.length?m[m.length-1]*12:0},gdpPC=()=>gdpNow()/Math.max(1,S.pop);
+const msTax=()=>(msHas('p2')?.03:0)+(msHas('p4')?.03:0)+(msHas('p6')?.02:0)+(msHas('p15')?.02:0);
 // counters, then any newly reached milestones, each month
 function msMonth(notes,stop){S.peace=S.war?0:(S.peace||0)+1;S.happy=S.hap>=75?(S.happy||0)+1:0;S.ms=S.ms||{};
   // a nation that has lost its last province falls; one that gets a province back through a revolt rises again
@@ -2550,7 +2579,9 @@ function endMonth(silent){
   S.month++;if(S.month>11){S.month=0;S.year++;hh().cands={};if(S.aging){S.monarch.age++;if(S.fam.spouse)S.fam.spouse.age++;royals().forEach(k=>k.age++)}}
   familyMonth(notes,stop);houseMonth(notes,stop);unityMonth(notes,stop);pretMonth(notes,stop);
   S.turn++;
-  S.hist.push([S.pop,S.hap,S.leg]);if(S.hist.length>60)S.hist.shift();S.fin=S.fin||[];S.fin.push([Math.round(c.inT),Math.round(c.outT)]);if(S.fin.length>60)S.fin.shift();
+  S.hist.push([S.pop,S.hap,S.leg]);if(S.hist.length>60)S.hist.shift();
+  // GDP: the last 25 months, and one total for each year (the sum of its months) for the chart
+  S.gdpm=(S.gdpm||[]).concat(Math.round(c.gdp)).slice(-25);if(S.month===0){const m=S.gdpm.slice(-12);S.gdpy=(S.gdpy||[]).concat([[S.year-1,Math.round(m.reduce((a,b)=>a+b,0)*12/m.length),S.pop]]).slice(-150)}S.fin=S.fin||[];S.fin.push([Math.round(c.inT),Math.round(c.outT)]);if(S.fin.length>60)S.fin.shift();
   const got=checkGoals(),newTier=tierOf(S.best).n;msMonth(notes,stop);
   if(S.aging){const a=S.monarch.age,p=a>50?Math.pow(a-50,2)/60000:0;if(Math.random()<p){queueSuccession(succeed('died'),'died')}}
   if(S.coins<-debtLimit(c)&&!(S.bkCd>S.turn)){S.bkCd=S.turn+18;queue.push(bankruptEvent(c));stop.push('The treasury is bankrupt')}
@@ -2645,15 +2676,24 @@ function tileColor(x,P,i){
 // Relations is diverging (hostile red, neutral gray at 50, friendly green); tension is one hue from calm gray to red.
 const UI=(()=>{try{return JSON.parse(localStorage.getItem('islandnation.ui'))||{}}catch(e){return{}}})();
 const saveUI=()=>{try{localStorage.setItem('islandnation.ui',JSON.stringify(UI))}catch(e){}};
-const MODES={political:'Political',land:'Land',pollution:'Pollution',unrest:'Unrest',relations:'Relations',tension:'Tension',claims:'Claims'};
+const MODES={political:'Political',provinces:'Provinces',land:'Land',pollution:'Pollution',unrest:'Unrest',relations:'Relations',tension:'Tension',claims:'Claims'};
 let mapMode=MODES[UI.mapMode]?UI.mapMode:'political';
 const hexRgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]};
 const mixHex=(a,b,t)=>{const A=hexRgb(a),B=hexRgb(b);return`rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')})`};
+// Provinces map: eight soft colours shared out so that no two neighbouring provinces match (greedy, largest first; cached per map)
+const PROVHUE=['#8DB86B','#D2B25A','#62A89E','#C28A68','#9A8CC4','#C97F92','#76A3CF','#B5B862'];
+let PHUE=null,RMK="";
+function provHues(){geo();if(PHUE&&PHUE.map===S.map&&PHUE.n===S.prov.length)return PHUE.v;const v=new Array(S.prov.length).fill(-1);
+  S.prov.map((P,i)=>i).sort((a,b)=>provTiles(b).length-provTiles(a).length).forEach(i=>{const used=new Set(adjProvs(i).map(j=>v[j]));let k=(i*3)%PROVHUE.length;for(let t=0;t<PROVHUE.length&&used.has(k);t++)k=(k+1)%PROVHUE.length;v[i]=k});
+  PHUE={map:S.map,n:S.prov.length,v};return v}
 // null means "use the normal political colour" for that province
 function provColors(P){if(mapMode==='political'||mapMode==='land'||mapMode==='pollution')return null;
   // neutral is the gray midpoint; frontier gets a fainter gray so it never reads as a neutral nation
   const neutral=P.neutral,wild=P.faint,N=P.neutralHex;
+  const hue=mapMode==='provinces'?provHues():null;
   return S.prov.map((Pv,i)=>{const o=Pv.o;
+    // each province its own soft colour, never the same as a neighbour's; yours bright, other lands faded toward gray
+    if(hue)return o==='me'?PROVHUE[hue[i]]:mixHex(PROVHUE[hue[i]],N,o==='wild'?.7:.55);
     if(mapMode==='unrest')return o!=='me'?wild:Pv.revolt?P.bad:mixHex(N,P.bad,Math.min(1,(Pv.unrest||0)/100));
     if(mapMode==='claims'){if(o==='me')return S.fclaims[i]?mixHex(P.grass,P.bad,.6):null;return S.claims[i]?mixHex(N,P.good,.75):o==='wild'?wild:neutral}
     if(o==='me')return null;if(o==='wild')return wild;
@@ -2665,7 +2705,8 @@ const keyShown=()=>UI.legend!=null?UI.legend:isWide();
 function renderModes(){const sel=$('#modeSel');if(!sel.options.length)sel.innerHTML=Object.entries(MODES).map(([k,n])=>`<option value="${k}">${n} map</option>`).join('');sel.value=mapMode;
   const on=keyShown();$('#legend').hidden=!on;$('#legBtn').setAttribute('aria-pressed',on);
   const sw=(cls,n,style)=>`<span class="lg"><i class="${cls}"${style?` style="${style}"`:''}></i>${n}</span>`,bar=(g,a,b)=>`<span class="lg">${a} <span class="lgbar" style="background:${g}"></span> ${b}</span>`;
-  $('#legend').innerHTML=mapMode==='political'?sw('o-me','Your kingdom')+sw('o-norvik','Norvik')+sw('o-solenne','Solenne')+sw('o-aurelia','Aurelia')+sw('o-wild','Frontier')
+  $('#legend').innerHTML=mapMode==='provinces'?(()=>{if(typeof S==='undefined'||!S||!S.map)return'<span class="lg">Each province has its own color.</span>';const h=provHues(),mine=provsOf('me');RMK=mine.join();return mine.slice(0,8).map(i=>sw('',esc(S.prov[i].name),`background:${PROVHUE[h[i]]}`)).join('')+(mine.length>8?`<span class="lg">and ${mine.length-8} more</span>`:'')+'<span class="lg">Other lands are faded. Tap a tile to outline its province.</span>'})()
+    :mapMode==='political'?sw('o-me','Your kingdom')+sw('o-norvik','Norvik')+sw('o-solenne','Solenne')+sw('o-aurelia','Aurelia')+sw('o-wild','Frontier')
     :mapMode==='land'?sw('','Open land',`background:color-mix(in srgb,var(--grass) 50%,var(--muted))`)+sw('','Fertile',`background:color-mix(in srgb,var(--grass) 55%,var(--coin))`)+sw('','Hills',`background:color-mix(in srgb,var(--sand) 55%,var(--muted))`)+sw('','Forest','background:var(--forest)')+sw('','River','background:var(--river);height:4px;border-radius:2px')
       +Object.keys(DEPN).map(k=>`<span class="lg">${DEPE[k]} ${DEPN[k][0].toUpperCase()+DEPN[k].slice(1)}</span>`).join('')
     :mapMode==='unrest'?bar(`linear-gradient(90deg,${NEU},var(--bad))`,'Calm','Revolt')+'<span class="lg">Your provinces. Riots start at 60.</span>'
@@ -2888,7 +2929,7 @@ function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(V3.on)return;i
   drawIslets(ctx,X,Y,z,c0,c1,r0,r1,P);
   // pieces lean up and to the right, so include a row below and a column to the left of the view
   if(pieces)drawPieces(ctx,X,Y,r0,Math.min(H-1,r1+2),Math.max(0,c0-1),c1,z,showDep&&z>=18,dpr);
-  drawSetl(ctx,X,Y,z,c0,c1,r0,r1);
+  drawProvOutline(ctx,X,Y,z);drawProvNames(ctx,X,Y,z,c0,c1,r0,r1);drawSetl(ctx,X,Y,z,c0,c1,r0,r1);
   marks.forEach(([e,mx,my,f])=>{const t=z*f,px=Math.max(8,Math.ceil(t*dpr/4)*4),g=glyph(e,px),s=t*1.3;ctx.drawImage(g,mx-s/2,my-s/2,s,s)});
   const ring=(i,color,dash)=>{if(i<0)return;const sx=X(i%W),sy=Y(i/W|0),w=X(i%W+1)-sx;ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=3;ctx.strokeRect(sx+1.5,sy+1.5,w-3,w-3);ctx.setLineDash([])};
   if(S.sel>=0&&GROWMARK)GROWMARK.forEach(j=>ring(j,'rgba(255,255,255,.85)',[4,4]));
@@ -3633,6 +3674,13 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
   if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
   if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
     V3.sel=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xE2AE2A}));V3.scene.add(V3.sel)}
+  // the tapped tile's province, outlined in gold along its edges
+  if(V3.pvo){V3.scene.remove(V3.pvo);V3.pvo.geometry.dispose();V3.pvo.material.dispose();V3.pvo=null}
+  if(S.sel>=0&&S.map[S.sel]&&S.map[S.sel].p>=0){const pos=[],hw=.035;provEdges(S.map[S.sel].p).forEach(([a,b,c,d])=>{const nu=b===d?0:hw,nw=b===d?hw:0;
+      for(let k=0;k<4;k++){const u0=a+(c-a)*k/4,w0=b+(d-b)*k/4,u1=a+(c-a)*(k+1)/4,w1=b+(d-b)*(k+1)/4,P=(u,w)=>[v3X(u),v3G(u,w)+.06,v3Z(w)];
+        const A=P(u0-nu,w0-nw),B2=P(u0+nu,w0+nw),C=P(u1+nu,w1+nw),D=P(u1-nu,w1-nw);pos.push(...A,...B2,...C,...A,...C,...D)}});
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+    V3.pvo=new T.Mesh(g,new T.MeshBasicMaterial({color:0xFFD66E,side:T.DoubleSide,transparent:true,opacity:.9,depthWrite:false}));V3.pvo.renderOrder=5;V3.scene.add(V3.pvo)}
   // Development 2.0: the tiles your towns will spread onto next, dashed in white
   if(V3.grow){V3.scene.remove(V3.grow);V3.grow.geometry.dispose();V3.grow.material.dispose();V3.grow=null}
   if(S.sel>=0&&GROWMARK&&GROWMARK.length){const pts=[];GROWMARK.forEach(i=>{const c=i%W,r=i/W|0,ring=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.1+f*.8,r+.1],[c+.9,r+.1+f*.8],[c+.9-f*.8,r+.9],[c+.1,r+.9-f*.8]][side];ring.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
@@ -3651,6 +3699,11 @@ function v3Labels(){const box=$('#v3lab'),vw=box.clientWidth,vh=box.clientHeight
     const u=s.cx+.5,w=s.cy+.5;v.set(v3X(u),v3G(u,w)+.45,v3Z(w)).project(V3.cam);if(v.z>1||v.x<-1.1||v.x>1.1||v.y<-1.1||v.y>1.1)return;
     let el=V3.labels.get(s.id);if(!el){el=document.createElement('span');V3.labels.set(s.id,el);box.appendChild(el)}
     el.textContent=X.name;el.className='r'+Math.min(4,s.r)+(s.o==='me'?' mine':'');el.style.transform=`translate(${Math.round((v.x+1)/2*vw)}px,${Math.round((1-v.y)/2*vh)}px) translate(-50%,-100%)`;seen.add(s.id)});
+  // province names once the camera is pulled back (and always for the tapped province)
+  const selP=S.sel>=0&&S.map[S.sel]?S.map[S.sel].p:-1;
+  S.prov.forEach((P,i)=>{if(V3.dist<7&&i!==selP)return;const q=provCtr(i);if(!q)return;const u=q.c+.5,w=q.r+1.05;v.set(v3X(u),v3G(u,w)+.1,v3Z(w)).project(V3.cam);if(v.z>1||v.x<-1.1||v.x>1.1||v.y<-1.1||v.y>1.1)return;
+    const key='p'+i;let el=V3.labels.get(key);if(!el){el=document.createElement('span');V3.labels.set(key,el);box.appendChild(el)}
+    el.textContent=P.name;el.className='pv'+(P.o==='me'?' mine':'')+(i===selP?' on':'');el.style.transform=`translate(${Math.round((v.x+1)/2*vw)}px,${Math.round((1-v.y)/2*vh)}px) translate(-50%,-50%)`;seen.add(key)});
   V3.labels.forEach((el,id)=>{if(!seen.has(id)){el.remove();V3.labels.delete(id)}})}
 // the tile under a point on the screen: walk along the ray until it meets the ground
 function v3Pick(sx,sy){const T=THREE,w=$('#mapwrap'),ndc=new T.Vector2(sx/w.clientWidth*2-1,-(sy/w.clientHeight)*2+1),rc=new T.Raycaster();rc.setFromCamera(ndc,V3.cam);
@@ -3859,6 +3912,31 @@ function runwayText(c){const n=c.net,m=S.coins,when=k=>k>600?'':` (${MONTHS[(S.m
     return{t:`The treasury is growing by about 🪙${fmt(n*12)} a year, so it won’t run out.`,c:'var(--good)'}}
   if(m<=0)return{t:`The treasury is empty: you are 🪙${fmt(-m)} in debt, and it grows by 🪙${fmt(-n)} a month. Debt costs interest, and deep debt can end in bankruptcy.`,c:'var(--bad)'};
   const k=Math.floor(m/-n);return{t:k<1?'At this rate the treasury runs out next month, and you go into debt.':`At this rate the treasury runs out in ${k>600?"":"about "}${mo(k)}${when(k)}, and then you go into debt.`,c:k<12?'var(--bad)':'var(--warn)'}}
+/* ---------- GDP ---------- */
+// pay per working person a month, by era; neighbours' GDP per person a month is estimated from the era, their trade and their fortunes
+const WAGE=[40,48,58,70],NGDPPC=[22,31,40,50],NGDPF={norvik:1.15,solenne:.95,aurelia:1.05};
+const gdpYear=c=>Math.round(c.gdp*12);
+const nGdp=n=>Math.round(nPop(n)*NGDPPC[Math.min(3,era())]*(NGDPF[n]||1)*({stable:1,indebted:.85,troubled:.7}[S.nsit[n]]||1)*(nwarOf(n)||atWarWith(n)?.9:1)*12);
+// growth against the same month a year ago (S.gdpm keeps the last 25 months)
+const gdpGrowth=()=>{const m=S.gdpm||[];return m.length>=13&&m[m.length-13]>0?m[m.length-1]/m[m.length-13]-1:null};
+// every nation on the island, richest first
+function gdpRank(c){const me=gdpYear(c),r=[{k:'me',n:S.name,e:'👑',g:me,p:S.pop}];liveNations().forEach(n=>r.push({k:n,n:NATIONS[n].n,e:NATIONS[n].e,g:nGdp(n),p:nPop(n)}));return r.sort((a,b)=>b.g-a.g)}
+function gdpChart(){const h=S.gdpy||[];if(h.length<2)return'<p class="hint">A chart of your GDP fills in year by year.</p>';
+  const Wc=320,Hc=110,L=8,R=8,T=16,Bm=18,mx=Math.max(...h.map(x=>x[1]))*1.08||1,x=i=>L+(Wc-L-R)*i/(h.length-1),y=v=>T+(Hc-T-Bm)*(1-v/mx),pts=h.map((v,i)=>`${x(i).toFixed(1)},${y(v[1]).toFixed(1)}`).join(' ');
+  return`<svg viewBox="0 0 ${Wc} ${Hc}" style="width:100%;height:auto;display:block" role="img" aria-label="GDP each year, from year ${h[0][0]} to year ${h[h.length-1][0]}">
+    <line x1="${L}" x2="${Wc-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)" stroke-width="1"/><polyline points="${pts}" fill="none" stroke="var(--deep)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(h.length-1)}" cy="${y(h[h.length-1][1])}" r="4" fill="var(--deep)" stroke="var(--card)" stroke-width="2"/>
+    <text x="${L}" y="11" font-size="10" fill="var(--muted)">🪙${fmt(Math.max(...h.map(x=>x[1])))} at most</text>
+    <text x="${L}" y="${Hc-4}" font-size="10" fill="var(--muted)">Year ${h[0][0]}</text><text x="${Wc-R}" y="${Hc-4}" font-size="10" fill="var(--muted)" text-anchor="end">Year ${h[h.length-1][0]}</text></svg>`}
+function gdpHTML(c){const g=gdpYear(c),pc=g/Math.max(1,S.pop),gr=gdpGrowth(),P=c.gdpP,share=g?c.tax*12/g:0,rk=gdpRank(c),pos=rk.findIndex(r=>r.k==='me')+1;
+  const part=(v,l)=>`${l} ${Math.round(v/Math.max(1,c.gdp)*100)}%`;
+  return`<h2>📊 The economy</h2><p class="hint">GDP is the value of everything your kingdom makes and earns in a year: food, energy, goods and products at today’s prices, the pay of working people, and business and tourism income.</p>
+  <div class="tots t3"><div><small>GDP a year</small><b>🪙${fmt(g)}</b></div><div><small>Per person</small><b>🪙${fmt(pc)}</b></div><div><small>Growth</small><b class="${gr==null?'':gr>=0?'pos':'neg'}">${gr==null?'–':(gr>=0?'+':'')+(gr*100).toFixed(1)+'%'}</b></div></div>
+  <div class="card"><div class="row"><div class="grow">${gdpChart()}<small>${part(P.made,'Things made')}, ${part(P.pay,'wages')}, ${part(P.biz,'business and tourism')}. ${gr==null?'Growth shows once a year has passed.':'Growth compares this month with the same month last year.'}</small>
+    <small>Taxes take ${Math.round(share*100)}% of the economy${share>.2?', a heavy burden':share<.08?', a light touch':''}. Your GDP is ${pos===1?'the largest':`number ${pos}`} of ${rk.length} on the island (see the World tab).</small></div></div></div>`}
+// the World tab: every nation's economy side by side
+function gdpWorld(c){const rk=gdpRank(c),mx=rk[0]?rk[0].g||1:1;
+  return`<h2>📊 Economies of the island</h2><p class="hint">GDP a year, richest first. Your figure is exact; your neighbors’ are estimates from their size, their trade and their fortunes (debt, turmoil and war shrink them).</p><div class="card">${rk.map((r,i)=>`<div class="row"><span class="em">${r.e}</span><div class="grow"><b>${i+1}. ${esc(r.n)}</b>${r.k==='me'?' <span class="tag" style="color:var(--good)">You</span>':''}<small>🪙${fmt(r.g)} a year, 🪙${fmt(r.g/Math.max(1,r.p))} per person, ${fmt(r.p)} people.</small>${bar(r.g/mx*100,r.k==='me'?'var(--good)':'var(--deep)')}</div></div>`).join('')}</div>`}
 function econHTML(){const c=calc();
   const rows=(a,cls)=>a.filter(x=>Math.round(x[1])).map(([l,v])=>`<div class="row"><div class="grow">${l}</div><span class="num ${cls}">${fmt(v)}</span></div>`).join('')||'<div class="row"><div class="grow"><small>None</small></div></div>';
   const decs=Object.entries(DEC).map(([k,p])=>`<div class="row"><span class="em">${p.e}</span><div class="grow"><b>${p.n}</b><small>${p.d}</small></div><button class="sw" data-act="dec" data-arg="${k}" aria-pressed="${!!S.dec[k]}" aria-label="${p.n}"></button></div>`).join('');
@@ -3869,6 +3947,7 @@ function econHTML(){const c=calc();
   <div class="tots"><div><small>Revenue a month</small><b class="pos">🪙${fmt(c.inT)}</b></div><div><small>Spending a month</small><b class="neg">🪙${fmt(c.outT)}</b></div></div>
   <p class="hint" style="color:${rw.c}">⏳ ${rw.t} Treasury now: 🪙${fmt(S.coins)}.</p>
   ${budgetHTML(c)}
+  ${gdpHTML(c)}
   ${luxHTML()}
   <h2>Prices and rent</h2><p class="hint">Prices follow supply and demand, and rent rises once homes are more than 80% full. Together they set the cost of living, which hits the lower class hardest. Building homes brings rent down, and imports lower prices.</p><div class="card">${market}${rentRow}</div>
   <h2>Building materials</h2><div class="card"><div class="row"><span class="em">🧱</span><div class="grow"><b>${fmt(S.mat||0)} in stock</b><small>Storage for ${fmt(c.matCap)}. ${c.t.mat?`Producing ${fmt(c.t.mat)} a month.`:'You don’t produce any yet. Build a lumber camp in a forest, or a quarry or brickworks on a stone or clay deposit.'}</small><small>Buildings costing 🪙800 or more also need materials. Anything you don’t have is imported at 🪙${matPrice().toFixed(1)} each.${c.matSale?` Production beyond storage sells for 🪙${fmt(c.matSale)} a month.`:''}</small>${bar(Math.min(100,(S.mat||0)/c.matCap*100),'var(--deep)')}</div></div>
@@ -3918,7 +3997,7 @@ function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
   return `${war}${mil}<h2>Trade capacity</h2><p class="hint">${fmt(used)} of ${fmt(c.cap)} units used this month. Fishing docks add 30 and a harbor adds 600. Imports are filled first. Your trade law: ${law('trade').n.toLowerCase()}.</p><div class="capbar"><i style="width:${c.cap?Math.min(100,used/c.cap*100):0}%"></i></div>
   <h2>Food, energy and goods</h2><p class="hint">Choose a partner for each. By default you sell only what you don’t need and import any shortfall, but you can sell a fixed share of everything you make.</p><div class="card">${res}</div>
   <h2>📦 Export products</h2><p class="hint">Products come from vineyards (wine), lumber camps (timber), quarries (stone), brickworks (bricks), iron mines, coal mines, textile mills (cloth), steelworks, luxury workshops (fine goods) and factories (machinery). What you sell leaves home. Each kingdom pays its own price, demand drifts every month, and better relations pay more. Product exports use trade capacity first.${c.pexV?` Now earning 🪙${fmt(c.pexV)} a month.`:''}</p><div class="card">${prods}</div>
-  <h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}${overseasHTML()}`}
+  ${gdpWorld(c)}<h2>Neighbors</h2><p class="hint">An envoy improves relations and eases tension. A demand raises tension, but a friendly neighbor may pay tribute and your standing at home improves.</p>${nats}${overseasHTML()}`}
 function techHTML(){const c=calc(),cur=S.tech.cur&&techOf(S.tech.cur);
   const avail=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&(!t.req||hasTech(t.req))),locked=TECH.filter(t=>techOpen(t)&&!hasTech(t.id)&&t.req&&!hasTech(t.req)),done=TECH.filter(t=>hasTech(t.id)),future=TECH.filter(t=>!techOpen(t)),E=ERAS[era()];
   const row=(t,btn,sub)=>`<div class="row"><span class="em">${t.e}</span><div class="grow"><b>${t.n}</b><small>${t.d}${sub?' '+sub:''}</small></div>${btn||''}</div>`;
@@ -3936,7 +4015,7 @@ function techHTML(){const c=calc(),cur=S.tech.cur&&techOf(S.tech.cur);
   ${future.length?`<h2>Later ages</h2><div class="card">${[1,2,3].filter(e=>e>era()).map(e=>`<div class="row"><span class="em">${ERAS[e].e}</span><div class="grow"><b>${ERAS[e].n}</b><small>${future.filter(t=>t.era===e).map(t=>t.e+' '+t.n).join(', ')}.</small></div></div>`).join('')}</div>`:''}
   ${done.length?`<h2>Known</h2><div class="card">${done.map(t=>row(t,'<span>✅</span>')).join('')}</div>`:''}`}
 
-function render(){
+function render(){if(mapMode==="provinces"&&PHUE&&(PHUE.map!==S.map||RMK!==provsOf("me").join()))renderModes();
   $('#name').textContent=S.name;
   $('#when').textContent=`${MONTHS[S.month]}, year ${S.year}. ${ERAS[era()].n}. ${monarchName(S.monarch)}`;
   $('#coins').textContent=`🪙 ${fmt(S.coins)}`;$('#coins').style.color=S.coins<0?'var(--bad)':'';
@@ -4006,7 +4085,7 @@ function provSheet(i){const P=S.prov[i],tiles=provTiles(i),o=P.o,bl=tiles.map(t=
       <div class="row"><span class="em">⚔️</span><div class="grow"><b>Declare war for it</b><small>${S.war?'You\u2019re already at war.':S.claims[i]?'Your claim justifies it. Legitimacy -2.':'Without a claim this is naked aggression. Legitimacy -10, and all neighbors grow tense.'} Yours ${c.str}, theirs ${th}, and defenders fight 25% harder.</small></div><button class="btn" id="warBtn" data-act="declare" data-arg="${i}" ${S.war?'disabled':''}>Declare</button></div></div>`}
   openSheet(`<h3>${o==='me'?'🏠':o==='wild'?'🌿':NATIONS[o].e} ${P.name}</h3>${body}<button class="btn primary wide" data-act="closeSheet">Done</button>`)}
 function tileSheet(i){if(MOVE&&doMove(i))return;const x=S.map[i];if(x.o!=='me'){S.sel=i;render();provSheet(x.p);return}const coast=isCoast(i);S.sel=i;GROWMARK=d2()?[...growNext().keys()]:null;render();
-  const tt=terrainTxt(i),place=`${S.prov[x.p].name}${tt.length?', '+tt.join(', '):''}.${x.sid&&setls()[x.sid]?` In ${esc(setls()[x.sid].name)}.`:''}`,depTxt=x.dp?`${DEPE[x.dp]} ${DEPN[x.dp][0].toUpperCase()+DEPN[x.dp].slice(1)} deposit.`:'';
+  const tt=terrainTxt(i),place=`<b>${esc(S.prov[x.p].name)} province</b>${tt.length?', '+tt.join(', '):''}.${x.sid&&setls()[x.sid]?` In ${esc(setls()[x.sid].name)}.`:''}`,depTxt=x.dp?`${DEPE[x.dp]} ${DEPN[x.dp][0].toUpperCase()+DEPN[x.dp].slice(1)} deposit.`:'';
   const A=appealMap()[i],hoodTxt=d=>!(d&&d.homes)?'':A>0?` Pleasant neighborhood (+${A}): parks or gardens nearby.`:A<0?` Polluted neighborhood (${A}): industry nearby makes residents less happy.`:'';
   if(x.b){const d=B[x.b],up=UPGR[x.b],U=up&&B[up],upk=U?priceOf(Math.max(0,U.c-Math.round(d.c*.5)),Math.max(0,matCost(U)-Math.round(matCost(d)/2))):null,lr=U&&placeWhy(up,i);
     openSheet(`<h3>${d.e} ${d.n}${d2()&&lvOK(x.b)?` <span class="tag">Level ${x.lv||1}</span>`:''}</h3><p>${d.d}</p><p class="hint">${place} ${effStr(d,i)}${hoodTxt(d)}${GROWMARK&&GROWMARK.includes(i)?" The town beside it will spread onto this tile next (outlined on the map), and this will move to a nearby tile for free.":""}${x.dp&&d.dep!==x.dp?` ${depTxt} Demolish this to use it.`:''}</p>
@@ -4277,7 +4356,7 @@ function act(a,arg,n){
     case'maphelp':openSheet(`<h3>🗺️ The map</h3><div class="card">
       <div class="row"><span class="em">👆</span><div class="grow"><b>Moving around</b><small>Drag to move. Pinch, scroll, or use + and − to zoom. ⌂ returns to your capital, and the small map in the corner jumps anywhere.</small></div></div>
       <div class="row"><span class="em">🏗️</span><div class="grow"><b>Tapping tiles</b><small>Tap your own land to build or upgrade. Tap a neighbor’s province to buy, claim or contest it, or frontier to settle it.</small></div></div>
-      <div class="row"><span class="em">🧭</span><div class="grow"><b>Borders</b><small>Thick lines are national borders, thin lines are provinces. Sand-coloured edges mark your coastline.</small></div></div>
+      <div class="row"><span class="em">🧭</span><div class="grow"><b>Borders</b><small>Thick lines are national borders, thin lines are provinces. Sand-coloured edges mark your coastline. Province names show when you zoom out. Tap any tile to outline its province in gold, or choose the Provinces map to give each province its own color.</small></div></div>
       <div class="row"><span class="em">🎨</span><div class="grow"><b>Map modes</b><small>The menu at the top left recolours the map: Land shows terrain and deposits, Pollution shows how pleasant your neighborhoods are, and Relations, Tension and Claims show diplomacy. Key shows or hides the legend.</small></div></div>
       <div class="row"><span class="em">🏔️</span><div class="grow"><b>3D view</b><small>The 3D button switches to a 3D view of the same map. Drag to move, pinch to zoom, and twist two fingers to turn (drag two fingers up or down to tilt). On a computer, drag with the right mouse button to turn and tilt, and scroll to zoom. Tap a tile as usual. It needs an internet connection the first time you open it. Zoom in close to see the living world: people, carts, farmers, animals, boats, turning windmills and chimney smoke. Life turns it off to save battery.</small></div></div>
       ${isWide()?'<div class="row"><span class="em">⤢</span><div class="grow"><b>More room</b><small>⤢ hides the side panel for a full-screen map. Tap any tab to bring it back, or the open tab again to hide it.</small></div></div>':''}</div>
@@ -4517,7 +4596,7 @@ function setPanel(show){document.body.classList.toggle('nopanel',!show);UI.nopan
 $('#modeSel').addEventListener('change',e=>act('mapmode',e.target.value));
 // folding or unfolding the phone crosses the wide/narrow line; the key's default follows it
 if(window.matchMedia)matchMedia('(min-width:760px)').addEventListener('change',renderModes);
-mapInit();renderModes();setPanel(!UI.nopanel);setFull(!!UI.full);const had=load();net();render();if(!had)welcome();if(UI.v3)v3Start(false);
+mapInit();renderModes();setPanel(!UI.nopanel);setFull(!!UI.full);const had=load();renderModes();net();render();if(!had)welcome();if(UI.v3)v3Start(false);
 else if(S.migrated){delete S.migrated;save();openSheet(`<div class="event"><div class="pic" aria-hidden="true">🗺️</div><h3>Your kingdom now has neighbors</h3><p>The kingdom has been redrawn on a larger map with land borders. Your buildings have been rebuilt around the capital, and you also hold two more provinces to grow into. Norvik lies to the north, Aurelia to the east and Solenne to the south, with unclaimed frontier between you.</p></div><button class="btn primary wide" data-act="closeSheet">Explore the map</button>`)}
 </script>
 </body>
