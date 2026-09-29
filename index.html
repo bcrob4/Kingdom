@@ -377,6 +377,78 @@ const B={
   broadcaster:{n:'Radio station',e:'📻',c:1800,u:25,jobs:20,fun:80,leg:2,unique:1,tech:'radio',d:'Royal broadcasts: legitimacy +2, and recreation for 80.'}
 };
 const RENAME={studio:'bank',tram:'rail',solar:'hydro'};
+/* ---------- Development 2.0 (new games from v2 on: S.d2) ----------
+   Fewer, bigger buildings: each serves a whole settlement, and can be raised two levels. Towns grow tile by tile on their own,
+   town buildings go in town tiles, farms, mines and mills in the countryside, and industry on a town's edge. */
+const B0=JSON.parse(JSON.stringify(B));
+const D2B={
+  hall:{fun:100,jobs:15,d:'The seat of the crown. Royal feasts and festivals give recreation for 100 people.'},
+  fcap:{homes:100},
+  cottage:{homes:100,d:'Homes for 100 people on one town tile.'},
+  townhouse:{homes:250,d:'Homes for 250 people on one town tile.'},
+  tenement:{homes:400,d:'Cheap, crowded housing: 400 people on one town tile.'},
+  apartments:{homes:800,d:'Homes for 800 people on one town tile.'},
+  farm:{food:200,jobs:40,d:'Feeds 200 people, more on fertile land by a river. Countryside.'},
+  dock:{food:150,jobs:25,d:'Feeds 150 people, and adds a little trade. Coast, in the countryside.'},
+  greenhouse:{food:500,jobs:40,d:'Year-round food for 500 people. Countryside.'},
+  vineyard:{jobs:20,inc:40},
+  market:{jobs:40,inc:80,fun:100,mid:15,d:'Stalls, trade and gossip: recreation for 100, and jobs. Strengthens the merchants.'},
+  workshop:{jobs:80,inc:80,goods:80,d:'Makes goods. Strengthens the workers. On a town’s edge.'},
+  factory:{jobs:250,inc:200,goods:300,d:'Large-scale manufacturing. Pollutes. On a town’s edge.'},
+  textile:{jobs:220,inc:160,goods:250},steelworks:{jobs:260,inc:240,goods:200},
+  bank:{jobs:60,inc:350},atelier:{jobs:30,inc:80},
+  clinic:{health:2000,jobs:40,d:'Physicians and nursing care for 2,000 people.'},
+  hospital:{health:5000,jobs:120,d:'Healthcare for 5,000 people.'},
+  school:{learn:600,jobs:20,d:'Education for 600 people, and research.'},
+  library:{learn:250,fun:150,jobs:6,d:'Education for 250 and recreation for 150, and research.'},
+  university:{learn:2000,jobs:50,d:'Education for 2,000 people, and a big boost to research.'},
+  polytechnic:{learn:2500,jobs:50,d:'Engineering and science: education for 2,500, and research +5 points a month.'},
+  printhouse:{learn:300,jobs:20,d:'Books and newspapers: education for 300 and a stronger middle class.'},
+  observatory:{learn:200,d:'Research +5 points a month, and education for 200. Hills only.'},
+  church:{fun:500,jobs:5,d:'Faith and fellowship: recreation for 500 people. Strengthens the clergy.'},
+  park:{fun:250,d:'Recreation for 250 people.'},garden:{fun:150},
+  tavern:{fun:200,inc:20,jobs:6,d:'Ale, songs and gossip: recreation for 200 people.'},
+  coffeehouse:{fun:300,jobs:8,d:'Recreation for 300, and lively debate that strengthens the intelligentsia.'},
+  tent:{fun:1000,jobs:10,d:'Recreation for 1,000 people.'},
+  fair:{fun:4000,jobs:30,d:'Recreation for 4,000 people, and draws visitors.'},
+  cinema:{fun:3000,jobs:20,d:'Recreation for 3,000 people.'},
+  deptstore:{fun:400,jobs:150,inc:300},broadcaster:{fun:500,d:'Royal broadcasts: legitimacy +2, and recreation for 500.'},
+  inn:{move:600,inc:25,jobs:10,d:'Post horses, stagecoaches and stables: transport for 600 people.'},
+  ferry:{move:400,d:'Boats for people and goods: transport for 400, and a little trade. Coast or river only.'},
+  canal:{move:1000,d:'Barges and locks: transport for 1,000 people, and trade capacity +120. On or next to a river, in the countryside.'},
+  bus:{move:2500,jobs:15,d:'Horse-drawn omnibuses: transport for 2,500 people.'},
+  rail:{move:5000,jobs:40,d:'Transport for 5,000 people.'},
+  garage:{move:4000,jobs:30,d:'Motor buses and cars: transport for 4,000 people.'},
+  well:{water:500,d:'Clean water for 500 people.'},
+  waterworks:{water:2500,jobs:15,d:'Piped water and sewers for 2,500 people.'},
+  wind:{power:400,d:'A traditional mill: energy for 400 people, and more on hills. Countryside.'},
+  mill:{power:600,d:'A water wheel driving millstones and hammers: energy for 600 people. On or next to a river, in the countryside.'},
+  charcoal:{power:300,d:'Fuel for homes and smithies: energy for 300 people. Keeps the forest, but smokes a little. Forest only.'},
+  hydro:{power:2000,d:'Clean energy for 2,000 people. On or next to a river, in the countryside.'},
+  diesel:{power:1500,d:'Coal-fired steam engines: energy for 1,500 people. Pollutes heavily, and needs coal. On a town’s edge.'},
+  gasworks:{power:800,fun:100,d:'Gas for lamps and stoves: energy for 800 and livelier evenings. Pollutes nearby homes. On a town’s edge.'},
+  powerstation:{power:5000,d:'Energy for 5,000 people. Pollutes nearby homes. On a town’s edge.'},
+  mine:{jobs:40,goods:40},coalmine:{jobs:40},quarry:{jobs:25},brickworks:{jobs:25},lumber:{jobs:15},harbor:{jobs:80}};
+// [price, upkeep] under Development 2.0: bigger buildings cost more to build and run
+const D2C={farm:[900,60],dock:[900,45],greenhouse:[3000,150],well:[800,50],waterworks:[4000,250],church:[1500,60],tavern:[500,25],market:[1000,25],park:[500,30],garden:[700,20],
+  tent:[2500,120],coffeehouse:[900,35],cinema:[5000,360],fair:[6000,480],library:[1200,50],school:[2000,120],printhouse:[1500,60],university:[5000,400],polytechnic:[6000,500],
+  clinic:[3000,400],hospital:[7000,1000],inn:[900,50],bus:[2000,200],rail:[6000,400],garage:[4500,320],ferry:[700,30],canal:[2500,80],wind:[900,32],mill:[1000,48],charcoal:[600,24],
+  hydro:[3500,160],diesel:[2000,120],gasworks:[2400,64],powerstation:[6000,400],workshop:[1500,40],factory:[3500,100],textile:[3000,90],steelworks:[4000,110],observatory:[1400,30],deptstore:[3500,60],broadcaster:[1800,40]};
+// where each building may stand: town tiles (with homes), the countryside, a town's edge (just outside it), or anywhere
+const ZCOUNTRY=['farm','greenhouse','dock','vineyard','lumber','quarry','brickworks','mine','coalmine','mill','charcoal','wind','hydro','harbor','fort','canal'];
+const ZEDGE=['workshop','factory','textile','steelworks','gasworks','diesel','powerstation','shipyard'];
+const ZANY=['granary','ferry','lighthouse','observatory','hall','fcap','barracks','academy','tradeco'];
+const zoneOf=id=>isHousing(id)?'home':ZCOUNTRY.includes(id)?'country':ZEDGE.includes(id)?'edge':ZANY.includes(id)?'any':'town';
+const ZNAME={town:'Town',country:'Countryside',edge:'Town edge',any:'Anywhere',home:'Homes'};
+// needs arrive with the eras: at first only food, homes, water, recreation and work matter
+const NEED_ERA={homes:0,food:0,water:0,fun:0,jobs:0,learn:1,goods:1,health:2,power:2,move:2,nature:3};
+const d2=()=>!!(typeof S!=='undefined'&&S&&S.d2);
+const needOn=k=>!d2()||era()>=(NEED_ERA[k]||0);
+// building levels: a level-2 building does 50% more and a level-3 one twice as much, with upkeep rising to match
+const LVM=[1,1.5,2],LVU=[1,1.5,2],LVC=[0,.6,1],LVK=new Set(['food','water','health','learn','fun','move','power','goods','mat','jobs','inc']);
+const lvOK=id=>{const d=B[id];return!!d&&!d.fixed&&!d.unique&&!isHousing(id)&&['food','water','health','learn','fun','move','power','goods','mat'].some(k=>d[k])};
+// B holds the rules of the game being played: the classic numbers, or Development 2.0's
+function applyRules(st){Object.keys(B0).forEach(k=>{const b=B[k];Object.keys(b).forEach(p=>delete b[p]);Object.assign(b,JSON.parse(JSON.stringify(B0[k])))});if((st||S).d2){Object.entries(D2B).forEach(([k,o])=>Object.assign(B[k],o));Object.entries(D2C).forEach(([k,[c,u]])=>{B[k].c=c;B[k].u=u})}}
 // [heading, buildings, short label for the build menu's filter chips]
 const GROUPS=[['Housing',['cottage','townhouse','tenement','apartments'],'🏠 Housing'],['Food',['farm','dock','greenhouse','granary'],'🌾 Food'],['Economy',['market','workshop','vineyard','atelier','factory','textile','steelworks','bank','tradeco','harbor','deptstore'],'🪙 Economy'],['Resources',['lumber','quarry','brickworks','mine','coalmine'],'⛏️ Resources'],['Public services',['clinic','hospital','watch','firestation','school','library','printhouse','university','polytechnic','observatory','church'],'🏥 Services'],['Recreation and environment',['park','garden','tavern','coffeehouse','tent','cinema','fair'],'🌳 Leisure'],['Transport',['inn','ferry','canal','bus','rail','garage'],'🚌 Transport'],['Water and sanitation',['well','waterworks'],'🚰 Water'],['Energy',['wind','mill','charcoal','diesel','gasworks','hydro','powerstation'],'⚡ Energy'],['Military',['barracks','academy','fort','shipyard'],'🪖 Military'],['Tourism and prestige',['hotel','broadcaster','lighthouse'],'🗼 Prestige']];
 const UPGR={inn:'bus',tavern:'coffeehouse',well:'waterworks',cottage:'townhouse',townhouse:'apartments',workshop:'factory',bus:'garage',wind:'hydro',farm:'greenhouse',tent:'fair',clinic:'hospital',school:'polytechnic',market:'deptstore',diesel:'powerstation'};
@@ -395,14 +467,34 @@ const isHousing=id=>HOUSING.includes(id);
 function splitHousing(map){map.forEach(x=>{if(x.b&&isHousing(x.b)){if(!x.hs)x.hs=x.b;x.b=null}})}
 function housingCard(i){const x=S.map[i],A=appealMap()[i],hood=A>0?` Pleasant neighborhood (+${A}).`:A<0?` Polluted neighborhood (${A}).`:'';
   if(x.hs&&B[x.hs]){const d=B[x.hs],up=UPGR[x.hs],U=up&&B[up],upk=U?priceOf(Math.max(0,U.c-Math.round(d.c*.5)),Math.max(0,matCost(U)-Math.round(matCost(d)/2))):null,lr=U&&lockReason(U);
-    return`<h2>🏠 Homes on this tile</h2><div class="card"><div class="row"><span class="em">${d.e}</span><div class="grow"><b>${d.n}</b><small>Homes for ${Math.round(d.homes*DENS()*(x.b?1:RESB))} people.${x.b?' A tile with homes alone would hold 20% more.':' A quiet residential tile: 20% more homes than if it shared the tile with a building.'} Upkeep ${Math.round(d.u*ECON.up[era()])}/mo.${hood}${x.b&&RURAL.includes(x.b)?' A farmstead: countryside homes that belong to no town.':''}</small></div><button class="btn" data-act="moveStart" data-arg="${i}" data-n="hs">Move</button><button class="btn" data-act="demolishH" data-arg="${i}" id="demoH">Clear</button></div>
+    return`<h2>🏠 Homes on this tile</h2><div class="card"><div class="row"><span class="em">${d.e}</span><div class="grow"><b>${d.n}</b><small>Homes for ${Math.round(d.homes*DENS()*(x.b?1:RESB))} people.${x.b?' A tile with homes alone would hold 20% more.':' A quiet residential tile: 20% more homes than if it shared the tile with a building.'} ${x.hp?'Built by the townsfolk, so the crown pays no upkeep.':`Upkeep ${Math.round(d.u*ECON.up[era()])}/mo.`}${hood}${x.b&&RURAL.includes(x.b)?' A farmstead: countryside homes that belong to no town.':''}</small></div><button class="btn" data-act="moveStart" data-arg="${i}" data-n="hs">Move</button><button class="btn" data-act="demolishH" data-arg="${i}" id="demoH">Clear</button></div>
       ${U?`<div class="row"><span class="em">${U.e}</span><div class="grow"><b>Upgrade to ${U.n.toLowerCase()}</b><small>${lr?lr+'.':`Homes for ${Math.round(U.homes*DENS())}. ${priceTxt(upk)}`}</small></div><button class="btn primary" data-act="upgradeH" data-arg="${i}" ${lr||S.coins<upk.coins?'disabled':''}>🪙${fmt(upk.coins)}</button></div>`:''}</div>`}
   return`<h2>🏠 Add homes to this tile</h2><p class="hint">Homes can share a tile with any building, so land never runs out of room for housing.</p><div class="card">${HOUSING.map(id=>{const d=B[id],why=placeWhy(id,i),k=priceOf(d.c,matCost(d));
     return`<div class="row"><span class="em" ${why?'style="opacity:.45"':''}>${d.e}</span><div class="grow"><b>${d.n}</b><small>Homes for ${Math.round(d.homes*DENS()*(x.b?1:RESB))}. Upkeep ${Math.round(d.u*ECON.up[era()])}/mo.${why?'':hood}${k.m&&!why?' '+priceTxt(k):''}</small></div><button class="btn" data-act="build" data-arg="${i}" data-n="${id}" ${why||S.coins<k.coins?'disabled':''}>${why||'🪙'+fmt(k.coins)}</button></div>`}).join('')}</div>`}
 // Why a building can't go on tile i ('' if it can). free=true skips technology and one-of-a-kind checks, for the console.
 function placeWhy(id,i,free){const d=B[id],x=S.map[i];if(isHousing(id)){if(x.hs)return'Homes already here';if(x.b&&B[x.b]&&B[x.b].forest)return'Forest industry here'}if(!free){const w=lockReason(d);if(w)return w}
+  if(d2()){const w=zoneWhy(id,i);if(w)return w}
   if(d.coast&&!isCoast(i))return'Coast only';if(d.forest&&x.t!=='f')return'Forest only';if(d.hill&&!x.hl)return'Hills only';if(d.shore&&!isCoast(i)&&!nearRiver(i))return'Coast or river only';if(d.dep&&x.dp!==d.dep)return`Needs ${DEPN[d.dep]}`;
   if(d.riv&&!nearRiver(i))return'River only';if(!free&&d.unique&&has(id))return'Built';return''}
+// Development 2.0 zones. A town tile is any tile of yours with homes on it.
+const isTownT=j=>{const y=S.map[j];return!!y&&y.o==='me'&&y.t!=='w'&&!!y.hs};
+const around=(i,r)=>{const r0=i/W|0,c0=i%W,o=[];for(let dr=-r;dr<=r;dr++)for(let dc=-r;dc<=r;dc++){const rr=r0+dr,cc=c0+dc;if((dr||dc)&&rr>=0&&cc>=0&&rr<H&&cc<W)o.push(rr*W+cc)}return o};
+// how many tiles a settlement may cover at a given population: hamlets 1-2, villages up to 4, towns 8, cities 16, great cities 25, metropolises 36
+const TILEP=[[0,1],[200,2],[500,4],[2000,8],[10000,16],[50000,25],[200000,36]];
+function tileSpan(p){for(let k=1;k<TILEP.length;k++){const[a,ta]=TILEP[k-1],[b,tb]=TILEP[k];if(p<=b)return ta+(tb-ta)*(p-a)/(b-a)}return 36}
+const maxTiles=p=>Math.min(36,Math.ceil(tileSpan(p)+.5));
+// the population at which a settlement of n tiles may spread onto one more
+function spreadAt(n){const v=n-.5;for(let k=1;k<TILEP.length;k++){const[a,ta]=TILEP[k-1],[b,tb]=TILEP[k];if(v<tb)return Math.ceil(a+(b-a)*Math.max(0,v-ta)/(tb-ta))+1}return Infinity}
+function zoneWhy(id,i){const x=S.map[i],z=zoneOf(id);
+  if(z==='home'){if(x.b&&['country','edge'].includes(zoneOf(x.b)))return'Countryside building here';
+    const adj=around(i,1).filter(j=>isTownT(j)&&S.map[j].p===x.p);
+    if(adj.length){const st=setlStats(),s=adj.map(j=>st[S.map[j].sid]).filter(Boolean).sort((a,b)=>b.t.length-a.t.length)[0];
+      if(s&&s.t.length>=maxTiles(s.pop))return`Town full until ${fmt(spreadAt(s.t.length))} people`;return''}
+    return around(i,2).some(isTownT)?'Too close to a town':''}
+  if(z==='town'&&!x.hs)return'Town tiles only';
+  if((z==='country'||z==='edge')&&x.hs)return'Outside towns only';
+  if(z==='edge'&&!around(i,1).some(isTownT))return'Beside a town only';
+  return''}
 // Larger buildings (🪙800 and up) need building materials; whatever isn't in stock is imported.
 const matCost=d=>d&&d.c>=800?Math.round(d.c/250*(hasTech('masonry')?.8:1))*10:0;
 const matPrice=()=>5*(S.laws.trade==='protect'?1.2:S.laws.trade==='free'?.9:1);
@@ -418,11 +510,11 @@ function homesNear(i,rad){const r0=i/W|0,c0=i%W;let n=0;for(let r=Math.max(0,r0-
 
 /* ---------- needs and classes ---------- */
 const NEEDS=[
-  {k:'homes',n:'Housing',e:'🏠',tip:'Build or upgrade homes, which can share a tile with any building, and private builders add more when there is work. In a housing shortage families double up and rents soar, bringing unhappiness, poor health and unrest.',lo:'Rents keep rising and there\u2019s nothing available.',hi:'Finding a place to live was straightforward.'},
+  {k:'homes',n:'Housing',e:'🏠',get tip(){return d2()?'Towns build cottages on the land beside them as they fill up, as far as their size allows. Upgrade cottages to townhouses, and later tenements and apartments, to fit more people on each tile, or found a new hamlet in open country.':this.tip0},tip0:'Build or upgrade homes, which can share a tile with any building, and private builders add more when there is work. In a housing shortage families double up and rents soar, bringing unhappiness, poor health and unrest.',lo:'Rents keep rising and there\u2019s nothing available.',hi:'Finding a place to live was straightforward.'},
   {k:'jobs',n:'Employment',e:'💼',tip:'Markets, workshops, factories and banks create jobs.',lo:'I\u2019ve been looking for work for months.',hi:'Work is steady, and wages are fair.'},
   {k:'food',n:'Food',e:'🌾',tip:'Build farms or docks, or import food.',lo:'Bread costs twice what it did in spring.',hi:'The shelves are full and prices are stable.'},
   {k:'goods',n:'Consumer goods',e:'📦',tip:'Workshops and factories, or imports. Mostly wanted by the middle and upper classes.',lo:'You can\u2019t find a decent coat on this island.',hi:'The shops are well stocked.'},
-  {k:'health',n:'Healthcare',e:'🩺',tip:'Each infirmary serves 160 people, and a hospital 600.',lo:'The wait for a doctor is three weeks.',hi:'I was seen the same day.'},
+  {k:'health',n:'Healthcare',e:'🩺',tip:'Build infirmaries, and hospitals once you know medicine. Clean water helps too.',lo:'The wait for a doctor is three weeks.',hi:'I was seen the same day.'},
   {k:'learn',n:'Education',e:'📖',tip:'Schools, libraries and universities.',lo:'Classes are overcrowded.',hi:'The schools here are genuinely good.'},
   {k:'fun',n:'Recreation',e:'🎭',tip:'Parks, gardens, markets and assembly halls.',lo:'There\u2019s nothing to do after work.',hi:'There\u2019s always something on at the weekend.'},
   {k:'move',n:'Transport',e:'🚌',tip:'Omnibus depots and railways. Small populations can walk.',lo:'My commute takes over an hour.',hi:'Getting around is easy.'},
@@ -621,7 +713,7 @@ const eraDone=e=>TECH.filter(t=>t.era===e&&hasTech(t.id)).length;
 const techOpen=t=>t.era<=era();
 const eraReady=()=>era()<3&&eraDone(era())>=ERAS[era()].need;
 function eraEvent(){const next=era()+1,E=ERAS[next];
-  return{id:'era',e:E.e,t:`The ${E.n} begins`,d:`${E.d} New technologies are now open to your scholars. Choose what will define your kingdom in this new age.`,
+  return{id:'era',e:E.e,t:`The ${E.n} begins`,d:`${E.d} New technologies are now open to your scholars.${d2()&&NEEDS.some(n=>NEED_ERA[n.k]===next)?` Your people will now also want ${NEEDS.filter(n=>NEED_ERA[n.k]===next).map(n=>n.e+' '+n.n.toLowerCase()).join(', ')}.`:''} Choose what will define your kingdom in this new age.`,
     ch:E.b.map(b=>({l:b.n,s:b.d,f(){if(era()<next){S.era=next;S.eraB=[...(S.eraB||[]),b.id]}return`Your kingdom enters the ${E.n}. ${b.n}: ${b.d}`}}))}}
 // once enough of this era's technologies are known, the next age arrives as an event (asked again each month until answered)
 function eraCheck(stop){if(eraReady()&&!queue.some(q=>q.id==='era')&&!(curEvent&&curEvent.id==='era')){queue.push(eraEvent());stop.push(`The ${ERAS[era()+1].n} begins`)}}
@@ -1157,19 +1249,31 @@ function genWorld(size){const Z=WSIZES[size]||WSIZES.medium;W=Z.W;H=Z.H;
   return{map,prov,cap:prov[0].r*W+prov[0].c,W,H,size}}
 // Saves from before world sizes were added use the classic 18x16 map with the capital at row 8, column 4.
 function capIdx(){return S.cap!=null?S.cap:8*18+4}
-function startBuildings(m,cap){m[cap].b='hall';const order=['cottage','cottage','cottage','farm','market','wind','church','well'];
+function startBuildings(m,cap,v2){m[cap].b='hall';if(v2)return startV2(m,cap);const order=['cottage','cottage','cottage','farm','market','wind','church','well'];
   const near=m.map((x,i)=>[x,i]).filter(([x,i])=>x.o==='me'&&x.p===0&&x.t!=='w'&&i!==cap).map(([,i])=>i).sort((a,b)=>dist(a,cap)-dist(b,cap));
   order.forEach((b,k)=>{const i=near[k];if(i!=null){m[i].b=b;m[i].t='l'}});splitHousing(m)}
+// Development 2.0: the capital is a village of three town tiles (the palace, homes and a well), with one farm outside it.
+// Neighbors' towns sit together around their provincial seat instead of homes scattered across the land.
+function startV2(m,cap){const free=j=>m[j]&&m[j].o==='me'&&m[j].p===0&&m[j].t!=='w'&&!m[j].b&&!m[j].hs,r0=cap/W|0,c0=cap%W,near=[];
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const rr=r0+dr,cc=c0+dc;if((dr||dc)&&rr>=0&&cc>=0&&rr<H&&cc<W&&free(rr*W+cc))near.push(rr*W+cc)}
+  near.sort((a,b)=>dist(a,cap)-dist(b,cap)||(m[a].fr?1:0)-(m[b].fr?1:0));
+  const town=[cap,...near.slice(0,2)];town.forEach(j=>{m[j].hs='cottage';m[j].hp=1;m[j].t='l'});if(town[1]!=null)m[town[1]].b='well';
+  const inTown=j=>town.some(t=>Math.max(Math.abs((t/W|0)-(j/W|0)),Math.abs(t%W-j%W))<=1);
+  const fs=m.map((x,j)=>j).filter(j=>free(j)&&!inTown(j)&&!m[j].dp).sort((a,b)=>(Math.abs(dist(a,cap)-2.3)-(m[a].fr?1:0)-(m[a].rn!=null?.5:0))-(Math.abs(dist(b,cap)-2.3)-(m[b].fr?1:0)-(m[b].rn!=null?.5:0)));
+  if(fs.length){m[fs[0]].b='farm';m[fs[0]].t='l'}}
+function clusterForeign(m,prov){prov.forEach((Pv,i)=>{if(Pv.o==='me'||Pv.o==='wild')return;const seat=Pv.r*W+Pv.c,mine=m.map((x,j)=>j).filter(j=>m[j].p===i&&m[j].t!=='w');
+  const hs=mine.filter(j=>m[j].b==='cottage'||m[j].hs),fm=mine.filter(j=>m[j].b==='farm');hs.forEach(j=>{if(m[j].b==='cottage')m[j].b=null;m[j].hs=null});fm.slice(Math.ceil(fm.length/3)).forEach(j=>{m[j].b=null});
+  mine.sort((a,b)=>dist(a,seat)-dist(b,seat)).filter(j=>m[j].b!=='farm').slice(0,Math.max(1,Math.ceil(hs.length/4))).forEach(j=>{m[j].hs='cottage';m[j].t='l'})})}
 const dist=(a,b)=>Math.hypot(Math.floor(a/W)-Math.floor(b/W),a%W-b%W);
 // your starting provinces: everyone lives in the capital province at first, and all are fully integrated
 function initMyProvs(prov,pop){prov.forEach((P,i)=>{if(P.o!=='me')return;P.pop=i===0?pop:0;P.integ=100;P.unrest=0})}
-function setWorld(wd){startBuildings(wd.map,wd.cap);initMyProvs(wd.prov,S.pop);Object.assign(S,{map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{}})}
-function newState(name,size){const mo=newRoyal(28,38),wd=genWorld(size||'medium');startBuildings(wd.map,wd.cap);initMyProvs(wd.prov,60);
-  const st={v:2,mv:2,name:name||'Kestrel',month:3,year:1,turn:0,coins:2500,pop:60,best:60,hap:55,leg:60,unrest:5,tax:12,map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{},army:1,troops:1,mob:false,general:null,navy:0,dev:{},war:null,aggr:[],nsit:{norvik:'stable',solenne:'stable',aurelia:'stable'},wins:0,gained:0,sold:{},dec:{},mods:[],hist:[],goals:{},lastNet:0,recent:[],sel:-1,
+function setWorld(wd){startBuildings(wd.map,wd.cap,S.d2);if(S.d2)clusterForeign(wd.map,wd.prov);initMyProvs(wd.prov,S.pop);Object.assign(S,{map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{}})}
+function newState(name,size){const mo=newRoyal(28,38),wd=genWorld(size||'medium');startBuildings(wd.map,wd.cap,true);clusterForeign(wd.map,wd.prov);initMyProvs(wd.prov,150);
+  const st={v:2,mv:2,d2:1,name:name||'Kestrel',month:3,year:1,turn:0,coins:2500,pop:150,best:150,hap:55,leg:60,unrest:5,tax:12,map:wd.map,prov:wd.prov,cap:wd.cap,W:wd.W,H:wd.H,wsize:wd.size,nscale:nscaleOf(wd.prov),claims:{},fclaims:{},army:1,troops:1,mob:false,general:null,navy:0,dev:{},war:null,aggr:[],nsit:{norvik:'stable',solenne:'stable',aurelia:'stable'},wins:0,gained:0,sold:{},dec:{},mods:[],hist:[],goals:{},lastNet:0,recent:[],sel:-1,
   rel:{norvik:50,solenne:50,aurelia:50},tension:{norvik:10,solenne:5,aurelia:15},embargo:{},crisisCd:{},demandCd:{},trade:{food:null,energy:null,goods:null},envoy:{},
   laws:Object.assign({},DEFAULT_LAWS),enact:null,lawsPassed:0,favorCd:{},
   tech:{done:[],cur:null,prog:0,pp:{},q:[],bank:0},era:0,eraB:[],
-  court:2,monarch:Object.assign(mo,{trait:pick(Object.keys(TRAITS)),num:1,since:1}),fam:makeFamily(mo),house:newHouse(),drama:'some',aging:true,reigns:[],calm:0,sandbox:false,news:[],showReport:false,mat:100,pv:1};bindHeir(st);return st}
+  court:2,monarch:Object.assign(mo,{trait:pick(Object.keys(TRAITS)),num:1,since:1}),fam:makeFamily(mo),house:newHouse(),drama:'some',aging:true,reigns:[],calm:0,sandbox:false,news:[],showReport:false,mat:100,pv:1};bindHeir(st);applyRules(st);return st}
 let S,tab='isle',resetArmed=false;const queue=[];let curEvent=null;
 function adopt(d){
   const base=newState();
@@ -1185,7 +1289,7 @@ function adopt(d){
     Object.assign(S,{map:wd.map,prov:wd.prov,cap,W:wd.W,H:wd.H,wsize:'small',nscale:nscaleOf(wd.prov),mv:2});let refund=0;
     old.forEach(b=>{const k=mine.findIndex(i=>!S.map[i].b&&(!B[b].coast||isCoast(i)));if(k<0){refund+=Math.round((B[b].c||0)*.5);return}const i=mine[k];S.map[i].b=b;S.map[i].t='l'});
     S.coins+=refund;S.migrated=true}
-  if(!d.pv)migrateProvPop()}
+  if(!d.pv)migrateProvPop();if(!d.d2)delete S.d2;applyRules()}
 function load(){let raw=store.get();if(!raw){try{raw=localStorage.getItem('pocketisle.v1')}catch(e){}}
   if(raw){try{const d=JSON.parse(raw);if(d&&(d.v===1||d.v===2)&&Array.isArray(d.map)){adopt(d);splitHousing(S.map);return true}}catch(e){}}S=newState();return false}
 const save=()=>store.set(JSON.stringify(S));
@@ -1211,7 +1315,7 @@ function adjProvs(i){geo();return geoAdj[i]||[]}
 const DENSE=[1,1.25,2,3];
 const DENS=()=>DENSE[era()]*(1+(hasTech('rail')?.25:0)+(hasTech('electric')?.25:0))*(typeof S!=='undefined'&&S&&S.gp&&S.gp.done.skyline?1.25:1);
 // a quiet residential tile, with homes and no other building, has room for 20% more homes
-const RESB=1.2;const homesOf=x=>((x.hs&&B[x.hs]?B[x.hs].homes*(x.b?1:RESB):0)+(x.b&&B[x.b]&&B[x.b].homes||0))*DENS();
+const RESB=1.2;const homesOf=x=>((x.hs&&B[x.hs]?B[x.hs].homes*(x.b?1:RESB)*upF(x):0)+(x.b&&B[x.b]&&B[x.b].homes||0))*DENS();
 const homesIn=i=>provTiles(i).reduce((a,t)=>{const x=S.map[t];return a+homesOf(x)},0);
 function syncPop(){S.pop=provsOf('me').reduce((a,i)=>a+(S.prov[i].pop||0),0);if(S.pop<10){S.prov[0].pop=(S.prov[0].pop||0)+10-S.pop;S.pop=10}}
 // newcomers settle where there's room, the capital first
@@ -1252,12 +1356,12 @@ function calc(){
   // provinces tally their own homes, jobs and local services; the capital starts with more room to walk and natural water.
   // A province in revolt produces nothing, and one with riots (unrest 60+) three quarters.
   const own=provsOf('me'),pv={},LOC=['homes','jobs','health','learn','fun','move','water'];
-  own.forEach(i=>{const P=S.prov[i];pv[i]={pop:P.pop||0,homes:0,jobs:0,health:0,learn:0,fun:0,move:i===0?100:40,water:i===0?50:20,hw:0,ha:0,hp:0,f:P.revolt?0:(P.unrest||0)>=60?.75:1}});
+  own.forEach(i=>{const P=S.prov[i];pv[i]={pop:P.pop||0,homes:0,jobs:0,health:0,learn:0,fun:0,move:(i===0?100:40)*(d2()?4:1),water:i===0?50:20,hw:0,ha:0,hp:0,f:P.revolt?0:(P.unrest||0)>=60?.75:1}});
   const skill=skillCalc(),po={};Object.keys(PRODS).forEach(k=>po[k]={u:0,inc:0,goods:0,mat:0});
   S.map.forEach((c,i)=>{if(c.o!=='me')return;[c.b,c.hs,c.sm].forEach(bid=>{if(!bid)return;const d=B[bid];if(!d)return;const p=pv[c.p],f=(S.war&&S.war.occ[c.p]==='them'?0:S.dev[c.p]?.5:1)*(p?p.f:1)*(fund('infra')===0?.9:1)*(SKILLED.includes(bid)?skill.f:1);
-    const tm=bid==='farm'?farmMult(i):bid==='wind'&&c.hl?1.5:1;if(PSRC[bid]){const o=po[PSRC[bid]];o.u+=PRODS[PSRC[bid]].u*f;o.inc+=(d.inc||0)*f;o.goods+=(d.goods||0)*f;o.mat+=(d.mat||0)*f}
-    for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs&&!c.b?RESB:1):d[k]*f*(k==='food'||k==='power'?tm:1);{const uu=bid===c.hs&&c.hp?0:(d.u||0);t.up+=uu;if(d.health)t.upH+=uu;else if(d.learn)t.upE+=uu}
-    if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs&&!c.b?RESB:1):d[k]*f})})});
+    const tm=bid==='farm'?farmMult(i):bid==='wind'&&c.hl?1.5:1,lm=bid===c.b&&c.lv>1?LVM[c.lv-1]:1,L=k=>LVK.has(k)?lm:1;if(PSRC[bid]){const o=po[PSRC[bid]];o.u+=PRODS[PSRC[bid]].u*f*lm;o.inc+=(d.inc||0)*f*lm;o.goods+=(d.goods||0)*f*lm;o.mat+=(d.mat||0)*f*lm}
+    for(const k in t)if(k!=='up'&&d[k])t[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs?(c.b?1:RESB)*upF(c):1):d[k]*f*L(k)*(k==='food'||k==='power'?tm:1);{const uu=bid===c.hs&&c.hp?0:(d.u||0)*(lm>1?LVU[c.lv-1]:1);t.up+=uu;if(d.health)t.upH+=uu;else if(d.learn)t.upE+=uu}
+    if(p)LOC.forEach(k=>{if(d[k])p[k]+=k==='homes'?d[k]*DENS()*(bid===c.hs?(c.b?1:RESB)*upF(c):1):d[k]*f*L(k)})})});
   // smallholdings: open land feeds some people without any farm, and fishing and sugar colonies send food home
   S.map.forEach((c,i)=>{t.food+=smallFood(i)});t.food+=colFood();
   t.trade+=S.navy*40+setlCount(2)*20;if(msHas('g5'))t.trade*=1.1;if(msHas('p8'))t.trade*=1.1;if(gp('canals'))t.trade*=1.25;if(heritage('mariners'))t.trade*=1.2;if(campOn('fair'))t.trade*=1.3;if(gp('railnet'))t.trade*=1.1;t.trade*=(hasTech('navigation')?1.2:1)*(hasTech('steamship')?1.25:1)*(eraB('commerce')?1.2:1);const blockaded=(S.war&&S.war.foes.reduce((a,n)=>a+theirNavy(n),0)>S.navy)||!!(S.ov&&S.ov.block>0);if(blockaded){t.trade*=.5}
@@ -1278,7 +1382,7 @@ function calc(){
   // a province with spare capacity shares 60% of it with its neighbours: people use a clinic or take a job next door
   const eff={};own.forEach(i=>{eff[i]=pv[i].eff={};LOC.forEach(k=>eff[i][k]=pv[i][k]);pv[i].workers=Math.max(0,Math.round(pv[i].pop*soc().adults-soldiers*pv[i].pop/Math.max(1,pop)))});
   // the private economy: part of the workforce finds its own work in shops, crafts and trades, without any crown building
-  own.forEach(i=>{const pj=Math.round(pv[i].workers*(PJ[era()]+(gp('skyline')?.05:0)));pv[i].jobs+=pj;eff[i].jobs+=pj;t.jobs+=pj});
+  own.forEach(i=>{const pj=Math.round(pv[i].workers*((d2()?PJ2:PJ)[era()]+(gp('skyline')?.05:0)));pv[i].jobs+=pj;eff[i].jobs+=pj;t.jobs+=pj});
   LOC.forEach(k=>{if(k==='homes')return;own.forEach(j=>{const need=k==='jobs'?pv[j].workers:pv[j].pop,spare=Math.max(0,pv[j][k]-need),ns=adjProvs(j).filter(q=>pv[q]);
     if(spare&&ns.length)ns.forEach(q=>{eff[q][k]+=spare*.6/ns.length})})});
   own.forEach(i=>{pv[i].emp=Math.min(pv[i].workers,eff[i].jobs)});
@@ -1287,7 +1391,7 @@ function calc(){
   const S0=soc();if(S0.mid==null){S0.mid=clamp(.08+t.mid/Math.max(1,pop)*.5,.08,.45);S0.up=.05+(S.laws.labor==='serfdom'?.02:0)}const share={upper:S0.up,middle:S0.mid};share.lower=1-share.upper-share.middle;
   const foodMult=[1,1.3,2,3][era()]*(1+(hasTech('rotation')?.15:0)+(hasTech('watermill')?.05:0)+(hasTech('agronomy')?.15:0)+(law('labor').food||0)/100+modSum('foodprod')/100+(gp('canals')?.1:0)+(heritage('farmers')?.15:0)),goodsMult=1+(gp('railnet')?.15:0)+(hasTech('workshops')?.25:0)+(hasTech('coke')?.1:0)+(hasTech('massprod')?.25:0)+(eraB('workshop')?.2:0);
   const prod={food:t.food*foodMult+(S.granRel||0),energy:t.power,goods:t.goods*goodsMult};
-  const rat=D('ration')?.8:1;const dem={food:Math.round(pop*rat),energy:Math.round(pop*rat),goods:Math.round(pop*share.middle+pop*share.upper*3)};
+  const rat=D('ration')?.8:1;const dem={food:Math.round(pop*rat),energy:needOn('power')?Math.round(pop*rat):0,goods:needOn('goods')?Math.round(pop*share.middle+pop*share.upper*3):0};
   let cap=t.trade-pUsed;const tr={};let expV=0,impV=0;
   RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r];if(diff<0&&tradeOK(c)&&expSh(r)==null){const amt=Math.min(-diff,cap);cap-=amt;const v=amt*buyP(c,r);impV+=v;tr[r]={dir:'import',amt,v,c}}});
   RES.forEach(({k:r})=>{const diff=prod[r]-dem[r],c=S.trade[r],sh=expSh(r),want=sh==null?diff:prod[r]*sh;if(want>0&&tradeOK(c)){const amt=Math.min(want,cap);cap-=amt;const v=amt*payP(c,r);expV+=v;tr[r]={dir:'export',amt,v,c}}});
@@ -1319,8 +1423,15 @@ function calc(){
     LOC.forEach(k=>{s[k]=clamp(Math.round(s[k]+modSum(k)),0,100)});s.health=clamp(Math.round(s.health-(100-s.water)*.25),0,100);
     p.sc=s;p.hood=clamp(Math.round((p.hw?p.ha/p.hw:0)*1.5),-5,5)});
   if(pop>0&&own.length)LOC.forEach(k=>{sc[k]=Math.round(own.reduce((a,i)=>a+pv[i].sc[k]*pv[i].pop,0)/pop)});
+  // Development 2.0: needs that haven't arrived yet count as met, and weigh on no one's mood
+  if(d2())NEEDS.forEach(({k})=>{if(needOn(k))return;sc[k]=100;own.forEach(i=>{pv[i].sc[k]=100})});
+  // carrying capacity: how many people each province can hold, the least of its homes (5% overcrowding allowed), its water, and its share of the food.
+  // Spare food goes where there are spare homes; food that can still be imported counts too.
+  const fImp=S.trade.food&&tradeOK(S.trade.food)&&expSh('food')==null?Math.max(0,cap):0,fRoom=sup.food+fImp-pop,hRoom=own.map(i=>Math.max(0,pv[i].homes*1.05-pv[i].pop)),hSum=hRoom.reduce((a,b)=>a+b,0);
+  own.forEach((i,k)=>{const p=pv[i];p.capH=Math.round(p.homes*1.05);p.capW=Math.round(eff[i].water);p.capF=Math.round(p.pop+(fRoom>=0?(hSum?fRoom*hRoom[k]/hSum:0):fRoom*p.pop/Math.max(1,pop)));
+    p.cap=Math.min(p.capH,p.capW,p.capF);p.capBy=p.cap===p.capF?'food':p.cap===p.capW?'water':'homes'});
   taxFit();const LX=luxCount();
-  const clsFrom=s=>{const o={};Object.entries(CLASSES).forEach(([k,C])=>{const ws=Object.entries(C.w),tot=ws.reduce((a,[,w])=>a+w,0);
+  const clsFrom=s=>{const o={};Object.entries(CLASSES).forEach(([k,C])=>{const ws=Object.entries(C.w).filter(([n])=>needOn(n)),tot=ws.reduce((a,[,w])=>a+w,0);
     const v=ws.reduce((a,[n,w])=>a+s[n]*w,0)/tot+(10-taxc()[k])*C.tax[S.laws.tax]+(k==='upper'?Math.min(12,LX*2):k==='middle'?Math.min(9,LX*1.5):0)-(colIdx-1)*C.col+(C.base||0)+((law('labor').cls||{})[k]||0)+((law('welfare').cls||{})[k]||0)-6;
     o[k]=clamp(Math.round(v),0,100)});return o};
   const cls=clsFrom(sc);
@@ -1903,10 +2014,13 @@ function socMonth(c,notes,stop){const s=soc(),own=provsOf('me');
   // incidents, at most one a year in each province
   own.forEach(i=>{const Pr=S.prov[i];if(!Pr.pop||Pr.revolt||(Pr.incCd>S.turn))return;const d=provDens(i),p=c.pv[i];if(!p)return;
     const pF=Math.min(.08,d/400*.03)*(1-fireProt(i))*(era()>=2?1.2:1);
-    if(Math.random()<pF){const tl=provTiles(i).filter(t=>S.map[t].hs);let lost=0,homes=0;tl.sort(()=>Math.random()-.5).slice(0,1+rnd(3)).forEach(t=>{S.map[t].hs=null;delete S.map[t].hp;homes++});
-      const bt=provTiles(i).filter(t=>{const x=S.map[t];return x.b&&B[x.b]&&!B[x.b].fixed&&x.b!=='hall'});let bn='';if(bt.length&&Math.random()<.3){const t=pick(bt);bn=B[S.map[t].b].n;S.map[t].b=null}
+    if(Math.random()<pF){const tl=provTiles(i).filter(t=>S.map[t].hs);let lost=0,homes=0;
+      // Development 2.0: a town tile is too big to burn to the ground; its homes are rebuilt a step smaller
+      if(d2())tl.sort(()=>Math.random()-.5).slice(0,1).forEach(t=>{const y=S.map[t],dn=Object.keys(UPGR).find(k=>UPGR[k]===y.hs&&isHousing(k));if(dn){y.hs=dn;homes++}});
+      else tl.sort(()=>Math.random()-.5).slice(0,1+rnd(3)).forEach(t=>{S.map[t].hs=null;delete S.map[t].hp;homes++});
+      const bt=provTiles(i).filter(t=>{const x=S.map[t];return x.b&&B[x.b]&&!B[x.b].fixed&&x.b!=='hall'});let bn='';if(bt.length&&Math.random()<(d2()?.15:.3)){const t=pick(bt);bn=B[S.map[t].b].n;S.map[t].b=null;delete S.map[t].lv}
       lost=Math.min(Pr.pop,Math.ceil(Pr.pop*.01));Pr.pop-=lost;Pr.incCd=S.turn+12;const t=`Fire in ${Pr.name}`;
-      notes.push(['🔥',t,`${homes} block${homes===1?'':'s'} of homes${bn?` and a ${bn.toLowerCase()}`:''} burned down, and ${lost} people died. Watch houses and fire stations make fires rarer.`]);stop.push(t);return}
+      notes.push(['🔥',t,`${d2()?(homes?'A street of homes burned and was rebuilt smaller':'Cottages burned and were rebuilt')+(bn?` and a ${bn.toLowerCase()} burned down`:'')+`. ${lost} people died.`:`${homes} block${homes===1?'':'s'} of homes${bn?` and a ${bn.toLowerCase()}`:''} burned down, and ${lost} people died.`} Watch houses and fire stations make fires rarer.`]);stop.push(t);return}
     const pE=Math.min(.05,d/400*.02)*(1-Math.min(100,p.sc.health)/100)*(1-Math.min(100,p.sc.water)/200)*(campOn('health')?.5:1);
     if(Math.random()<pE){const lost=Math.min(Pr.pop,Math.ceil(Pr.pop*(.04+Math.random()*.06)));Pr.pop-=lost;Pr.incCd=S.turn+12;
       adjProvs(i).filter(j=>S.prov[j].o==='me'&&S.prov[j].pop).forEach(j=>{S.prov[j].pop-=Math.ceil(S.prov[j].pop*.02)});addMod('health',-10,3,'Epidemic');
@@ -1989,8 +2103,17 @@ function drawSetl(ctx,X,Y,z,c0,c1,r0,r1){if(z<10)return;const st=setlStats(),Sx=
     const x=X(s.cx+.5),y=Y(s.cy)-z*.1,fs=Math.round([11,12,13,15,17,20][s.r]*(z>=30?1.1:1));ctx.font=`${s.r>=3?'bold ':''}${fs}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
     ctx.lineJoin='round';ctx.lineWidth=3;ctx.strokeStyle='rgba(20,25,30,.8)';ctx.strokeText(Sx[s.id].name,x,y);ctx.fillStyle=s.o==='me'?(s.r>=3?'#FFE9A8':'#FFFFFF'):(s.r>=3?'#E8DCC4':'#D6E0E4');ctx.fillText(Sx[s.id].name,x,y)})}
 function setlLine(s){const R=SRANK[s.r];return s.block?`Needs ${s.block.miss.map(m=>SNEED[m].n).join(', ')} nearby to become a ${SRANK[s.block.r].n.toLowerCase()}.`:SRANK[s.r+1]?`Becomes a ${SRANK[s.r+1].n.toLowerCase()} at ${fmt(SRANK[s.r+1].p)} people.`:'The greatest a settlement can be.'}
+// needs still to come in later eras
+function laterNeeds(){if(!d2())return'';const L=NEEDS.filter(n=>!needOn(n.k));if(!L.length)return'';const by={};L.forEach(n=>{const e=NEED_ERA[n.k];(by[e]=by[e]||[]).push(n.e+' '+n.n.toLowerCase())});
+  return`<p class="hint">Not needed yet: ${Object.entries(by).map(([e,a])=>`${a.join(', ')} from the ${ERAS[e].n}`).join('; ')}.</p>`}
+// Development 2.0: a town tile's panel shows its settlement, how far it may spread, and what limits its growth
+function setlCard(i){const x=S.map[i],st=setlStats(),s=x.sid!=null&&st[x.sid],X=s&&setls()[s.id];if(!s||!X)return'';const c=calc(),p=c.pv[s.p],mx=maxTiles(s.pop),n=s.t.length;
+  const nxt=(X.upt?`Hemmed in, with no land beside it to spread onto, it builds upward instead: its homes hold ${Math.round((X.upf-1)*100)}% more people, but it gets no new tiles for town buildings. Clear or move a building beside it to let it spread again. `:'')+(n<mx?(growPick(s)?'It will spread onto a tile beside it (outlined on the map) when its homes are nine-tenths full.':''):`It can spread onto another tile at ${fmt(spreadAt(n))} people.`),lim=p&&{homes:'homes',water:'clean water',food:'food'}[p.capBy];
+  const tip={homes:'Upgrade homes to fit more people on each tile.',water:'Build a well or waterworks in town, or raise one a level.',food:'Build a farm or dock in the countryside, raise one a level, or import food.'}[p&&p.capBy];
+  return`<h2>${SEMO[s.r]} ${esc(X.name)}</h2><div class="card"><div class="row"><div class="grow"><b>${SRANK[s.r].n} of ${fmt(s.pop)}</b><small>${n} of ${mx} town tile${mx>1?'s':''} in use. ${nxt} ${setlLine(s)}</small></div></div>
+    ${p?`<div class="row"><div class="grow"><b>${esc(S.prov[s.p].name)} has room for ${fmt(Math.max(0,p.cap))} people</b><small>${fmt(p.pop)} live there now. Homes for ${fmt(p.capH)} (allowing a little crowding), clean water for ${fmt(p.capW)}, and food for ${fmt(Math.max(0,p.capF))}. ${p.cap>p.pop+5?`People keep arriving until it is full; ${lim} will run out first.`:`Growth is held back by ${lim}. ${tip}`}</small></div></div>`:''}</div>`}
 function setlHTML(){const st=setlOf('me'),Sx=setls();if(!st.length)return'';
-  return`<h2>🏘️ Settlements</h2><p class="hint">Touching homes form a settlement. It ranks up with population and the right services on or beside it: a market for a town; a market, church, school and clean water for a city; and an infirmary or hospital plus a university, assembly hall or cinema for a great city. A metropolis of 50,000 also needs a hospital, a university, a railway, and a department store or bank. Towns add trade, cities research, and great cities and metropolises legitimacy and renown. Homes on farms, docks, vineyards, forests and mines are farmsteads: they belong to the countryside, not to a town. A charter lets a town govern itself: tax +2% and the merchants +2, but the landowners −2. Neighboring kingdoms have settlements too, one in each of their provinces, ranked by population alone. Their names show on the map in pale blue, and a town you conquer keeps its name.</p>
+  return`<h2>🏘️ Settlements</h2>${d2()?`<p class="hint">Each settlement grows tile by tile: when its homes are nearly full it builds cottages on a free tile beside it, up to a limit set by its size (a hamlet 1 to 2 tiles, a village 4, a town 8, a city 16, a great city 25, a metropolis 36). Every town tile has homes and room for one town building, such as a market, well or church. Farms, mines, mills and forts go in the countryside, and industry just outside a town. Upgrade homes to fit more people on each tile, raise buildings a level to serve more, and found a new hamlet by building homes in open country at least three tiles from any town.</p>`:''}<p class="hint">Touching homes form a settlement. It ranks up with population and the right services on or beside it: a market for a town; a market, church, school and clean water for a city; and an infirmary or hospital plus a university, assembly hall or cinema for a great city. A metropolis of 50,000 also needs a hospital, a university, a railway, and a department store or bank. Towns add trade, cities research, and great cities and metropolises legitimacy and renown. Homes on farms, docks, vineyards, forests and mines are farmsteads: they belong to the countryside, not to a town. A charter lets a town govern itself: tax +2% and the merchants +2, but the landowners −2. Neighboring kingdoms have settlements too, one in each of their provinces, ranked by population alone. Their names show on the map in pale blue, and a town you conquer keeps its name.</p>
     <div class="card">${st.slice(0,20).map(s=>{const X=Sx[s.id];return`<div class="row"><span class="em">${SEMO[s.r]}</span><div class="grow"><b>${esc(X.name)}</b> <span class="tag">${SRANK[s.r].n}</span>${X.ch?' <span class="tag" style="color:var(--good)">Chartered</span>':''}<small>${fmt(s.pop)} people in ${S.prov[s.p].name}, founded in year ${X.f}.${X.q&&X.q.length?` Quarters: ${X.q.join(', ')}.`:''} ${setlLine(s)}</small></div>${s.r>=2&&!X.ch?`<button class="btn" data-act="charter" data-arg="${s.id}" ${S.coins<CHARTER?'disabled':''}>Charter 🪙${fmt(CHARTER)}</button>`:''}</div>`}).join('')}</div>${st.length>20?`<p class="hint">And ${st.length-20} smaller settlements.</p>`:''}`}
 function provSetlRow(i){const st=Object.values(setlStats()).filter(s=>s.p===i).sort((a,b)=>b.pop-a.pop),Sx=setls();if(!st.length)return'';
   return`<div class="row"><span class="em">🏘️</span><div class="grow"><b>Settlements</b><small>${st.map(s=>`${esc(Sx[s.id].name)} (${SRANK[s.r].n.toLowerCase()}, ${fmt(s.pop)})`).join(', ')}.</small></div></div>`}
@@ -2002,7 +2125,7 @@ function doMove(to){const M=MOVE;MOVE=null;const x=S.map[to],src=S.map[M.from];i
   if(x[M.kind]){toast(M.kind==='hs'?'That tile already has homes. Move cancelled.':'That tile already has a building. Move cancelled.');return true}
   const why=placeWhy(M.id,to,true);if(why){toast(`${why}. Move cancelled.`);return true}
   const d=B[M.id],cost=moveCost(M.id);if(S.coins<cost){toast(`Moving costs 🪙${fmt(cost)}. Move cancelled.`);return true}
-  S.coins-=cost;x[M.kind]=M.id;if(M.kind==='hs'&&src.hp)x.hp=1;src[M.kind]=null;if(M.kind==='hs')delete src.hp;if(!d.forest)x.t='l';setlDirty();S.sel=-1;
+  S.coins-=cost;x[M.kind]=M.id;if(M.kind==='b'){delete x.lv;if(src.lv)x.lv=src.lv;delete src.lv}if(M.kind==='hs'&&src.hp)x.hp=1;src[M.kind]=null;if(M.kind==='hs')delete src.hp;if(!d.forest)x.t='l';setlDirty();S.sel=-1;
   toast(`${d.e} ${d.n} moved for 🪙${fmt(cost)}`);render();return true}
 
 /* ---------- corner buildings and quiet residential tiles ---------- */
@@ -2079,7 +2202,7 @@ function nGrowMonth(){const r0=[.012,.018,.03,.025][Math.min(3,era())]/12;
 const NLOC={health:'Infirmaries and hospitals care for',learn:'Schools and libraries teach',fun:'Leisure places entertain',move:'Transport serves',water:'Wells and waterworks supply'};
 function needWhy(k,c){const t=c.t,p=fmt(c.pop);let s='';
   const res=r=>{const T=c.tr[r],short=c.sup[r]<c.dem[r]-.5;return`You produce ${fmt(c.prod[r])} and need ${fmt(c.dem[r])}${T&&T.dir==='import'?`, and import ${fmt(T.amt)}`:T&&T.dir==='export'?`, and export ${fmt(T.amt)}`:''}.${short?' '+tradeWhy(r,c):''}`};
-  if(k==='homes')s=`Homes for ${fmt(t.homes)} and ${p} people, so homes are ${Math.round(c.occ*100)}% full. Above 80% full, rents rise and this falls. Private builders add homes where there is work and calm.`;
+  if(k==='homes')s=`Homes for ${fmt(t.homes)} and ${p} people, so homes are ${Math.round(c.occ*100)}% full. Above 80% full, rents rise and this falls.${d2()?' Towns add cottages beside them as they fill, and you can upgrade homes to fit more on each tile.':' Private builders add homes where there is work and calm.'}`;
   else if(k==='jobs')s=`${fmt(t.jobs)} jobs, counting private trades, for ${fmt(c.workers)} people of working age.`;
   else if(k==='food')s=res('food');else if(k==='goods')s=res('goods');else if(k==='power')s=res('energy');
   else if(k==='nature')s=`Starts at 55. Forests and parks raise it; smoky industry and run-down neighborhoods lower it.`;
@@ -2261,7 +2384,7 @@ function revoltSheet(){const h=heirOf(S),win=clamp(.25+(S.leg-40)/100+(S.army-1)
 const GROWR=[.02,.03,.05,.04];
 const growRate=c=>GROWR[era()]/12*(c.sc.food>=80?1:c.sc.food>=50?.6:c.sc.food>=30?.25:0)*(.6+Math.min(100,c.sc.health)/250)*(era()>=3?1-Math.max(0,c.sc.learn-60)/200:1)*(S.boom>S.turn?1.3:1)*(heritage('farmers')?1.1:1);
 // the share of workers who find private work (shops, crafts, trades and services) without any crown building
-const PJ=[.35,.4,.45,.5];
+const PJ=[.35,.4,.45,.5],PJ2=[.5,.5,.5,.5];
 // fishing and sugar colonies send food home as well as money
 const colFood=()=>(S.ov?S.ov.isl:[]).filter(I=>I.o==='me').reduce((a,I)=>a+({fish:40,sugar:25}[I.res]||0),0);
 const smallFood=i=>{const c=S.map[i];if(c.o!=='me'||c.t==='w'||c.b)return 0;return(c.t==='f'?.5:1.2*(c.fr?1.4:1)*(nearRiver(i)?1.2:1)*(c.hl?.7:1))*(c.hs?.5:1)};
@@ -2280,7 +2403,40 @@ function famineEvent(c){const buy=Math.round(Math.max(300,S.pop*1.5));return{id:
   {l:'Ration food',f(){S.dec.ration=true;addMod('hap',-4,6,'Famine rationing');return'Rationing stretches what food there is. You can end it from the Economy tab when the crisis passes.'}},
   {l:'Let the market sort it out',f(){addMod('leg',-4,12,'Left the people to starve');igM('workers',-10,12,'Left to starve');return'The crown does nothing. The poor go hungry, and they will remember.'}}]}}
 // private builders put up homes wherever they run short, as long as the province is calm and there is work
-function builderMonth(c,notes){const rate=.12*(S.dec&&S.dec.builders?2:1);let built=0,upg=0;
+// Development 2.0: a town whose homes are nearly full spreads onto a free tile beside it, if its population allows another tile.
+// Townsfolk build the cottages themselves; raising them to townhouses and beyond is up to the crown.
+// Countryside buildings a growing town may take over: they move aside for free. Anything tied to a deposit, a river or the shore stays put.
+const ABSORB=['farm','greenhouse','wind','lumber','charcoal','vineyard','granary','dock','fort','barracks','academy','observatory','ferry','tradeco','workshop','factory','textile','steelworks','gasworks','diesel','powerstation'];
+// where a building pushed aside by a town goes: the nearest suitable free tile, ideally not in the way of any town
+function moveAside(id,from){const z=zoneOf(id),r=[];S.map.forEach((y,t)=>{if(t===from||y.o!=='me'||y.t==='w'||y.b||y.hs||y.sm||placeWhy(id,t,true))return;
+    r.push([t,dist(t,from)+(y.p!==S.map[from].p?6:0)+(z!=='edge'&&around(t,1).some(isTownT)?3:0)-(id==='farm'?farmMult(t)*2:0)])});
+  r.sort((a,b)=>a[1]-b[1]);return r.length?r[0][0]:null}
+// the tile a settlement would spread onto next: free land first, then countryside it can push aside. {j, to} (to: where the building there moves), or null
+function growPick(s){const inS=new Set(s.t),seen=new Set();let free=null,fs=-1e9,take=null,ts=-1e9;
+  s.t.forEach(t=>around(t,1).forEach(j=>{if(inS.has(j)||seen.has(j))return;seen.add(j);const y=S.map[j];if(y.o!=='me'||y.p!==s.p||y.t==='w'||y.hs||y.sm)return;
+    if(around(j,1).some(k=>!inS.has(k)&&isTownT(k)))return; // don't reach out and touch another town
+    const sc=NB(j).filter(k=>inS.has(k)).length*2+around(j,1).filter(k=>inS.has(k)).length-(y.fr?2:0)-(y.dp?4:0)-(y.t==='f'?1:0)-(isCoast(j)?1:0)-(y.rn!=null?1:0);
+    if(!y.b||zoneOf(y.b)==='town'){const v=sc+(y.b?6:0);if(v>fs){fs=v;free=j}}
+    else if(ABSORB.includes(y.b)&&sc>ts){ts=sc;take=j}}));
+  if(free!=null)return{j:free};if(take==null)return null;const to=moveAside(S.map[take].b,take);return to==null?null:{j:take,to}}
+// Development 2.0: a town whose homes are nearly full spreads onto a tile beside it, if its population allows another tile.
+// Townsfolk build the cottages themselves; raising them to townhouses and beyond is up to the crown.
+// A town hemmed in by the sea, a border or buildings that can't move builds upward instead: each tile it is owed adds homes to the tiles it has.
+function townClaimMonth(c,notes){const st=setlStats(),grown=[],moved=[],Sx=setls();
+  Object.values(st).forEach(s=>{if(s.o!=='me'||!Sx[s.id])return;const X=Sx[s.id],P=S.prov[s.p],p=c.pv[s.p];if(!p)return;let n=s.t.length;const owed=()=>Math.max(0,maxTiles(s.pop)-n);
+    const want=!P.revolt&&(P.hap??50)>=40&&(P.pop||0)>=p.homes*.9&&owed()>0;let blocked=false;
+    if(want){const g=growPick(s);
+      if(g){const y=S.map[g.j];if(g.to!=null){const T=S.map[g.to],id=y.b,d=B[id];T.b=id;if(y.lv)T.lv=y.lv;if(!d.forest)T.t='l';y.b=null;delete y.lv;moved.push(`${X.name} spreads over a ${d.n.toLowerCase()}, which moves to a nearby tile`)}
+        y.hs='cottage';y.hp=1;y.t='l';n++;grown.push(X.name)}
+      else blocked=true}
+    const was=X.upt||0;X.upt=blocked?owed():Math.min(was,owed());X.upf=X.upt?1+.8*X.upt/Math.max(1,n):1;if(!X.upt)delete X.upf;
+    if(blocked&&!was&&X.upt)notes.push(['🏗️',`${X.name} builds upward`,`With no free land beside it, ${X.name} builds taller instead: its homes hold more people, though it gets no new tiles for town buildings. Clearing a building beside it would let it spread again.`])});
+  if(grown.length||moved.length){setlDirty();notes.push(['🏘️',grown.length>1?'Towns spread':`${grown[0]} spreads`,moved.length?moved.join('. ')+'.':`${grown.join(', ')} ${grown.length>1?'have':'has'} built new cottages on the land beside ${grown.length>1?'them':'it'}.`])}}
+// homes in a hemmed-in town hold more people (Development 2.0)
+const upF=x=>{if(x.sid==null||!S.d2||!S.setl)return 1;const X=S.setl[x.sid];return X&&X.o==='me'&&X.upf||1};
+// the tiles your towns will spread onto next, outlined on the map while you choose where to build
+function growNext(){const st=setlStats(),o=new Map();Object.values(st).forEach(s=>{if(s.o!=='me'||!setls()[s.id])return;const g=growPick(s);if(g)o.set(g.j,s)});return o}
+function builderMonth(c,notes){if(d2())return townClaimMonth(c,notes);const rate=.12*(S.dec&&S.dec.builders?2:1);let built=0,upg=0;
   provsOf('me').forEach(i=>{const P=S.prov[i],p=c.pv[i];if(!p||P.revolt||!P.pop)return;const o=P.pop/Math.max(1,p.homes);
     if(o<.9||(P.hap??50)<40||c.sc.jobs<60||Math.random()>=rate)return;const tiles=provTiles(i).filter(t=>S.map[t].t!=='w');
     const up=tiles.find(t=>{const x=S.map[t],u=x.hs&&UPGR[x.hs];return x.hp&&u&&B[u]&&!lockReason(B[u])});
@@ -2294,6 +2450,11 @@ function builderMonth(c,notes){const rate=.12*(S.dec&&S.dec.builders?2:1);let bu
 function provinceMonth(c,notes,stop){const own=provsOf('me'),grow=(law('labor').grow||1)*(hasTech('antibiotics')?1.1:1)*(gp('nhs')?1.1:1)*(fund('infra')===4?1.05:1);
   own.forEach(i=>{const P=S.prov[i],p=c.pv[i];if(!p)return;const was=P.hap??p.target;P.hap=Math.round(was+(p.target-was)*.35);
     const room=p.homes-(P.pop||0),o=(P.pop||0)/Math.max(1,p.homes);
+    // Development 2.0: people are born and move in while there is room for them (homes, water and food), and drift away when there isn't
+    if(d2()){const R=p.cap-(P.pop||0);
+      if(R>0&&P.hap>=40){const mv=Math.max(1,Math.ceil(R*.1*grow*Math.min(1,(P.hap-30)/40)));const b=Math.round(mv*.4);P.pop+=mv;soc().bM+=b;soc().mM+=mv-b}
+      else if(R<0)P.pop-=Math.min(P.pop,Math.ceil(-R*.1));
+      if(P.hap<35&&P.pop>0)P.pop-=Math.min(P.pop,Math.ceil(P.pop*.03*(35-P.hap)/35)+1);return}
     // people move quickly into free homes; beyond that, families keep growing, crowding in more slowly the more crowded it gets
     if(P.hap>=50&&room>0){const mv=Math.max(1,Math.ceil(room*.22*grow*(P.hap-40)/60));P.pop+=mv;soc().mM+=mv}
     if(P.hap>=45&&P.pop>0&&o<1.6){P.gf=(P.gf||0)+P.pop*growRate(c)*grow*Math.min(1,(1.6-o)/.6);const n=Math.floor(P.gf);if(n){P.pop+=n;P.gf-=n;soc().bM+=n}}
@@ -2449,12 +2610,12 @@ function showNext(){curEvent=queue.shift();if(!curEvent){closeSheet();return}
 /* ---------- views ---------- */
 const bar=(v,c)=>`<div class="meter"><i style="width:${clamp(v,0,100)}%;background:${c||col(v)}"></i></div>`;
 function isleHTML(){const c=calc();
-  const needs=NEEDS.map(n=>`<button class="need" data-act="needInfo" data-arg="${n.k}" aria-label="${n.n} ${c.sc[n.k]}: why?"><span aria-hidden="true">${n.e}</span> ${n.n}<b style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</b>${bar(c.sc[n.k])}</button>`).join('');
+  const needs=NEEDS.filter(n=>needOn(n.k)).map(n=>`<button class="need" data-act="needInfo" data-arg="${n.k}" aria-label="${n.n} ${c.sc[n.k]}: why?"><span aria-hidden="true">${n.e}</span> ${n.n}<b style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</b>${bar(c.sc[n.k])}</button>`).join('');
   const x=(S.news||[])[0];
   const news=x?`<h2>News: ${newsTitle(x)}</h2><div class="card">${x.items.map(newsRow).join('')}</div>${S.news.length>1?'<button class="btn wide" data-act="news">Earlier news</button>':''}`
     :'<h2>News</h2><p class="hint">Nothing has happened yet. <b>End month</b> moves time forward one month, and <b>⏩</b> keeps going until something needs you, up to a year.</p>';
   const chr=(S.chron||[]).length?`<h2>📜 Chronicle</h2><div class="card">${S.chron.slice(0,3).map(chronRow).join('')}</div><button class="btn wide" data-act="chronicle">The full chronicle</button>`:'';
-  return `${chr}${news}<h2>Public needs</h2><p class="hint">Tap a need to see why it stands where it does.</p><div class="needs">${needs}</div>`}
+  return `${chr}${news}<h2>Public needs</h2><p class="hint">Tap a need to see why it stands where it does.</p><div class="needs">${needs}</div>${laterNeeds()}`}
 
 /* ---------- map canvas ---------- */
 // cam.cx/cy is the tile position at the middle of the view; cam.z is the size of one tile in CSS pixels.
@@ -2730,6 +2891,7 @@ function drawMap(){const cv=MAP.cv,ctx=MAP.ctx,{vw,vh,dpr}=MAP;if(V3.on)return;i
   drawSetl(ctx,X,Y,z,c0,c1,r0,r1);
   marks.forEach(([e,mx,my,f])=>{const t=z*f,px=Math.max(8,Math.ceil(t*dpr/4)*4),g=glyph(e,px),s=t*1.3;ctx.drawImage(g,mx-s/2,my-s/2,s,s)});
   const ring=(i,color,dash)=>{if(i<0)return;const sx=X(i%W),sy=Y(i/W|0),w=X(i%W+1)-sx;ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=3;ctx.strokeRect(sx+1.5,sy+1.5,w-3,w-3);ctx.setLineDash([])};
+  if(S.sel>=0&&GROWMARK)GROWMARK.forEach(j=>ring(j,'rgba(255,255,255,.85)',[4,4]));
   ring(S.sel,P.coin);if(document.activeElement===cv)ring(MAP.kc,P.coin,[5,4]);
   drawMini()}
 function drawMini(){const m=MAP.mini,c=MAP.cam,show=MAP.vw/c.z<W||MAP.vh/c.z<H;m.style.display=show?'block':'none';if(!show)return;
@@ -3471,6 +3633,11 @@ function v3Sync(){if(!V3.on||!V3.r)return;const T=THREE,newMap=V3.mapRef!==S.map
   if(V3.sel){V3.scene.remove(V3.sel);V3.sel.geometry.dispose();V3.sel.material.dispose();V3.sel=null}
   if(S.sel>=0&&S.sel<S.map.length){const i=S.sel,c=i%W,r=i/W|0,pts=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.06+f*.88,r+.06],[c+.94,r+.06+f*.88],[c+.94-f*.88,r+.94],[c+.06,r+.94-f*.88]][side];pts.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
     V3.sel=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xE2AE2A}));V3.scene.add(V3.sel)}
+  // Development 2.0: the tiles your towns will spread onto next, dashed in white
+  if(V3.grow){V3.scene.remove(V3.grow);V3.grow.geometry.dispose();V3.grow.material.dispose();V3.grow=null}
+  if(S.sel>=0&&GROWMARK&&GROWMARK.length){const pts=[];GROWMARK.forEach(i=>{const c=i%W,r=i/W|0,ring=[];for(let k=0;k<=24;k++){const t=k/24*4,side=Math.floor(Math.min(3,t)),f=t-side,e=[[c+.1+f*.8,r+.1],[c+.9,r+.1+f*.8],[c+.9-f*.8,r+.9],[c+.1,r+.9-f*.8]][side];ring.push(new T.Vector3(v3X(e[0]),v3G(e[0],e[1])+.03,v3Z(e[1])))}
+      for(let k=0;k<ring.length-1;k++)pts.push(ring[k],ring[k+1])});
+    V3.grow=new T.LineSegments(new T.BufferGeometry().setFromPoints(pts),new T.LineDashedMaterial({color:0xFFFFFF,dashSize:.06,gapSize:.05,transparent:true,opacity:.9}));V3.grow.computeLineDistances();V3.scene.add(V3.grow)}
   v3Draw()}
 function v3Resize(){if(!V3.r)return;const w=$('#mapwrap'),vw=w.clientWidth,vh=w.clientHeight;if(!vw||!vh)return;V3.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));V3.r.setSize(vw,vh,false);V3.cam.aspect=vw/vh;V3.cam.updateProjectionMatrix();v3Draw()}
 function v3Draw(){if(!V3.on)return;if(v3LifeOn()){if(!V3.loop){V3.last=0;V3.loop=requestAnimationFrame(v3Loop)}return}if(V3.raf)return;V3.raf=requestAnimationFrame(()=>{V3.raf=0;v3Render()})}
@@ -3558,7 +3725,7 @@ function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.s
   const quotes=[low[0],low[1],hi].map((n,i)=>{const nm=NAMES[(S.turn*3+i*4)%NAMES.length];const good=c.sc[n.k]>=70;return `<div class="row"><span class="em">${n.e}</span><div class="grow"><span class="quote">\u201c${good?n.hi:n.lo}\u201d</span><small>${nm}</small></div></div>`}).join('');
   const classes=Object.entries(CLASSES).map(([k,C])=>{const v=c.cls[k],p=Math.round(S.pop*c.share[k]);const worst=Object.keys(C.w).sort((a,b)=>c.sc[a]-c.sc[b])[0],wn=NEEDS.find(n=>n.k===worst);
     return `<div class="row"><span class="em">${C.e}</span><div class="grow"><b>${C.n}</b> <span class="tag">${fmt(p)} people</span><small>${C.d} Biggest worry: ${wn.n.toLowerCase()}.</small>${bar(v)}</div><span class="num" style="color:${col(v)}">${v}</span></div>`}).join('');
-  const needs=NEEDS.map(n=>`<div class="row"><span class="em">${n.e}</span><div class="grow"><b>${n.n}</b>${bar(c.sc[n.k])}<small>${needWhy(n.k,c)}${c.sc[n.k]<70?` <b>To improve:</b> ${n.tip}${needBuild(n.k)}`:''}</small></div><span class="num" style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</span></div>`).join('');
+  const needs=NEEDS.filter(n=>needOn(n.k)).map(n=>`<div class="row"><span class="em">${n.e}</span><div class="grow"><b>${n.n}</b>${bar(c.sc[n.k])}<small>${needWhy(n.k,c)}${c.sc[n.k]<70?` <b>To improve:</b> ${n.tip}${needBuild(n.k)}`:''}</small></div><span class="num" style="color:${col(c.sc[n.k])}">${c.sc[n.k]}</span></div>`).join('');
   const lbl={hap:'Approval',inc:'Monthly budget',tour:'Tourism',foodprod:'Food production',leg:'Legitimacy'};
   const mods=S.mods.map(m=>{const nm=m.k.startsWith('ig:')?IGS[m.k.slice(3)].n+' mood':lbl[m.k]||(NEEDS.find(n=>n.k===m.k)||{n:m.k}).n;return `<div class="row"><div class="grow"><b>${m.l}</b><small>${nm} ${m.v>0?'+':''}${m.v}${m.k==='inc'?' a month':m.k==='tour'||m.k==='foodprod'?'%':''} for ${m.m} more month${m.m>1?'s':''}</small></div></div>`}).join('');
   return `<div class="mood"><div class="grow"><div class="big" style="color:${col(S.hap)}">${S.hap}%</div><div class="sub">approval, trending toward ${c.target}%</div></div><button class="btn" data-act="why" data-arg="approval">Why?</button></div>
@@ -3570,7 +3737,7 @@ function peopleHTML(){const c=calc(),low=NEEDS.slice().sort((a,b)=>c.sc[a.k]-c.s
   ${societyHTML(c)}
   <p class="hint">Each class cares about different things, and tax laws weigh on them differently. Approval is the average, weighted by class size.</p>
   <h2>Public opinion</h2><div class="card">${quotes}</div>
-  <h2>Needs</h2><div class="card">${needs}</div>
+  <h2>Needs</h2><div class="card">${needs}</div>${laterNeeds()}
   ${mods?`<h2>Active effects</h2><div class="card">${mods}</div>`:''}`}
 function courtHTML(){const c=calc(),m=S.monarch,h=S.heir;
   const igs=IGIDS.map(k=>{const G=IGS[k],md=c.mood[k],[st,sc]=igStatus(md),cl=Math.round(c.clout[k]*100);
@@ -3789,15 +3956,23 @@ function render(){
 
 /* ---------- sheets ---------- */
 function openSheet(h){$('#sheet').innerHTML=h;$('#sheetWrap').classList.add('open');$('#sheet').scrollTop=0}
-function closeSheet(){$('#sheetWrap').classList.remove('open');resetArmed=false;if(S.sel>=0){S.sel=-1;render()}}
+let GROWMARK=null;
+function closeSheet(){$('#sheetWrap').classList.remove('open');resetArmed=false;GROWMARK=null;if(S.sel>=0){S.sel=-1;render()}}
 // i (optional) is the tile, so farms and windmills can show what that spot's terrain gives them
-function effStr(d,i){const p=[],x=i!=null&&S.map[i],tm=!x?1:d===B.farm?farmMult(i):d===B.wind&&x.hl?1.5:1,adj=v=>tm===1?v:`${Math.round(v*tm)} (${tm>1?'terrain bonus':'poor terrain'})`;
-  if(d.homes)p.push(`Housing +${Math.round(d.homes*DENS())}`);if(d.food)p.push(`Food for ${d===B.farm?adj(d.food):d.food}`);if(d.mat)p.push(`🧱${d.mat} materials/mo`);if(d.rp)p.push(`Research +${d.rp}/mo`);if(d.jobs)p.push(`${d.jobs} jobs`);if(d.inc)p.push(`+🪙${d.inc}/mo`);if(d.goods)p.push(`${d.goods} goods/mo`);
-  if(d.health)p.push(`Healthcare for ${d.health}`);if(d.learn)p.push(`Education for ${d.learn}`);if(d.fun)p.push(`Recreation for ${d.fun}`);if(d.move)p.push(`Transport for ${d.move}`);
-  if(d.power)p.push(`${era()<2?'Fuel and light':'Energy'} for ${d===B.wind?adj(d.power):d.power}`);if(d.trade)p.push(`Trade capacity +${d.trade}`);if(d.tour)p.push('Tourism');if(d.hap)p.push(`Approval +${d.hap}`);if(d.nat)p.push(`Environment ${d.nat>0?'+':''}${d.nat}`);if(d.u)p.push(`Upkeep ${Math.round(d.u*ECON.up[era()])}/mo`);return p.join('. ')+'.'}
+// what a building does; lv (or the level of the building already on tile i) scales its output and upkeep
+function effStr(d,i,lv){const p=[],x=i!=null&&S.map[i],tm=!x?1:d===B.farm?farmMult(i):d===B.wind&&x.hl?1.5:1,adj=v=>tm===1?v:`${fmt(v*tm)} (${tm>1?'terrain bonus':'poor terrain'})`;
+  lv=lv||(x&&x.b&&B[x.b]===d&&x.lv)||1;const V=k=>Math.round(d[k]*(LVK.has(k)?LVM[lv-1]:1));
+  if(d.homes)p.push(`Housing +${fmt(d.homes*DENS())}`);if(d.food)p.push(`Food for ${d===B.farm?adj(V('food')):fmt(V('food'))}`);if(d.mat)p.push(`🧱${V('mat')} materials/mo`);if(d.rp)p.push(`Research +${d.rp}/mo`);if(d.jobs)p.push(`${fmt(V('jobs'))} jobs`);if(d.inc)p.push(`+🪙${V('inc')}/mo`);if(d.goods)p.push(`${fmt(V('goods'))} goods/mo`);
+  if(d.health)p.push(`Healthcare for ${fmt(V('health'))}`);if(d.learn)p.push(`Education for ${fmt(V('learn'))}`);if(d.fun)p.push(`Recreation for ${fmt(V('fun'))}`);if(d.move)p.push(`Transport for ${fmt(V('move'))}`);if(d.water)p.push(`Water for ${fmt(V('water'))}`);
+  if(d.power)p.push(`${era()<2?'Fuel and light':'Energy'} for ${d===B.wind?adj(V('power')):fmt(V('power'))}`);if(d.trade)p.push(`Trade capacity +${d.trade}`);if(d.tour)p.push('Tourism');if(d.hap)p.push(`Approval +${d.hap}`);if(d.nat)p.push(`Environment ${d.nat>0?'+':''}${d.nat}`);if(d.u)p.push(`Upkeep ${Math.round(d.u*LVU[lv-1]*ECON.up[era()])}/mo`);return p.join('. ')+'.'}
+// raising a building a level (Development 2.0)
+const lvPrice=(d,lv)=>priceOf(Math.round(d.c*LVC[lv]),Math.round(matCost(d)*LVC[lv]));
+function levelCard(i){const x=S.map[i];if(!d2()||!lvOK(x.b))return'';const d=B[x.b],lv=x.lv||1;
+  if(lv>=3)return`<div class="card"><div class="row"><span class="em">⭐</span><div class="grow"><b>Level 3 of 3</b><small>At its largest: it does twice as much as at level 1.</small></div></div></div>`;
+  const k=lvPrice(d,lv);return`<div class="card"><div class="row"><span class="em">⭐</span><div class="grow"><b>Raise to level ${lv+1}</b><small>Now level ${lv} of 3. Level ${lv+1}: ${effStr(d,i,lv+1)} ${priceTxt(k)}</small></div><button class="btn primary" data-act="levelUp" data-arg="${i}" ${S.coins<k.coins?'disabled':''}>🪙${fmt(k.coins)}</button></div></div>`}
 // your own province: its people, mood, unrest, integration, any revolt, and how well its local needs are met
 function provStats(i){const P=S.prov[i],c=calc(),p=c.pv[i];if(!p)return'';const R=P.revolt,m=P.hap??p.target,u=Math.round(P.unrest||0),need=k=>NEEDS.find(n=>n.k===k);
-  const cov=LOCAL_NEEDS.map(k=>`<div class="need"><span aria-hidden="true">${need(k).e}</span> ${need(k).n}<b style="color:${col(p.sc[k])}">${p.sc[k]}</b>${bar(p.sc[k])}</div>`).join('');
+  const cov=LOCAL_NEEDS.filter(needOn).map(k=>`<div class="need"><span aria-hidden="true">${need(k).e}</span> ${need(k).n}<b style="color:${col(p.sc[k])}">${p.sc[k]}</b>${bar(p.sc[k])}</div>`).join('');
   return `<div class="card">
     <div class="row"><span class="em">👥</span><div class="grow"><b>${fmt(P.pop||0)} people</b><small>Homes for ${fmt(p.homes)}. ${fmt(Math.round(p.emp))} of ${fmt(p.workers)} workers have jobs.</small></div></div>
     <div class="row"><span class="em">📊</span><div class="grow"><b>Mood ${m}</b><small>Trending toward ${p.target}.${p.hood?` Neighborhoods ${p.hood>0?'+':''}${p.hood}.`:''}${p.integPen>=1?` Not yet integrated: −${Math.round(p.integPen)}.`:''}</small>${bar(m)}</div></div>
@@ -3830,26 +4005,33 @@ function provSheet(i){const P=S.prov[i],tiles=provTiles(i),o=P.o,bl=tiles.map(t=
       <div class="row"><span class="em">📜</span><div class="grow"><b>Demand it</b><small>${S.claims[i]||S.tension[n]>=60?`Works best if your army is much stronger. Yours ${c.str}, theirs ${th}. Refusal raises tension sharply.`:'You need a claim, or tension of 60 or more.'}</small></div><button class="btn" data-act="demandProv" data-arg="${i}" ${war||S.demandCd[n]||!(S.claims[i]||S.tension[n]>=60)?'disabled':''}>${S.demandCd[n]?`${S.demandCd[n]} mo`:'Demand'}</button></div>
       <div class="row"><span class="em">⚔️</span><div class="grow"><b>Declare war for it</b><small>${S.war?'You\u2019re already at war.':S.claims[i]?'Your claim justifies it. Legitimacy -2.':'Without a claim this is naked aggression. Legitimacy -10, and all neighbors grow tense.'} Yours ${c.str}, theirs ${th}, and defenders fight 25% harder.</small></div><button class="btn" id="warBtn" data-act="declare" data-arg="${i}" ${S.war?'disabled':''}>Declare</button></div></div>`}
   openSheet(`<h3>${o==='me'?'🏠':o==='wild'?'🌿':NATIONS[o].e} ${P.name}</h3>${body}<button class="btn primary wide" data-act="closeSheet">Done</button>`)}
-function tileSheet(i){if(MOVE&&doMove(i))return;const x=S.map[i];if(x.o!=='me'){S.sel=i;render();provSheet(x.p);return}const coast=isCoast(i);S.sel=i;render();
+function tileSheet(i){if(MOVE&&doMove(i))return;const x=S.map[i];if(x.o!=='me'){S.sel=i;render();provSheet(x.p);return}const coast=isCoast(i);S.sel=i;GROWMARK=d2()?[...growNext().keys()]:null;render();
   const tt=terrainTxt(i),place=`${S.prov[x.p].name}${tt.length?', '+tt.join(', '):''}.${x.sid&&setls()[x.sid]?` In ${esc(setls()[x.sid].name)}.`:''}`,depTxt=x.dp?`${DEPE[x.dp]} ${DEPN[x.dp][0].toUpperCase()+DEPN[x.dp].slice(1)} deposit.`:'';
   const A=appealMap()[i],hoodTxt=d=>!(d&&d.homes)?'':A>0?` Pleasant neighborhood (+${A}): parks or gardens nearby.`:A<0?` Polluted neighborhood (${A}): industry nearby makes residents less happy.`:'';
   if(x.b){const d=B[x.b],up=UPGR[x.b],U=up&&B[up],upk=U?priceOf(Math.max(0,U.c-Math.round(d.c*.5)),Math.max(0,matCost(U)-Math.round(matCost(d)/2))):null,lr=U&&placeWhy(up,i);
-    openSheet(`<h3>${d.e} ${d.n}</h3><p>${d.d}</p><p class="hint">${place} ${effStr(d,i)}${hoodTxt(d)}${x.dp&&d.dep!==x.dp?` ${depTxt} Demolish this to use it.`:''}</p>
+    openSheet(`<h3>${d.e} ${d.n}${d2()&&lvOK(x.b)?` <span class="tag">Level ${x.lv||1}</span>`:''}</h3><p>${d.d}</p><p class="hint">${place} ${effStr(d,i)}${hoodTxt(d)}${GROWMARK&&GROWMARK.includes(i)?" The town beside it will spread onto this tile next (outlined on the map), and this will move to a nearby tile for free.":""}${x.dp&&d.dep!==x.dp?` ${depTxt} Demolish this to use it.`:''}</p>
     ${U?`<div class="card"><div class="row"><span class="em">${U.e}</span><div class="grow"><b>Upgrade to ${U.n.toLowerCase()}</b><small>${lr?lr+'.':effStr(U,i)+' '+priceTxt(upk)}</small></div><button class="btn primary" data-act="upgrade" data-arg="${i}" ${lr||S.coins<upk.coins?'disabled':''}>🪙${fmt(upk.coins)}</button></div></div>`:''}
-    ${smallCard(i)}${housingCard(i)}
+    ${levelCard(i)}${d2()?(x.hs?setlCard(i)+housingCard(i):''):smallCard(i)+housingCard(i)}
     ${d.fixed?'':`<button class="btn wide" data-act="moveStart" data-arg="${i}" data-n="b">Move to another tile (🪙${fmt(moveCost(x.b))})</button>`}
     ${d.fixed?'':`<button class="btn wide" data-act="demolish" data-arg="${i}" id="demoBtn">Demolish (recover 🪙${fmt(Math.round(d.c*.25))})</button>`}
     <button class="btn primary wide" data-act="closeSheet">Done</button>`);return}
   const F=UI.bfilt||(UI.bfilt={cat:'all',afford:false});if(F.cat!=='all'&&!GROUPS.some(([g])=>g===F.cat))F.cat='all';
   // what a building would do to (or get from) its neighbors on this tile
-  const nearTxt=id=>{const d=B[id];if(POLL[id]){const n=homesNear(i,POLL[id][0]);return n?` ⚠️ Pollutes ${n} home${n>1?'s':''} nearby.`:''}
+  // Development 2.0: building beside a town may get in the way of its growth
+  const gn=d2()&&!x.hs?growNext():null,tj=d2()&&!x.hs?around(i,1).find(j=>isTownT(j)&&S.map[j].sid!=null&&setls()[S.map[j].sid]):undefined,townBy=tj!=null?S.map[tj]:null,tName=townBy?esc(setls()[townBy.sid].name):'';
+  const blockTxt=id=>{if(!townBy||isHousing(id)||zoneOf(id)==='town')return'';const nx=gn&&gn.has(i);
+    return ABSORB.includes(id)?(nx?` ${tName} will spread onto this tile next, and would move it aside for free.`:` Beside ${tName}: if the town spreads this way, it moves aside for free.`)
+      :` ⚠️ ${nx?`${tName} would spread onto this tile next: this`:`Beside ${tName}: this`} can't be moved aside, so the town could never spread onto this tile.`};
+  const nearTxt=id=>blockTxt(id)+nearTxt0(id),nearTxt0=id=>{const d=B[id];if(POLL[id]){const n=homesNear(i,POLL[id][0]);return n?` ⚠️ Pollutes ${n} home${n>1?'s':''} nearby.`:''}
     if(AMEN[id]){const n=homesNear(i,AMEN[id][0]);return n?` Makes ${n} home${n>1?'s':''} nearby more pleasant.`:''}return d.homes&&A?` Neighborhood here: ${A>0?'+':''}${A}.`:''};
-  const groups=GROUPS.filter(([g])=>F.cat==='all'||F.cat===g).map(([g,ids])=>{const rows=ids.map(id=>{const d=B[id],why=placeWhy(id,i),k=priceOf(d.c,matCost(d));if(F.afford&&(why||S.coins<k.coins))return'';
+  // Development 2.0: a town tile lists town buildings; open land lists the countryside, industry and homes
+  const fits=id=>{if(!d2())return true;const z=zoneOf(id);return x.hs?z==='town'||z==='any':z!=='town'};
+  const groups=GROUPS.filter(([g])=>F.cat==='all'||F.cat===g).map(([g,ids])=>{const rows=ids.filter(fits).map(id=>{const d=B[id],why=placeWhy(id,i),k=priceOf(d.c,matCost(d));if(F.afford&&(why||S.coins<k.coins))return'';
     return `<div class="row"><span class="em" ${why?'style="opacity:.45"':''}>${d.e}</span><div class="grow"><b>${d.n}</b><small>${effStr(d,i)}${why?'':nearTxt(id)}${k.m&&!why?' '+priceTxt(k):''}</small></div><button class="btn" data-act="build" data-arg="${i}" data-n="${id}" ${why||S.coins<k.coins?'disabled':''}>${why||'🪙'+fmt(k.coins)}</button></div>`}).join('');
     return rows?`<h2>${g}</h2><div class="card">${rows}</div>`:''}).join('');
   const chips=`<div class="seg scroll" role="group" aria-label="Building category">${[['all','All'],...GROUPS.map(([g,,s])=>[g,s])].map(([k,n])=>`<button class="btn ${F.cat===k?'on':''}" data-act="bfilt" data-arg="${k}" data-n="${i}" aria-pressed="${F.cat===k}">${n}</button>`).join('')}</div>
     <div class="row" style="border:0;padding:6px 0 0"><div class="grow"><b>Only what I can build now</b></div><button class="sw" data-act="bfilt" data-arg="afford" data-n="${i}" aria-pressed="${!!F.afford}" aria-label="Only show what I can build now"></button></div>`;
-  openSheet(`<h3>${x.hs&&B[x.hs]?B[x.hs].e+' '+B[x.hs].n:x.t==='f'?'🌲 Forest':'Open land'}${coast?', coastal':''}</h3><p class="hint">${place} ${depTxt} Treasury: 🪙${fmt(S.coins)}, materials: 🧱${fmt(S.mat||0)}. ${x.t==='f'?'Building here clears the forest, except a lumber camp.':''} <button class="btn" data-act="provInfo" data-arg="${x.p}">Province info</button></p>${x.hs?housingCard(i)+'<h2>Add a building</h2><p class="hint">Any building can join the homes on this tile.</p>':''}${chips}${groups||`<p class="hint">Nothing ${F.cat==='all'?'':'in this category '}can be built here right now${F.afford?' with 🪙'+fmt(S.coins):''}.</p>`}<button class="btn wide" data-act="closeSheet">Cancel</button>`);
+  openSheet(`<h3>${x.hs&&B[x.hs]?B[x.hs].e+' '+B[x.hs].n:x.t==='f'?'🌲 Forest':'Open land'}${coast?', coastal':''}</h3><p class="hint">${place} ${depTxt} Treasury: 🪙${fmt(S.coins)}, materials: 🧱${fmt(S.mat||0)}. ${x.t==='f'?'Building here clears the forest, except a lumber camp.':''} <button class="btn" data-act="provInfo" data-arg="${x.p}">Province info</button></p>${d2()?(x.hs?setlCard(i)+housingCard(i)+'<h2>Add a town building</h2><p class="hint">Each town tile has room for one town building beside its homes. Farms, mines, mills and forts go in the countryside, and industry just outside a town.</p>':`<p class="hint">🌾 Countryside. Farms, mines, mills and forts go here, and industry beside a town. Town buildings, such as markets, wells and churches, go on town tiles, which have homes. ${(w=>w?`Homes: ${w.toLowerCase()}.`:around(i,1).some(isTownT)?'Homes here would extend the town beside it.':'Homes here would found a new hamlet.')(placeWhy('cottage',i))}${gn&&gn.has(i)?` ${esc(setls()[gn.get(i).id].name)} will spread onto this tile next (outlined tiles show where each town grows next).`:''}</p>`):x.hs?housingCard(i)+'<h2>Add a building</h2><p class="hint">Any building can join the homes on this tile.</p>':''}${chips}${groups||`<p class="hint">Nothing ${F.cat==='all'?'':'in this category '}can be built here right now${F.afford?' with 🪙'+fmt(S.coins):''}.</p>`}<button class="btn wide" data-act="closeSheet">Cancel</button>`);
   const on=$('#sheet .seg.scroll .on');if(on)on.parentNode.scrollLeft=on.offsetLeft-on.parentNode.offsetLeft-40}
 function settings(){openSheet(`<h3>Settings</h3>
   <p>The game runs entirely on this device and saves automatically. It works without an internet connection once it\u2019s open.</p>
@@ -3888,7 +4070,7 @@ async function saveFile(share){const c=await packSave(),name=saveName();
   if(share){try{const f=new File([c],name,{type:'text/plain'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
     toast('Sharing isn’t available here, so the file was saved instead')}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);if(!share)toast('Saved “'+name+'”')}
-function welcome(){const m=S.monarch;openSheet(`<div class="event"><div class="pic" aria-hidden="true">👑</div><h3>The crown is yours</h3><p>You are ${monarchName(m)}, absolute ruler of a small island kingdom of 60 subjects.</p></div>
+function welcome(){const m=S.monarch;openSheet(`<div class="event"><div class="pic" aria-hidden="true">👑</div><h3>The crown is yours</h3><p>You are ${monarchName(m)}, absolute ruler of a small island kingdom of ${fmt(S.pop)} subjects.</p></div>
   <p>Build up the realm, balance the treasury, and keep the powerful on your side. Your legitimacy depends on the landowners, clergy, merchants, intelligentsia and workers. Let it fall too far, and unrest may end in revolution.</p>
   <p class="hint" style="margin-bottom:0">Your monarch</p><div class="seg" role="group" aria-label="King or queen">${[['m','👑 King'],['f','👑 Queen']].map(([g,l])=>`<button class="btn ${m.g===g?'on':''}" data-act="mgender" data-arg="${g}" aria-pressed="${m.g===g}">${l}</button>`).join('')}</div>
   <p class="hint" style="margin-bottom:0">${S.fam.spouse?`Married to ${S.fam.spouse.name}. The consort is your`:'The consort is your'}</p><div class="seg" role="group" aria-label="Husband or wife">${[['m','Husband'],['f','Wife']].map(([g,l])=>`<button class="btn ${S.fam.spouse&&S.fam.spouse.g===g?'on':''}" data-act="sgender" data-arg="${g}" aria-pressed="${!!S.fam.spouse&&S.fam.spouse.g===g}">${l}</button>`).join('')}</div>
@@ -4142,19 +4324,21 @@ function act(a,arg,n){
     case'wsize':{if(!WSIZES[arg]||S.turn>0)return;const v=($('#nm')||{}).value;setWorld(genWorld(arg));welcome();if(v!=null)$('#nm').value=v;render();return}
     case'tile':tileSheet(+arg);return;
     case'build':{const i=+arg,d=B[n],x=S.map[i],hz=isHousing(n);if(!d||x.o!=='me'||(hz?x.hs:x.b)||x.t==='w'||placeWhy(n,i))return;const k=priceOf(d.c,matCost(d));if(S.coins<k.coins)return;
-      S.coins-=k.coins;S.mat=(S.mat||0)-k.use;if(hz)x.hs=n;else x.b=n;if(!d.forest)x.t='l';S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${d.e} ${d.n} built${k.imp?`, with 🧱${k.imp} imported`:''}`);checkGoals().forEach(g=>setTimeout(()=>toast(`✅ ${g.d}. +🪙${fmt(g.r)}`),1200));break}
+      S.coins-=k.coins;S.mat=(S.mat||0)-k.use;if(hz){x.hs=n;setlDirty()}else{x.b=n;delete x.lv}if(!d.forest)x.t='l';S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${d.e} ${d.n} built${k.imp?`, with 🧱${k.imp} imported`:''}`);checkGoals().forEach(g=>setTimeout(()=>toast(`✅ ${g.d}. +🪙${fmt(g.r)}`),1200));break}
     case'upgrade':{const i=+arg,x=S.map[i],d=B[x.b],U=B[UPGR[x.b]];if(!U||placeWhy(UPGR[x.b],i))return;const k=priceOf(Math.max(0,U.c-Math.round(d.c*.5)),Math.max(0,matCost(U)-Math.round(matCost(d)/2)));if(S.coins<k.coins)return;
-      S.coins-=k.coins;S.mat=(S.mat||0)-k.use;x.b=UPGR[x.b];S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${U.e} Upgraded to ${U.n.toLowerCase()}`);checkGoals();break}
+      S.coins-=k.coins;S.mat=(S.mat||0)-k.use;x.b=UPGR[x.b];delete x.lv;S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${U.e} Upgraded to ${U.n.toLowerCase()}`);checkGoals();break}
+    case'levelUp':{const i=+arg,x=S.map[i],d=B[x.b],lv=x.lv||1;if(!d2()||!lvOK(x.b)||x.o!=='me'||lv>=3)return;const k=lvPrice(d,lv);if(S.coins<k.coins)return;
+      S.coins-=k.coins;S.mat=(S.mat||0)-k.use;x.lv=lv+1;S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${d.e} ${d.n} raised to level ${x.lv}`);checkGoals();break}
     case'upgradeH':{const i=+arg,x=S.map[i],d=B[x.hs],up=d&&UPGR[x.hs],U=up&&B[up];if(!U||lockReason(U))return;const k=priceOf(Math.max(0,U.c-Math.round(d.c*.5)),Math.max(0,matCost(U)-Math.round(matCost(d)/2)));if(S.coins<k.coins)return;
       S.coins-=k.coins;S.mat=(S.mat||0)-k.use;x.hs=up;delete x.hp;S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${U.e} Upgraded to ${U.n.toLowerCase()}`);checkGoals();break}
-    case'demolishH':{const i=+arg,x=S.map[i],d=B[x.hs];if(!d)return;if(!resetArmed){resetArmed=true;const b=$('#demoH');if(b)b.textContent='Tap again';return}
+    case'demolishH':{const i=+arg,x=S.map[i],d=B[x.hs];if(!d)return;if(d2()&&x.b&&zoneOf(x.b)==='town'){toast(`Demolish the ${B[x.b].n.toLowerCase()} first: town buildings need homes around them`);return}if(!resetArmed){resetArmed=true;const b=$('#demoH');if(b)b.textContent='Tap again';return}
       S.coins+=Math.round(d.c*.25);x.hs=null;delete x.hp;S.sel=-1;resetArmed=false;$('#sheetWrap').classList.remove('open');toast(`${d.n} cleared`);break}
     case'buildSm':{const i=+arg,x=S.map[i],d=B[n];if(!d||!SMALL.includes(n)||x.o!=='me'||!x.b||x.sm||!townAt(i)||placeWhy(n,i))return;const k=priceOf(d.c,matCost(d));if(S.coins<k.coins)return;
       S.coins-=k.coins;S.mat=(S.mat||0)-k.use;x.sm=n;setlDirty();S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${d.e} ${d.n} built on the corner`);break}
     case'clearSm':{const i=+arg,x=S.map[i],d=B[x.sm];if(!d)return;if(!resetArmed){resetArmed=true;const b=$('#clearSm');if(b)b.textContent='Tap again';return}resetArmed=false;
       S.coins+=Math.round(d.c*.25);x.sm=null;setlDirty();S.sel=-1;$('#sheetWrap').classList.remove('open');toast(`${d.n} cleared`);break}
     case'demolish':{const i=+arg,x=S.map[i],d=B[x.b];if(!d||d.fixed)return;if(!resetArmed){resetArmed=true;$('#demoBtn').textContent='Tap again to demolish';return}
-      S.coins+=Math.round(d.c*.25);x.b=null;S.sel=-1;resetArmed=false;$('#sheetWrap').classList.remove('open');toast(`${d.n} demolished`);break}
+      S.coins+=Math.round(d.c*.25);x.b=null;delete x.lv;S.sel=-1;resetArmed=false;$('#sheetWrap').classList.remove('open');toast(`${d.n} demolished`);break}
     case'dec':S.dec[arg]=!S.dec[arg];toast(`${DEC[arg].n} ${S.dec[arg]?'decreed':'revoked'}`);break;
     case'provInfo':provSheet(+arg);return;
     case'quell':{const i=+arg,P=S.prov[i];if(!P||P.o!=='me'||P.revolt||!quellReady(P)||S.troops<2)return;P.unrest=Math.max(0,(P.unrest||0)-30);P.pm=(P.pm||[]).concat({v:-8,until:S.turn+12});P.qcd=S.turn+6;
