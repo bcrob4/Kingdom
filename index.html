@@ -75,6 +75,7 @@ svg.arms{flex:none;display:block}
 input.txt{width:100%;box-sizing:border-box;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card,transparent);color:inherit;font:inherit}
 .big{font-size:2.6rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
 .mood{display:flex;align-items:center;gap:14px;margin-top:14px}
+.tots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 6px}.tots>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tots small{display:block;color:var(--muted);font-size:.8rem}.tots b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
 .mood .face{font-size:3rem}
 .quote{font-style:italic}
 .chart{width:100%;height:120px;display:block}
@@ -3685,19 +3686,28 @@ function groupSheet(k){const G=IGS[k],c=calc(),md=c.mood[k],exps=activeExp().fil
     <button class="btn primary wide" data-act="closeSheet">Done</button>`)}
 function courtHint(i){const C=COURT[i],fx=[];if(C.leg)fx.push(`legitimacy ${C.leg>0?'+':''}${C.leg}`);Object.entries(C.ig).forEach(([k,v])=>fx.push(`${IGS[k].n.toLowerCase()} ${v>0?'+':''}${v}`));
   const cost=courtCost(i);return `${C.d} Costs 🪙${fmt(cost)} a month, rising as the kingdom grows.${fx.length?' Effects: '+fx.join(', ')+'.':''}`}
+// how long the treasury lasts at this month's rate (or how soon a debt is paid off)
+function runwayText(c){const n=c.net,m=S.coins,when=k=>k>600?'':` (${MONTHS[(S.month+k)%12]}, year ${S.year+Math.floor((S.month+k)/12)})`,mo=k=>k>600?'more than 50 years':k>=24?`${Math.round(k/12)} years`:`${k} month${k===1?'':'s'}`;
+  if(n>=0){if(m<0){const k=Math.ceil(-m/Math.max(1,n));return{t:`In debt by 🪙${fmt(-m)}. At this rate it is paid off in ${k>600?"":"about "}${mo(k)}${when(k)}.`,c:'var(--warn)'}}
+    return{t:`The treasury is growing by about 🪙${fmt(n*12)} a year, so it won’t run out.`,c:'var(--good)'}}
+  if(m<=0)return{t:`The treasury is empty: you are 🪙${fmt(-m)} in debt, and it grows by 🪙${fmt(-n)} a month. Debt costs interest, and deep debt can end in bankruptcy.`,c:'var(--bad)'};
+  const k=Math.floor(m/-n);return{t:k<1?'At this rate the treasury runs out next month, and you go into debt.':`At this rate the treasury runs out in ${k>600?"":"about "}${mo(k)}${when(k)}, and then you go into debt.`,c:k<12?'var(--bad)':'var(--warn)'}}
 function econHTML(){const c=calc();
   const rows=(a,cls)=>a.filter(x=>Math.round(x[1])).map(([l,v])=>`<div class="row"><div class="grow">${l}</div><span class="num ${cls}">${fmt(v)}</span></div>`).join('')||'<div class="row"><div class="grow"><small>None</small></div></div>';
   const decs=Object.entries(DEC).map(([k,p])=>`<div class="row"><span class="em">${p.e}</span><div class="grow"><b>${p.n}</b><small>${p.d}</small></div><button class="sw" data-act="dec" data-arg="${k}" aria-pressed="${!!S.dec[k]}" aria-label="${p.n}"></button></div>`).join('');
   const market=RES.map(({k,n,e})=>{const p=c.price[k],ratio=p/PRICE[k];return `<div class="row"><span class="em">${e}</span><div class="grow"><b>${n}</b><small>Supply ${fmt(c.sup[k])}, demand ${fmt(c.dem[k])}. ${ratio>1.15?'Scarce, so prices are high.':ratio<.85?'Plentiful, so prices are low.':'Balanced.'}</small></div><span class="num" style="color:${ratio>1.15?'var(--bad)':ratio<.85?'var(--good)':'var(--ink)'}">${p.toFixed(1)} <small style="display:inline;color:var(--muted)">(${Math.round(ratio*100)}%)</small></span></div>`}).join('');
   const rentRow=`<div class="row"><span class="em">🏠</span><div class="grow"><b>Rent</b><small>Homes are ${Math.round(c.occ*100)}% full. ${c.rentIdx>1.3?'Housing is scarce, so landlords are raising rents.':c.rentIdx>1.05?'Rents are starting to climb.':'Plenty of vacancies keep rents low.'}${S.dec.rentcap?' Rent controls are in force.':''}</small></div><span class="num" style="color:${c.rentIdx>1.3?'var(--bad)':c.rentIdx>1.05?'var(--warn)':'var(--good)'}">${c.rent.toFixed(1)} <small style="display:inline;color:var(--muted)">(${Math.round(c.rentIdx*100)}%)</small></span></div>`;
+  const rw=runwayText(c);
   return `<h2>Monthly budget</h2><div class="mood" style="margin-top:0"><div><div class="big ${c.net>=0?'pos':'neg'}">${c.net>=0?'+':''}${fmt(c.net)}</div><div class="sub">projected ${c.net>=0?'surplus':'deficit'} next month</div></div></div>
+  <div class="tots"><div><small>Revenue a month</small><b class="pos">🪙${fmt(c.inT)}</b></div><div><small>Spending a month</small><b class="neg">🪙${fmt(c.outT)}</b></div></div>
+  <p class="hint" style="color:${rw.c}">⏳ ${rw.t} Treasury now: 🪙${fmt(S.coins)}.</p>
   ${budgetHTML(c)}
   ${luxHTML()}
   <h2>Prices and rent</h2><p class="hint">Prices follow supply and demand, and rent rises once homes are more than 80% full. Together they set the cost of living, which hits the lower class hardest. Building homes brings rent down, and imports lower prices.</p><div class="card">${market}${rentRow}</div>
   <h2>Building materials</h2><div class="card"><div class="row"><span class="em">🧱</span><div class="grow"><b>${fmt(S.mat||0)} in stock</b><small>Storage for ${fmt(c.matCap)}. ${c.t.mat?`Producing ${fmt(c.t.mat)} a month.`:'You don’t produce any yet. Build a lumber camp in a forest, or a quarry or brickworks on a stone or clay deposit.'}</small><small>Buildings costing 🪙800 or more also need materials. Anything you don’t have is imported at 🪙${matPrice().toFixed(1)} each.${c.matSale?` Production beyond storage sells for 🪙${fmt(c.matSale)} a month.`:''}</small>${bar(Math.min(100,(S.mat||0)/c.matCap*100),'var(--deep)')}</div></div>
   ${c.coalImp?`<div class="row"><span class="em">⚫</span><div class="grow"><b>Imported coal: 🪙${fmt(c.coalImp)} a month</b><small>Each engine house without a coal mine to supply it costs 🪙20 a month.</small></div></div>`:''}</div>
-  <h2>Revenue</h2><div class="card">${rows(c.income,'pos')}</div>
-  <h2>Spending</h2><div class="card">${rows(c.costs,'neg')}</div>
+  <h2>Revenue</h2><div class="card">${rows(c.income,'pos')}<div class="row"><div class="grow"><b>Total revenue</b></div><span class="num pos"><b>${fmt(c.inT)}</b></span></div></div>
+  <h2>Spending</h2><div class="card">${rows(c.costs,'neg')}<div class="row"><div class="grow"><b>Total spending</b></div><span class="num neg"><b>${fmt(c.outT)}</b></span></div></div>
   <h2>Royal decrees</h2><div class="card">${decs}</div>${gpHTML()}`}
 function worldHTML(){const c=calc();const used=c.cap-c.capLeft;
   const res=RES.map(r=>{const diff=Math.round(c.prod[r.k]-c.dem[r.k]),T=c.tr[r.k],cur=S.trade[r.k],sh=expSh(r.k);
